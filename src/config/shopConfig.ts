@@ -1,0 +1,38 @@
+export type ShopItemCategory = 'food' | 'toy' | 'medicine' | 'cosmetic';
+
+export interface ItemEffect {
+  type: 'feed' | 'play' | 'heal' | 'clean' | 'buff';
+  value: number;
+  duration?: number;
+}
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  cost: { tokens?: number; coins?: number };
+  category: ShopItemCategory;
+  stackable: boolean;
+  effect: ItemEffect;
+  requiredMPTier?: 'silver';
+}
+
+export const SHOP_ITEMS: ShopItem[] = [
+  // Food
+  { id: 'apple', name: 'Apple', description: 'A crisp apple. +15 hunger.', icon: '/assets/generated/final/item_apple.png', cost: { tokens: 5 }, category: 'food', stackable: true, effect: { type: 'feed', value: 15 } },
+  { id: 'meat', name: 'Meat', description: 'Juicy protein. +30 hunger.', icon: '🥩', cost: { tokens: 10 }, category: 'food', stackable: true, effect: { type: 'feed', value: 30 } },
+  { id: 'cake', name: 'Cake', description: 'Sweet treat. +50 hunger +10 happiness.', icon: '/assets/generated/final/item_cake.png', cost: { tokens: 20 }, category: 'food', stackable: true, effect: { type: 'feed', value: 50 } },
+  { id: 'potion', name: 'Potion', description: 'Max hunger restore.', icon: '/assets/generated/final/item_potion.png', cost: { tokens: 50 }, category: 'food', stackable: true, effect: { type: 'feed', value: 100 } },
+  { id: 'golden_apple', name: 'Golden Apple', description: 'Premium apple. +40 hunger +10 happiness.', icon: '/assets/generated/final/item_apple.png', cost: { tokens: 25 }, category: 'food', stackable: true, effect: { type: 'feed', value: 40 }, requiredMPTier: 'silver' as const },
+  // Toys
+  { id: 'ball', name: 'Ball', description: 'A bouncy ball. +40 happiness.', icon: '⚽', cost: { tokens: 15 }, category: 'toy', stackable: true, effect: { type: 'play', value: 40 } },
+  { id: 'teddy', name: 'Teddy Bear', description: 'Snuggly companion. +60 happiness.', icon: '/assets/generated/final/item_teddy_bear.png', cost: { tokens: 30 }, category: 'toy', stackable: true, effect: { type: 'play', value: 60 } },
+  // Medicine
+  { id: 'bandage', name: 'Bandage', description: 'Basic first aid. +25 health.', icon: '/assets/generated/final/item_bandage.png', cost: { tokens: 20 }, category: 'medicine', stackable: true, effect: { type: 'heal', value: 25 } },
+  { id: 'medicine', name: 'Medicine', description: 'Full health restore.', icon: '/assets/generated/final/item_pill.png', cost: { tokens: 50 }, category: 'medicine', stackable: true, effect: { type: 'heal', value: 100 } },
+  // Cosmetic (coins)
+  { id: 'hat', name: 'Party Hat', description: 'Festive head wear.', icon: '🎩', cost: { coins: 5 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 5 } },
+];
+
+export const STREAK_THRESHOLDS: { streak: number; label: string }[] = [];

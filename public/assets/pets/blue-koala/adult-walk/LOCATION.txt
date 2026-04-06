@@ -1,0 +1,2 @@
+Legacy adult-walk source remains at: /assets/koala_sprite.png
+Do not move unless migration is explicitly required.

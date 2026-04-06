@@ -1,0 +1,774 @@
+@keyframes breathe {
+  0% { transform: scaleY(1) scaleX(1); }
+  50% { transform: scaleY(1.02) scaleX(0.99); }
+  100% { transform: scaleY(1) scaleX(1); }
+}
+
+@keyframes wobble {
+  0% { transform: rotate(0deg); }
+  15% { transform: rotate(-5deg); }
+  30% { transform: rotate(5deg); }
+  45% { transform: rotate(-5deg); }
+  60% { transform: rotate(5deg); }
+  75% { transform: rotate(-2deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes glow {
+  0% { filter: drop-shadow(0 0 5px rgba(122, 162, 247, 0.4)); }
+  50% { filter: drop-shadow(0 0 15px rgba(122, 162, 247, 0.8)); }
+  100% { filter: drop-shadow(0 0 5px rgba(122, 162, 247, 0.4)); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Sprite anims use scaleY from bottom so feet stay planted on the ground */
+@keyframes sprite-idle-breath {
+  0% { transform: scaleY(1) scaleX(1); }
+  50% { transform: scaleY(1.015) scaleX(0.99); }
+  100% { transform: scaleY(1) scaleX(1); }
+}
+
+@keyframes sprite-happy-glow {
+  0% { transform: scaleY(1) scaleX(1); filter: brightness(1); }
+  50% { transform: scaleY(1.04) scaleX(1.02); filter: brightness(1.1); }
+  100% { transform: scaleY(1) scaleX(1); filter: brightness(1); }
+}
+
+@keyframes sprite-sleep-float {
+  0% { transform: scaleY(0.99) scaleX(1); opacity: 0.9; }
+  50% { transform: scaleY(1.01) scaleX(0.99); opacity: 0.8; }
+  100% { transform: scaleY(0.99) scaleX(1); opacity: 0.9; }
+}
+
+@keyframes sprite-hungry-shake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-3px) rotate(-2deg); }
+  50% { transform: translateX(3px) rotate(2deg); }
+  75% { transform: translateX(-2px) rotate(-1deg); }
+}
+
+.anim-idle {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+.anim-breathe {
+  animation: breathe 2s ease-in-out infinite;
+}
+
+.anim-wobble {
+  animation: wobble 2s ease-in-out infinite;
+}
+
+.anim-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.anim-shake {
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+.anim-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.anim-pop {
+  animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.anim-sprite-idle {
+  animation: sprite-idle-breath 2.5s ease-in-out infinite;
+}
+
+.anim-sprite-happy {
+  animation: sprite-happy-glow 2s ease-in-out infinite;
+}
+
+.anim-sprite-sleep {
+  animation: sprite-sleep-float 4s ease-in-out infinite;
+}
+
+.anim-sprite-hungry {
+  animation: sprite-hungry-shake 0.9s ease-in-out infinite;
+}
+
+@keyframes fade-in-down {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes screen-enter {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in-down 0.25s ease-out forwards;
+}
+
+.anim-screen-enter {
+  animation: screen-enter 0.2s ease-out forwards;
+}
+
+.btn-press {
+  transition: transform 0.1s ease;
+}
+.btn-press:active {
+  transform: scale(0.95);
+}
+
+/* Hotbar button hover/active — console game feel */
+.hotbar-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+}
+.hotbar-btn:not(:disabled):active {
+  transform: translateY(1px) scale(0.96);
+  filter: brightness(0.9);
+}
+
+/* Room transition crossfade */
+@keyframes room-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes room-slide-in {
+  0% { opacity: 0; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.anim-room-enter {
+  animation: room-fade-in 0.35s ease-out forwards;
+}
+
+.anim-room-slide {
+  animation: room-slide-in 0.3s ease-out forwards;
+}
+
+/* ========== BATTLE ANIMATIONS ========== */
+
+@keyframes battle-screen-shake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-6px, 2px); }
+  20% { transform: translate(5px, -3px); }
+  30% { transform: translate(-4px, 1px); }
+  40% { transform: translate(3px, -2px); }
+  50% { transform: translate(-2px, 1px); }
+  60% { transform: translate(2px, -1px); }
+  70% { transform: translate(-1px, 0); }
+  80% { transform: translate(1px, 0); }
+}
+
+@keyframes battle-hit-flash {
+  0% { filter: brightness(1); }
+  15% { filter: brightness(3) saturate(0); }
+  30% { filter: brightness(1) saturate(1); }
+  50% { filter: brightness(2) saturate(0.5); }
+  100% { filter: brightness(1) saturate(1); }
+}
+
+@keyframes battle-knockback-left {
+  0% { transform: translateX(0); }
+  30% { transform: translateX(-16px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes battle-knockback-right {
+  0% { transform: translateX(0); }
+  30% { transform: translateX(16px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes battle-lunge-right {
+  0% { transform: translateX(0) scale(1); }
+  40% { transform: translateX(24px) scale(1.05); }
+  100% { transform: translateX(0) scale(1); }
+}
+
+@keyframes battle-lunge-left {
+  0% { transform: translateX(0) scale(1); }
+  40% { transform: translateX(-24px) scale(1.05); }
+  100% { transform: translateX(0) scale(1); }
+}
+
+@keyframes battle-damage-pop {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  15% { transform: translateY(-8px) scale(1.3); opacity: 1; }
+  30% { transform: translateY(-16px) scale(1); opacity: 1; }
+  100% { transform: translateY(-48px) scale(0.8); opacity: 0; }
+}
+
+@keyframes battle-heal-pop {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  15% { transform: translateY(-8px) scale(1.3); opacity: 1; }
+  30% { transform: translateY(-16px) scale(1); opacity: 1; }
+  100% { transform: translateY(-40px) scale(0.8); opacity: 0; }
+}
+
+@keyframes battle-miss-float {
+  0% { transform: translateY(0) scale(0.8); opacity: 0; }
+  20% { transform: translateY(-12px) scale(1); opacity: 1; }
+  100% { transform: translateY(-36px) scale(0.9); opacity: 0; }
+}
+
+@keyframes battle-impact-burst {
+  0% { transform: scale(0.3); opacity: 0; }
+  30% { transform: scale(1.4); opacity: 1; }
+  60% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.2); opacity: 0; }
+}
+
+@keyframes battle-defend-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); }
+  50% { box-shadow: 0 0 20px 8px rgba(59, 130, 246, 0.3); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+@keyframes battle-heal-glow {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+  50% { box-shadow: 0 0 24px 10px rgba(34, 197, 94, 0.3); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.anim-battle-shake {
+  animation: battle-screen-shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+.anim-battle-hit-flash {
+  animation: battle-hit-flash 0.35s ease-out both;
+}
+
+.anim-battle-knockback-left {
+  animation: battle-knockback-left 0.35s ease-out both;
+}
+
+.anim-battle-knockback-right {
+  animation: battle-knockback-right 0.35s ease-out both;
+}
+
+.anim-battle-lunge-right {
+  animation: battle-lunge-right 0.3s ease-out both;
+}
+
+.anim-battle-lunge-left {
+  animation: battle-lunge-left 0.3s ease-out both;
+}
+
+.anim-battle-damage-pop {
+  animation: battle-damage-pop 0.8s ease-out forwards;
+}
+
+.anim-battle-heal-pop {
+  animation: battle-heal-pop 0.8s ease-out forwards;
+}
+
+.anim-battle-miss-float {
+  animation: battle-miss-float 0.7s ease-out forwards;
+}
+
+.anim-battle-impact-burst {
+  animation: battle-impact-burst 0.4s ease-out forwards;
+}
+
+.anim-battle-defend-pulse {
+  animation: battle-defend-pulse 0.6s ease-out both;
+}
+
+.anim-battle-heal-glow {
+  animation: battle-heal-glow 0.6s ease-out both;
+}
+
+/* ========== COMBAT EFFECT ANIMATIONS ========== */
+
+/* Diagonal slash sweep — for claw/slash attacks */
+@keyframes battle-effect-slash {
+  0% { transform: rotate(-35deg) scaleX(0.2) scaleY(0.6); opacity: 0; }
+  25% { transform: rotate(-35deg) scaleX(1.3) scaleY(1.1); opacity: 1; }
+  60% { transform: rotate(-35deg) scaleX(1) scaleY(1); opacity: 0.7; }
+  100% { transform: rotate(-35deg) scaleX(1.1) scaleY(0.8); opacity: 0; }
+}
+
+/* Drop slam — falls from above, expands on impact */
+@keyframes battle-effect-slam {
+  0% { transform: translateY(-40px) scale(0.4); opacity: 0; }
+  35% { transform: translateY(4px) scale(1.3); opacity: 1; }
+  50% { transform: translateY(0) scale(1.5, 0.7); opacity: 0.9; }
+  100% { transform: translateY(0) scale(1.8, 0.5); opacity: 0; }
+}
+
+/* Lightning zap — rapid flash + flicker */
+@keyframes battle-effect-zap {
+  0% { transform: scaleY(0.3) scaleX(0.8); opacity: 0; filter: brightness(1); }
+  10% { transform: scaleY(1.2) scaleX(1); opacity: 1; filter: brightness(3); }
+  20% { opacity: 0.2; filter: brightness(1); }
+  30% { opacity: 1; filter: brightness(2.5); }
+  50% { transform: scaleY(1) scaleX(1); opacity: 0.8; filter: brightness(1.5); }
+  100% { transform: scaleY(0.8) scaleX(1.1); opacity: 0; filter: brightness(1); }
+}
+
+/* Splash scatter — expands outward, good for slime/acid */
+@keyframes battle-effect-splash {
+  0% { transform: scale(0.3); opacity: 0; }
+  20% { transform: scale(0.8); opacity: 1; }
+  40% { transform: scale(1.2); opacity: 0.9; }
+  70% { transform: scale(1.5); opacity: 0.5; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+/* Absorb spiral — shrinks inward, for drain/absorb/heal */
+@keyframes battle-effect-absorb {
+  0% { transform: scale(1.6) rotate(0deg); opacity: 0; }
+  20% { transform: scale(1.3) rotate(60deg); opacity: 0.8; }
+  50% { transform: scale(1) rotate(150deg); opacity: 1; }
+  80% { transform: scale(0.6) rotate(270deg); opacity: 0.7; }
+  100% { transform: scale(0.2) rotate(360deg); opacity: 0; }
+}
+
+/* Shield expand — ring outward, for defensive moves */
+@keyframes battle-effect-shield {
+  0% { transform: scale(0.4); opacity: 0; filter: brightness(2); }
+  30% { transform: scale(1.1); opacity: 1; filter: brightness(1.5); }
+  60% { transform: scale(1); opacity: 0.8; filter: brightness(1); }
+  100% { transform: scale(1.3); opacity: 0; filter: brightness(1); }
+}
+
+/* Critical hit — big pop with glow */
+@keyframes battle-effect-critical {
+  0% { transform: scale(0.2) rotate(-10deg); opacity: 0; filter: brightness(1); }
+  20% { transform: scale(1.6) rotate(5deg); opacity: 1; filter: brightness(2); }
+  40% { transform: scale(1.2) rotate(-3deg); opacity: 1; filter: brightness(1.5); }
+  60% { transform: scale(1.4) rotate(2deg); opacity: 0.8; filter: brightness(1.2); }
+  100% { transform: scale(1.6) rotate(0deg); opacity: 0; filter: brightness(1); }
+}
+
+/* Repair sparkle — gentle spin + glow for self-repair */
+@keyframes battle-effect-repair {
+  0% { transform: scale(0.5) rotate(0deg); opacity: 0; }
+  30% { transform: scale(1.1) rotate(90deg); opacity: 1; filter: brightness(1.3); }
+  60% { transform: scale(1) rotate(180deg); opacity: 0.9; }
+  100% { transform: scale(0.8) rotate(360deg); opacity: 0; }
+}
+
+.anim-battle-effect-slash {
+  animation: battle-effect-slash 0.4s ease-out forwards;
+}
+
+.anim-battle-effect-slam {
+  animation: battle-effect-slam 0.5s cubic-bezier(.25,.46,.45,.94) forwards;
+}
+
+.anim-battle-effect-zap {
+  animation: battle-effect-zap 0.45s ease-out forwards;
+}
+
+.anim-battle-effect-splash {
+  animation: battle-effect-splash 0.5s ease-out forwards;
+}
+
+.anim-battle-effect-absorb {
+  animation: battle-effect-absorb 0.6s ease-in forwards;
+}
+
+.anim-battle-effect-shield {
+  animation: battle-effect-shield 0.5s ease-out forwards;
+}
+
+.anim-battle-effect-critical {
+  animation: battle-effect-critical 0.55s cubic-bezier(.175,.885,.32,1.275) forwards;
+}
+
+.anim-battle-effect-repair {
+  animation: battle-effect-repair 0.6s ease-in-out forwards;
+}
+
+/* ========== TRACE EVENT ANIMATIONS ========== */
+
+@keyframes trace-overlay-enter {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes trace-segment-pulse {
+  0%, 100% { opacity: 0.4; r: 0.012; }
+  50% { opacity: 1; r: 0.022; }
+}
+
+@keyframes trace-complete-flash {
+  0% { opacity: 0; transform: scale(0.5); }
+  30% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+@keyframes trace-timer-urgent {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.anim-trace-enter {
+  animation: trace-overlay-enter 0.25s ease-out forwards;
+}
+
+.anim-trace-pulse {
+  animation: trace-segment-pulse 0.8s ease-in-out infinite;
+}
+
+.anim-trace-complete {
+  animation: trace-complete-flash 0.5s ease-out forwards;
+}
+
+.anim-trace-urgent {
+  animation: trace-timer-urgent 0.4s ease-in-out infinite;
+}
+
+/* ===== Interactive Scene Objects ===== */
+
+/* Tooltip fade-in */
+@keyframes scene-tooltip-in {
+  0% { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.anim-scene-tooltip {
+  animation: scene-tooltip-in 0.15s ease-out forwards;
+}
+
+/* Mailbox reward indicator pulse */
+@keyframes scene-indicator-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
+}
+.anim-scene-indicator {
+  animation: scene-indicator-pulse 1.5s ease-in-out infinite;
+}
+
+/* Door hint fade-in */
+@keyframes scene-door-hint-in {
+  0% { opacity: 0; transform: scale(0.7); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.anim-scene-door-hint {
+  animation: scene-door-hint-in 0.2s ease-out forwards;
+}
+
+/* Ambient sparkle near mailbox */
+@keyframes scene-sparkle-drift {
+  0% { opacity: 0; transform: translateY(0) scale(0.5); }
+  30% { opacity: 1; transform: translateY(-6px) scale(1); }
+  70% { opacity: 0.8; transform: translateY(-14px) scale(0.8); }
+  100% { opacity: 0; transform: translateY(-20px) scale(0.3); }
+}
+.anim-scene-sparkle {
+  animation: scene-sparkle-drift 2.5s ease-in-out infinite;
+}
+
+/* Mailbox popup entrance */
+@keyframes scene-popup-enter {
+  0% { opacity: 0; transform: scale(0.9) translateY(12px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.anim-scene-popup {
+  animation: scene-popup-enter 0.25s ease-out forwards;
+}
+
+/* Claim confirmation pop */
+@keyframes scene-claim-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.anim-scene-claim-pop {
+  animation: scene-claim-pop 0.4s ease-out forwards;
+}
+
+/* ===== Environmental Life (Phase 5) ===== */
+
+/* Fireplace warm glow flicker — subtle brightness pulse */
+@keyframes env-fireplace-glow {
+  0%, 100% { opacity: 0.25; }
+  25% { opacity: 0.35; }
+  50% { opacity: 0.2; }
+  75% { opacity: 0.3; }
+}
+.anim-env-fireplace {
+  animation: env-fireplace-glow 3s ease-in-out infinite;
+}
+
+/* Window ambient light — gentle brightness shift */
+@keyframes env-window-glow {
+  0%, 100% { opacity: 0.08; }
+  50% { opacity: 0.15; }
+}
+.anim-env-window {
+  animation: env-window-glow 6s ease-in-out infinite;
+}
+
+/* Tree sway — extremely subtle */
+@keyframes env-tree-sway {
+  0%, 100% { transform: scaleX(1); }
+  50% { transform: scaleX(1.003) translateX(0.3px); }
+}
+.anim-env-tree-sway {
+  animation: env-tree-sway 5s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+/* Sun rays — slow rotation */
+@keyframes env-sun-rays {
+  0% { transform: rotate(0deg); opacity: 0.06; }
+  50% { opacity: 0.1; }
+  100% { transform: rotate(360deg); opacity: 0.06; }
+}
+.anim-env-sun-rays {
+  animation: env-sun-rays 30s linear infinite;
+}
+
+/* Flower sway */
+@keyframes env-flower-sway {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(1deg); }
+  75% { transform: rotate(-1deg); }
+}
+.anim-env-flowers {
+  animation: env-flower-sway 4s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+/* Clock pendulum */
+@keyframes env-pendulum {
+  0%, 100% { transform: rotate(2deg); }
+  50% { transform: rotate(-2deg); }
+}
+.anim-env-pendulum {
+  animation: env-pendulum 2s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+/* ========== COMBAT UI ANIMATIONS (Phase 4) ========== */
+
+/* Combo meter — ambient glow pulse on container */
+@keyframes combo-glow {
+  0%, 100% { box-shadow: 0 0 6px 1px rgba(245, 158, 11, 0.2); }
+  50% { box-shadow: 0 0 14px 4px rgba(245, 158, 11, 0.45); }
+}
+.anim-combo-glow {
+  animation: combo-glow 1.8s ease-in-out infinite;
+}
+
+/* Combo count — bounce pop when count increments */
+@keyframes combo-pop {
+  0% { transform: scale(1); }
+  20% { transform: scale(1.35); }
+  50% { transform: scale(0.9); }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+.anim-combo-pop {
+  animation: combo-pop 0.35s cubic-bezier(.175,.885,.32,1.275);
+}
+
+/* Combo break — fade-out + shrink when combo resets */
+@keyframes combo-break {
+  0% { transform: scale(1); opacity: 1; }
+  40% { transform: scale(1.2); opacity: 0.6; filter: brightness(2); }
+  100% { transform: scale(0.5); opacity: 0; }
+}
+.anim-combo-break {
+  animation: combo-break 0.4s ease-out forwards;
+}
+
+/* Enemy intent — slide-in from left when new intent appears */
+@keyframes intent-reveal {
+  0% { transform: translateX(-12px); opacity: 0; }
+  60% { transform: translateX(2px); opacity: 1; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+.anim-intent-reveal {
+  animation: intent-reveal 0.3s ease-out;
+}
+
+/* Enemy intent icon — subtle pulse */
+@keyframes intent-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+.anim-intent-pulse {
+  animation: intent-pulse 1.5s ease-in-out infinite;
+}
+
+/* Focus gather — expanding ring for focus action */
+@keyframes focus-gather {
+  0% { transform: scale(0.3); opacity: 0; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+  40% { transform: scale(1); opacity: 1; box-shadow: 0 0 20px 8px rgba(16, 185, 129, 0.3); }
+  100% { transform: scale(1.3); opacity: 0; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.anim-focus-gather {
+  animation: focus-gather 0.6s ease-out forwards;
+}
+
+/* Action bar button ready — soft glow pulse on available actions */
+@keyframes action-btn-ready {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
+  50% { box-shadow: inset 0 0 8px 1px rgba(255,255,255,0.1); }
+}
+.anim-action-btn-ready {
+  animation: action-btn-ready 2.5s ease-in-out infinite;
+}
+
+/* ========== DARKEST DUNGEON — PERSISTENT HOTBAR ========== */
+
+/* Hotbar button idle breathing — subtle glow pulse */
+@keyframes hotbar-breathe {
+  0%, 100% {
+    box-shadow: 0 0 4px 0 var(--breathe-glow, rgba(255,255,255,0.1));
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 12px 2px var(--breathe-glow, rgba(255,255,255,0.15));
+    transform: scale(1.01);
+  }
+}
+.anim-hotbar-breathe {
+  animation: hotbar-breathe 2.5s ease-in-out infinite;
+}
+.anim-hotbar-breathe:hover {
+  animation: none;
+  box-shadow: 0 0 16px 4px var(--breathe-glow, rgba(255,255,255,0.25));
+  transform: scale(1.04);
+}
+
+/* Locked shimmer overlay — slow diagonal scanline */
+@keyframes hotbar-locked-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.anim-hotbar-locked-shimmer {
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgba(255,255,255,0.04) 45%,
+    rgba(255,255,255,0.07) 50%,
+    rgba(255,255,255,0.04) 55%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: hotbar-locked-shimmer 3s linear infinite;
+}
+
+/* ========== ENEMY INTENT UPGRADES ========== */
+
+/* Bounce animation for intent icon */
+@keyframes intent-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(-2px) scale(1.1); }
+  50% { transform: translateY(0) scale(1); }
+  75% { transform: translateY(-1px) scale(1.05); }
+}
+.anim-intent-bounce {
+  animation: intent-bounce 1.5s ease-in-out infinite;
+}
+
+/* Glowing text for intent label */
+@keyframes intent-glow-text {
+  0%, 100% { text-shadow: 0 0 4px currentColor; opacity: 0.9; }
+  50% { text-shadow: 0 0 10px currentColor, 0 0 20px currentColor; opacity: 1; }
+}
+.anim-intent-glow-text {
+  animation: intent-glow-text 1.5s ease-in-out infinite;
+}
+
+/* ========== HP BAR CRITICAL PULSE ========== */
+
+@keyframes hp-critical {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; color: #f87171; }
+}
+.anim-hp-critical {
+  animation: hp-critical 0.8s ease-in-out infinite;
+}
+
+/* ========== ENEMY TURN SCREEN DIM ========== */
+
+@keyframes enemy-turn-dim {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.anim-enemy-turn-dim {
+  animation: enemy-turn-dim 0.3s ease-out forwards;
+}
+
+/* ========== BUTTON PRESS FEEDBACK ========== */
+
+@keyframes btn-press-impact {
+  0% { transform: scale(1); }
+  30% { transform: scale(0.9); }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.anim-btn-press {
+  animation: btn-press-impact 0.15s ease-out;
+}
+
+/* ========== MP SYSTEM FEEDBACK ========== */
+
+/* Floating "+X MP" text on math solve */
+@keyframes mp-float-up {
+  0% { transform: translateY(0); opacity: 1; }
+  60% { opacity: 1; }
+  100% { transform: translateY(-28px); opacity: 0; }
+}
+.animate-mp-float {
+  animation: mp-float-up 1s ease-out forwards;
+}
+
+/* MP counter pulse when MP earned */
+@keyframes mp-counter-pulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.15); filter: brightness(1.4); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+.animate-mp-pulse {
+  animation: mp-counter-pulse 0.4s ease-out;
+}
+
+/* Tier-up banner entrance */
+@keyframes tier-up-enter {
+  0% { transform: translateY(-20px) scale(0.9); opacity: 0; }
+  30% { transform: translateY(4px) scale(1.05); opacity: 1; }
+  50% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes tier-up-exit {
+  0% { opacity: 1; }
+  100% { transform: translateY(-12px); opacity: 0; }
+}
+.animate-tier-up-in {
+  animation: tier-up-enter 0.5s ease-out forwards;
+}
+.animate-tier-up-out {
+  animation: tier-up-exit 0.4s ease-in forwards;
+}
+
+/* Shop item "NEW" badge glow */
+@keyframes shop-new-glow {
+  0%, 100% { box-shadow: 0 0 6px 1px rgba(96, 165, 250, 0.3); border-color: rgba(96, 165, 250, 0.5); }
+  50% { box-shadow: 0 0 14px 3px rgba(96, 165, 250, 0.5); border-color: rgba(96, 165, 250, 0.8); }
+}
+.animate-shop-new-glow {
+  animation: shop-new-glow 2s ease-in-out infinite;
+}

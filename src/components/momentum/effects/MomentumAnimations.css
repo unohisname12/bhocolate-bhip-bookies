@@ -1,0 +1,236 @@
+/* --- Energy Aura --- */
+
+.momentum-energy-breathe {
+  animation: momentum-energy-breathe 2.5s ease-in-out infinite;
+}
+
+@keyframes momentum-energy-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.momentum-energy-pulse {
+  animation: momentum-energy-pulse 2s ease-in-out infinite;
+}
+
+@keyframes momentum-energy-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.03);
+    filter: brightness(1.15);
+  }
+}
+
+/* --- Valid Move Highlights --- */
+
+.momentum-valid-move-pulse {
+  animation: momentum-valid-move-pulse 2s ease-in-out infinite;
+}
+
+@keyframes momentum-valid-move-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.momentum-valid-attack-pulse {
+  animation: momentum-valid-attack-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes momentum-valid-attack-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* --- Piece Selection --- */
+
+.momentum-piece-selected {
+  animation: momentum-piece-selected 2s ease-in-out infinite;
+}
+
+.scale-108 {
+  transform: scale(1.08);
+}
+
+@keyframes momentum-piece-selected {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.2); }
+}
+
+/* --- Rank 4 Glow --- */
+
+@keyframes momentum-rank4-glow {
+  0%, 100% {
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8), 0 0 4px rgba(168, 85, 247, 0.4);
+  }
+  50% {
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8), 0 0 10px rgba(168, 85, 247, 0.8);
+  }
+}
+
+/* --- Clutch Tile Glow --- */
+
+.momentum-clutch-pulse {
+  animation: momentum-clutch-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes momentum-clutch-pulse {
+  0%, 100% {
+    box-shadow: inset 0 0 10px rgba(251, 191, 36, 0.3), 0 0 4px rgba(251, 191, 36, 0.3);
+  }
+  50% {
+    box-shadow: inset 0 0 18px rgba(251, 191, 36, 0.7), 0 0 10px rgba(251, 191, 36, 0.6);
+  }
+}
+
+/* --- Board Shake --- */
+
+.momentum-board-shake {
+  animation: momentum-board-shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes momentum-board-shake {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-3px, 1px); }
+  30% { transform: translate(2px, -2px); }
+  45% { transform: translate(-1px, 2px); }
+  60% { transform: translate(3px, 0px); }
+  75% { transform: translate(-2px, -1px); }
+}
+
+/* --- Attack Impact Burst --- */
+
+.momentum-impact-burst {
+  animation: momentum-impact-burst 0.4s ease-out both;
+}
+
+@keyframes momentum-impact-burst {
+  0% { transform: scale(0.3); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.8; }
+  100% { transform: scale(1.2); opacity: 0; }
+}
+
+/* --- Capture Fade --- */
+
+.momentum-capture-fade {
+  animation: momentum-capture-fade 0.3s ease-out forwards;
+}
+
+@keyframes momentum-capture-fade {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.5); opacity: 0; }
+}
+
+/* --- Floating Text (CAPTURED!) --- */
+
+.momentum-float-text {
+  animation: momentum-float-text 0.8s ease-out forwards;
+}
+
+@keyframes momentum-float-text {
+  0% { transform: translateY(0) scale(0.5); opacity: 1; }
+  30% { transform: translateY(-10px) scale(1.3); opacity: 1; }
+  100% { transform: translateY(-40px) scale(0.8); opacity: 0; }
+}
+
+/* --- Flash Sequence --- */
+
+.momentum-flash-freeze {
+  animation: momentum-flash-freeze 0.2s ease-out forwards;
+}
+
+@keyframes momentum-flash-freeze {
+  0% { filter: saturate(1); }
+  100% { filter: saturate(0.5); }
+}
+
+.momentum-flash-zoom {
+  animation: momentum-flash-zoom 0.3s ease-out forwards;
+}
+
+@keyframes momentum-flash-zoom {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.05); }
+}
+
+.momentum-flash-burst {
+  animation: momentum-flash-burst 0.4s ease-out both;
+}
+
+@keyframes momentum-flash-burst {
+  0% { transform: scale(0.2); opacity: 1; }
+  60% { transform: scale(2.0); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+.momentum-flash-title {
+  animation: momentum-flash-title 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes momentum-flash-title {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(1.0); opacity: 1; }
+}
+
+.momentum-flash-title-pulse {
+  animation: momentum-flash-title-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes momentum-flash-title-pulse {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+    transform: scale(1.02);
+  }
+}
+
+/* --- Fusion Merge --- */
+
+.momentum-fusion-merge {
+  animation: momentum-fusion-merge 0.6s ease-in-out forwards;
+}
+
+@keyframes momentum-fusion-merge {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.3); opacity: 0.5; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+.momentum-fusion-appear {
+  animation: momentum-fusion-appear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes momentum-fusion-appear {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* --- Upgrade Glow --- */
+
+.momentum-upgrade-glow {
+  animation: momentum-upgrade-glow 0.5s ease-out both;
+}
+
+@keyframes momentum-upgrade-glow {
+  0% { filter: brightness(1); transform: scale(1); }
+  40% { filter: brightness(2); transform: scale(1.2); }
+  100% { filter: brightness(1); transform: scale(1); }
+}
+
+/* --- Victory/Defeat Screen --- */
+
+.momentum-victory-enter {
+  animation: momentum-victory-enter 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes momentum-victory-enter {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}

@@ -13,7 +13,7 @@ export const buildRunPlayerPet = (
   bonuses: RunBonuses,
   hpPercent: number,
   fractureModifier?: FractureModifierId,
-  instability?: number,
+  _instability?: number,
 ): BattlePet => {
   const base = petToBattlePet(pet);
 

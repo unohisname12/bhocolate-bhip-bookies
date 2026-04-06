@@ -68,7 +68,7 @@ const fracturedMirror: RunEventTemplate = {
       effectDescription: 'Glass scatters. Nothing changes — but nothing was risked.',
     },
   ],
-  resolve: (choiceIndex, seed) => {
+  resolve: (choiceIndex, _seed) => {
     if (choiceIndex === 0) {
       // Study: gain +5 stat bonus (high reward for the "risky" choice)
       return {

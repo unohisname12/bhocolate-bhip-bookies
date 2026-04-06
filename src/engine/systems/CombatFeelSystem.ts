@@ -12,8 +12,6 @@ import {
   WEAK_POINT,
   REFLECT,
   COLLAPSE,
-  getGlitchState,
-  getEnemyMultiplier,
 } from '../../config/combatFeelConfig';
 import type { TraceTier } from '../../types/trace';
 

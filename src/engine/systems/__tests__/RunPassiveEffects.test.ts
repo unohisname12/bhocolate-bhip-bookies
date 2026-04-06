@@ -37,10 +37,11 @@ function buildRunBattleState(opts: {
     log: [],
     mathBuffActive: false,
     traceBuffs: { mathTraceTier: null, shieldTier: null, runeBoostTier: null },
-    combo: { count: 0, lastMoveCategory: null },
+    combo: { count: 0, multiplier: 1.0, lastAction: '' },
     enemyIntent: null,
     focusUsedThisTurn: false,
     playerPet: {
+      petId: 'test-player',
       name: 'Test Pet',
       speciesId: 'koala_sprite',
       level: 5,
@@ -53,9 +54,9 @@ function buildRunBattleState(opts: {
       speed: opts.playerSpd ?? 10,
       moves: [],
       buffs: [],
-      debuffs: [],
     },
     enemyPet: {
+      petId: 'test-enemy',
       name: 'Test Enemy',
       speciesId: 'subtrak',
       level: 5,
@@ -68,7 +69,6 @@ function buildRunBattleState(opts: {
       speed: opts.enemySpd ?? 10,
       moves: [],
       buffs: [],
-      debuffs: [],
     },
   };
 

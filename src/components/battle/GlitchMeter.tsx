@@ -1,6 +1,6 @@
 import React from 'react';
 import type { CombatFeelState } from '../../types/battle';
-import { GLITCH_METER, getGlitchState, getRealityLevel } from '../../config/combatFeelConfig';
+import { GLITCH_METER, getGlitchState } from '../../config/combatFeelConfig';
 
 interface GlitchMeterProps {
   combatFeel: CombatFeelState | undefined;
@@ -18,7 +18,7 @@ export const GlitchMeter: React.FC<GlitchMeterProps> = ({ combatFeel }) => {
   if (glitchMeter <= 0) return null;
 
   const glitchState = getGlitchState(glitchMeter);
-  const realityLevel = getRealityLevel(glitchMeter);
+
   const pct = Math.min(100, (glitchMeter / GLITCH_METER.max) * 100);
   const colors = GLITCH_COLORS[glitchState];
 

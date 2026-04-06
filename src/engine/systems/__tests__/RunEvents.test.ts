@@ -250,7 +250,7 @@ describe('selectMapNode routes to event', () => {
         },
       };
       // Wire a tier 0 node to connect to it
-      const tier0 = state.run.map.nodes.find(n => n.tier === 0)!;
+      const tier0 = (state.run as ActiveRunState).map.nodes.find((n: { tier: number }) => n.tier === 0)!;
       tier0.connections.push('injected_event');
       // First select tier 0 node
       state = selectMapNode(state, tier0.id);

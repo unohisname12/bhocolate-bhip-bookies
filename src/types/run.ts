@@ -1,4 +1,3 @@
-import type { BattleMove } from './battle';
 
 // --- Phases ---
 

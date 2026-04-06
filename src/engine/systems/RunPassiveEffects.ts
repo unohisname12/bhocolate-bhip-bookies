@@ -1,5 +1,4 @@
 import type { EngineState } from '../../types/engine';
-import type { ActiveBattleState } from '../../types/battle';
 import type { ActiveRunState, EnemyPassiveEffect } from '../../types/run';
 import { getEnemyById } from '../../config/runEnemyConfig';
 import { RUN_BALANCE } from '../../config/runConfig';

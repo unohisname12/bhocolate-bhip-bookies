@@ -123,7 +123,8 @@ describe('selectMapNode', () => {
   it('marks node as visited', () => {
     const state = startRunAndSelectCombat(stateWithPet());
     if (!state.run.active) return;
-    const visitedNode = state.run.map.nodes.find(n => n.id === state.run.currentNodeId);
+    const currentNodeId = state.run.currentNodeId;
+    const visitedNode = state.run.map.nodes.find(n => n.id === currentNodeId);
     expect(visitedNode?.visited).toBe(true);
   });
 

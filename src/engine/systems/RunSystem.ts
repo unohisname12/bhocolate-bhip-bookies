@@ -4,8 +4,7 @@ import type { ActiveBattleState, ComboState } from '../../types/battle';
 import type { TraceBuffState } from '../../types/trace';
 import { createEmptyBonuses } from '../../types/run';
 import { getEnemyById } from '../../config/runEnemyConfig';
-import { generateRewardChoices } from '../../config/runRewardConfig';
-import { RUN_LENGTH, getEnemyForEncounter, getRewardsForEncounter, RUN_BALANCE } from '../../config/runConfig';
+import { RUN_LENGTH, getEnemyForEncounter, RUN_BALANCE } from '../../config/runConfig';
 import { getEventById } from '../../config/runEventConfig';
 import { generateRunMap, pickFractureModifier, getSelectableNodes, getNodeById } from './RunMapGenerator';
 import { buildRunPlayerPet, buildRunEnemy } from './RunBattleAdapter';
@@ -46,14 +45,9 @@ const V2_REWARD_EFFECTS: Record<string, (bonuses: ActiveRunState['bonuses'], hpP
   combo_surge: (b) => ({ bonuses: { ...b, comboGrowthBonus: b.comboGrowthBonus * 1.5 }, hpDelta: 0 }),
   desperate_power: (b) => ({ bonuses: { ...b, desperatePower: true }, hpDelta: 0 }),
   overcharge: (b) => ({ bonuses: { ...b, overchargeActive: true, maxEnergyBonus: b.maxEnergyBonus + 20 }, hpDelta: 0 }),
-  recovery_15: (b, hp) => ({ bonuses: b, hpDelta: 0.15 }),
-  recovery_25: (b, hp) => ({ bonuses: b, hpDelta: 0.25 }),
+  recovery_15: (b, _hp) => ({ bonuses: b, hpDelta: 0.15 }),
+  recovery_25: (b, _hp) => ({ bonuses: b, hpDelta: 0.25 }),
 };
-
-// Mark echo_strike as active by checking if the reward was chosen
-function hasEchoStrike(bonuses: ActiveRunState['bonuses'], rewardsChosen: string[]): boolean {
-  return rewardsChosen.includes('echo_strike');
-}
 
 // --- State transitions ---
 
@@ -221,9 +215,6 @@ export const handleRunVictory = (state: EngineState): EngineState => {
     };
     return { ...state, battle: { active: false }, run: updatedRun, screen: 'run_over' };
   }
-
-  // Determine reward tier from current node
-  const rewardTier = currentNode?.rewardTier ?? 'common';
 
   const updatedRun: ActiveRunState = {
     ...run,

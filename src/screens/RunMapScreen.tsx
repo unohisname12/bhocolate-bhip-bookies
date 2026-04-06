@@ -28,7 +28,7 @@ const NODE_TYPE_LABELS: Record<string, string> = {
   boss: 'Boss',
 };
 
-export const RunMapScreen: React.FC<RunMapScreenProps> = ({ run, pet, dispatch }) => {
+export const RunMapScreen: React.FC<RunMapScreenProps> = ({ run, pet: _pet, dispatch }) => {
   const selectable = getSelectableNodes(run.map, run.currentNodeId);
   const selectableIds = new Set(selectable.map(n => n.id));
   const modifier = FRACTURE_MODIFIERS[run.fractureModifier];

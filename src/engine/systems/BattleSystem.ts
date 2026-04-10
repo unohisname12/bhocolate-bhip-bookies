@@ -182,7 +182,15 @@ export const profileToBattlePet = (profile: ClassmateProfile): BattlePet => {
 
   const variance = Math.floor(Math.random() * 3) - 1;
 
-  const maxHP = Math.max(1, Math.floor(level * BATTLE_CONSTANTS.baseHPMultiplier * moodMult * stageMult));
+  // Mirror generateEnemyPet so PvP opponents aren't one-shot.
+  // Previously this used `level * baseHPMultiplier * moodMult * stageMult`
+  // which gave ~12–30 HP vs the player's ~175–250. Now we use the same
+  // health-base formula as wild encounters, then scale by mood/stage.
+  const healthValue = Math.min(100, 70 + level * 8);
+  const maxHP = Math.max(
+    1,
+    Math.floor(healthValue * BATTLE_CONSTANTS.baseHPMultiplier * moodMult * stageMult),
+  );
 
   return {
     petId: `pvp_${profile.id}`,

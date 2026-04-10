@@ -167,6 +167,7 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
             onBattle={() => dispatch({ type: 'START_BATTLE' })}
             onArena={() => dispatch({ type: 'SET_SCREEN', screen: 'class_roster' })}
             onNumberMerge={() => dispatch({ type: 'SET_SCREEN', screen: 'number_merge' })}
+            onMomentum={() => dispatch({ type: 'START_MOMENTUM' })}
             onDungeon={() => dispatch({ type: 'SET_SCREEN', screen: 'run_start' })}
           />
         </>

@@ -19,6 +19,7 @@ interface RightSidePanelProps {
   onBattle: () => void;
   onArena: () => void;
   onNumberMerge: () => void;
+  onMomentum: () => void;
   onDungeon: () => void;
 }
 
@@ -321,55 +322,107 @@ export const RightSidePanel: React.FC<RightSidePanelProps> = (props) => {
               );
             })}
             {isExpanded ? (
-              <button
-                onClick={props.onNumberMerge}
-                className="relative flex flex-col items-center justify-center gap-2 rounded-xl p-4 transition-all duration-150 cursor-pointer hover:shadow-cyan-500/40"
-                style={{
-                  background: 'linear-gradient(180deg, rgba(12,74,110,0.92) 0%, rgba(14,116,144,0.88) 100%)',
-                  boxShadow: '0 2px 12px rgba(8,145,178,0.26)',
-                  border: '1px solid rgba(103,232,249,0.3)',
-                }}
-              >
-                <img
-                  src="/assets/generated/final/icon_energy.png"
-                  alt="Merge"
-                  className="w-10 h-10 drop-shadow-sm"
-                  style={{ imageRendering: 'pixelated' }}
-                />
-                <span className="text-xs font-bold text-cyan-50 uppercase tracking-wide">
-                  Merge
-                </span>
-                <span className="text-[9px] font-black text-cyan-100">6x6</span>
-              </button>
-            ) : (
-              <button
-                onClick={props.onNumberMerge}
-                className="relative flex items-center gap-3 w-full rounded-xl px-4 py-3 transition-all duration-150 cursor-pointer hover:shadow-cyan-500/40"
-                style={{
-                  background: 'linear-gradient(180deg, rgba(12,74,110,0.92) 0%, rgba(14,116,144,0.88) 100%)',
-                  boxShadow: '0 2px 12px rgba(8,145,178,0.26)',
-                  border: '1px solid rgba(103,232,249,0.3)',
-                }}
-              >
-                <img
-                  src="/assets/generated/final/icon_energy.png"
-                  alt="Merge"
-                  className="w-7 h-7 drop-shadow-sm flex-shrink-0"
-                  style={{ imageRendering: 'pixelated' }}
-                />
-                <span className="text-sm font-bold text-cyan-50 uppercase tracking-wide flex-1 text-left">
-                  Merge
-                </span>
-                <span
-                  className="text-[10px] font-black text-cyan-100 rounded-md px-1.5 py-0.5"
+              <>
+                <button
+                  onClick={props.onNumberMerge}
+                  className="relative flex flex-col items-center justify-center gap-2 rounded-xl p-4 transition-all duration-150 cursor-pointer hover:shadow-cyan-500/40"
                   style={{
-                    background: 'rgba(8,47,73,0.55)',
-                    border: '1px solid rgba(125,211,252,0.25)',
+                    background: 'linear-gradient(180deg, rgba(12,74,110,0.92) 0%, rgba(14,116,144,0.88) 100%)',
+                    boxShadow: '0 2px 12px rgba(8,145,178,0.26)',
+                    border: '1px solid rgba(103,232,249,0.3)',
                   }}
                 >
-                  6x6
-                </span>
-              </button>
+                  <img
+                    src="/assets/generated/final/icon_energy.png"
+                    alt="Merge"
+                    className="w-10 h-10 drop-shadow-sm"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  <span className="text-xs font-bold text-cyan-50 uppercase tracking-wide">
+                    Merge
+                  </span>
+                  <span className="text-[9px] font-black text-cyan-100">6x6</span>
+                </button>
+                <button
+                  onClick={props.onMomentum}
+                  className="relative flex flex-col items-center justify-center gap-2 rounded-xl p-4 transition-all duration-150 cursor-pointer hover:shadow-purple-500/40"
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(76,29,149,0.92) 0%, rgba(109,40,217,0.88) 100%)',
+                    boxShadow: '0 2px 12px rgba(139,92,246,0.3)',
+                    border: '1px solid rgba(196,181,253,0.35)',
+                  }}
+                >
+                  <img
+                    src="/assets/generated/final/effect_energy_burst.png"
+                    alt="Momentum"
+                    className="w-10 h-10 drop-shadow-sm"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  <span className="text-xs font-bold text-purple-50 uppercase tracking-wide">
+                    Momentum
+                  </span>
+                  <span className="text-[9px] font-black text-purple-100">5x5</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={props.onNumberMerge}
+                  className="relative flex items-center gap-3 w-full rounded-xl px-4 py-3 transition-all duration-150 cursor-pointer hover:shadow-cyan-500/40"
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(12,74,110,0.92) 0%, rgba(14,116,144,0.88) 100%)',
+                    boxShadow: '0 2px 12px rgba(8,145,178,0.26)',
+                    border: '1px solid rgba(103,232,249,0.3)',
+                  }}
+                >
+                  <img
+                    src="/assets/generated/final/icon_energy.png"
+                    alt="Merge"
+                    className="w-7 h-7 drop-shadow-sm flex-shrink-0"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  <span className="text-sm font-bold text-cyan-50 uppercase tracking-wide flex-1 text-left">
+                    Merge
+                  </span>
+                  <span
+                    className="text-[10px] font-black text-cyan-100 rounded-md px-1.5 py-0.5"
+                    style={{
+                      background: 'rgba(8,47,73,0.55)',
+                      border: '1px solid rgba(125,211,252,0.25)',
+                    }}
+                  >
+                    6x6
+                  </span>
+                </button>
+                <button
+                  onClick={props.onMomentum}
+                  className="relative flex items-center gap-3 w-full rounded-xl px-4 py-3 transition-all duration-150 cursor-pointer hover:shadow-purple-500/40"
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(76,29,149,0.92) 0%, rgba(109,40,217,0.88) 100%)',
+                    boxShadow: '0 2px 12px rgba(139,92,246,0.3)',
+                    border: '1px solid rgba(196,181,253,0.35)',
+                  }}
+                >
+                  <img
+                    src="/assets/generated/final/effect_energy_burst.png"
+                    alt="Momentum"
+                    className="w-7 h-7 drop-shadow-sm flex-shrink-0"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  <span className="text-sm font-bold text-purple-50 uppercase tracking-wide flex-1 text-left">
+                    Momentum
+                  </span>
+                  <span
+                    className="text-[10px] font-black text-purple-100 rounded-md px-1.5 py-0.5"
+                    style={{
+                      background: 'rgba(46,16,101,0.6)',
+                      border: '1px solid rgba(196,181,253,0.3)',
+                    }}
+                  >
+                    5x5
+                  </span>
+                </button>
+              </>
             )}
           </div>
         </div>

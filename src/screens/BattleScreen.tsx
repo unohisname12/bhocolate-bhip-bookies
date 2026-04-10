@@ -442,44 +442,60 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
             )}
           </div>
 
-          {/* Power Rune + Brain Boost — only during player input */}
+          {/* Power Rune + Brain Boost — always visible during player input so
+              beta testers can actually find tracing. Individual buttons
+              disable themselves with a hint when the prerequisite isn't met. */}
           {isPlayerInput && actionMode === 'main' && !traceStartRequest && (
-            <div className="max-w-5xl mx-auto mt-2 flex gap-2 items-center">
-              {playerPet.energy >= RUNE_ENERGY_THRESHOLD && !battle.traceBuffs.runeBoostTier && (
-                <GameButton
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setTraceStartRequest('trace_rune')}
-                >
-                  Power Rune
-                </GameButton>
-              )}
+            <div className="max-w-5xl mx-auto mt-2 flex gap-2 items-center flex-wrap">
+              {(() => {
+                const runeReady = playerPet.energy >= RUNE_ENERGY_THRESHOLD && !battle.traceBuffs.runeBoostTier;
+                return (
+                  <GameButton
+                    variant="secondary"
+                    size="sm"
+                    disabled={!runeReady}
+                    onClick={() => runeReady && setTraceStartRequest('trace_rune')}
+                  >
+                    {battle.traceBuffs.runeBoostTier
+                      ? 'Rune Active'
+                      : playerPet.energy < RUNE_ENERGY_THRESHOLD
+                        ? `Power Rune (${RUNE_ENERGY_THRESHOLD} EN)`
+                        : 'Power Rune'}
+                  </GameButton>
+                );
+              })()}
 
-              {!battle.mathBuffActive && !battle.traceBuffs.mathTraceTier && (
-                <>
-                  <GameButton
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setMathChallenge(generateMathProblem(1))}
-                  >
-                    Type Answer
-                  </GameButton>
-                  <GameButton
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setTraceStartRequest('trace_missing_digit')}
-                  >
-                    Trace Digit
-                  </GameButton>
-                  <GameButton
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setTraceStartRequest('trace_answer')}
-                  >
-                    Trace Answer
-                  </GameButton>
-                </>
-              )}
+              {(() => {
+                const mathReady = !battle.mathBuffActive && !battle.traceBuffs.mathTraceTier;
+                return (
+                  <>
+                    <GameButton
+                      variant="primary"
+                      size="sm"
+                      disabled={!mathReady}
+                      onClick={() => mathReady && setMathChallenge(generateMathProblem(1))}
+                    >
+                      {mathReady ? 'Type Answer' : 'Math Active'}
+                    </GameButton>
+                    <GameButton
+                      variant="primary"
+                      size="sm"
+                      disabled={!mathReady}
+                      onClick={() => mathReady && setTraceStartRequest('trace_missing_digit')}
+                    >
+                      Trace Digit
+                    </GameButton>
+                    <GameButton
+                      variant="primary"
+                      size="sm"
+                      disabled={!mathReady}
+                      onClick={() => mathReady && setTraceStartRequest('trace_answer')}
+                    >
+                      Trace Answer
+                    </GameButton>
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>

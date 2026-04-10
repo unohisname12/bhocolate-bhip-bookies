@@ -5,6 +5,7 @@ import type { GameEngineAction } from '../engine/core/ActionTypes';
 import { getSelectableNodes } from '../engine/systems/RunMapGenerator';
 import { getEnemyById } from '../config/runEnemyConfig';
 import { FRACTURE_MODIFIERS } from '../config/runConfig';
+import { LeaveDungeonButton } from '../components/run/LeaveDungeonButton';
 
 interface RunMapScreenProps {
   run: ActiveRunState;
@@ -61,16 +62,14 @@ export const RunMapScreen: React.FC<RunMapScreenProps> = ({ run, pet: _pet, disp
         }} />
       )}
 
+      <LeaveDungeonButton dispatch={dispatch} />
+
       {/* Header */}
       <div className="relative z-10 px-4 pt-4 pb-2">
         <div className="flex items-center justify-between mb-2">
-          <button
-            onClick={() => dispatch({ type: 'END_RUN' })}
-            className="text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-red-400 transition-colors px-2 py-1 rounded"
-            style={{ background: 'rgba(30,20,40,0.6)', border: '1px solid rgba(100,60,120,0.2)' }}
-          >
-            Retreat
-          </button>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+            {/* retreat now lives in LeaveDungeonButton */}
+          </span>
           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-400/60">
             Fracture Zone
           </span>

@@ -4,6 +4,7 @@ import type { GameEngineAction } from '../engine/core/ActionTypes';
 import { getRewardsForEncounter } from '../config/runConfig';
 import { generateRewardChoices } from '../config/runRewardConfig';
 import { getNodeById } from '../engine/systems/RunMapGenerator';
+import { LeaveDungeonButton } from '../components/run/LeaveDungeonButton';
 
 interface RunRewardScreenProps {
   run: ActiveRunState;
@@ -32,6 +33,8 @@ export const RunRewardScreen: React.FC<RunRewardScreenProps> = ({ run, dispatch 
       <div className="absolute inset-0 pointer-events-none" style={{
         backgroundImage: 'radial-gradient(ellipse at 50% 40%, rgba(200,150,40,0.06) 0%, transparent 60%)',
       }} />
+
+      <LeaveDungeonButton dispatch={dispatch} />
 
       {/* Top label */}
       <div className="relative z-10 px-4 pt-4 text-center">

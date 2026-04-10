@@ -2,6 +2,7 @@ import React from 'react';
 import type { ActiveRunState } from '../types/run';
 import type { GameEngineAction } from '../engine/core/ActionTypes';
 import { BattlePetSprite } from '../components/battle/BattleEffects';
+import { LeaveDungeonButton } from '../components/run/LeaveDungeonButton';
 import type { Pet } from '../types';
 
 interface RunRestScreenProps {
@@ -33,6 +34,8 @@ export const RunRestScreen: React.FC<RunRestScreenProps> = ({ run, pet, dispatch
       <div className="absolute inset-0 pointer-events-none" style={{
         backgroundImage: 'radial-gradient(ellipse at 50% 40%, rgba(60,80,180,0.08) 0%, transparent 60%)',
       }} />
+
+      <LeaveDungeonButton dispatch={dispatch} />
 
       {/* Top label */}
       <div className="relative z-10 px-4 pt-4 text-center">

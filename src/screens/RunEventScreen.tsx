@@ -3,6 +3,7 @@ import type { ActiveRunState } from '../types/run';
 import type { GameEngineAction } from '../engine/core/ActionTypes';
 import { getEventById } from '../config/runEventConfig';
 import { getNodeById } from '../engine/systems/RunMapGenerator';
+import { LeaveDungeonButton } from '../components/run/LeaveDungeonButton';
 
 interface RunEventScreenProps {
   run: ActiveRunState;
@@ -31,6 +32,8 @@ export const RunEventScreen: React.FC<RunEventScreenProps> = ({ run, dispatch })
       <div className="absolute inset-0 pointer-events-none" style={{
         backgroundImage: 'radial-gradient(ellipse at 50% 35%, rgba(140,100,220,0.08) 0%, transparent 60%)',
       }} />
+
+      <LeaveDungeonButton dispatch={dispatch} />
 
       {/* Top label */}
       <div className="relative z-10 px-4 pt-4 text-center">

@@ -21,6 +21,10 @@ export interface NumberMergeDifficultyPreset {
   chainWindowPressureDecayMs: number;
   attackAnimationLevel: 'ambient' | 'warning' | 'reactive' | 'aggressive';
   targetRange: readonly [number, number];
+  /** Score at which the run is marked 'won' and the player is rewarded. */
+  winScore: number;
+  /** Tokens awarded on win. */
+  winTokenReward: number;
 }
 
 export const NUMBER_MERGE_DIFFICULTY_PRESETS: Record<NumberMergeDifficulty, NumberMergeDifficultyPreset> = {
@@ -45,6 +49,8 @@ export const NUMBER_MERGE_DIFFICULTY_PRESETS: Record<NumberMergeDifficulty, Numb
     chainWindowPressureDecayMs: 0,
     attackAnimationLevel: 'ambient',
     targetRange: [4, 9],
+    winScore: 250,
+    winTokenReward: 30,
   },
   normal: {
     id: 'normal',
@@ -67,6 +73,8 @@ export const NUMBER_MERGE_DIFFICULTY_PRESETS: Record<NumberMergeDifficulty, Numb
     chainWindowPressureDecayMs: 0,
     attackAnimationLevel: 'warning',
     targetRange: [5, 11],
+    winScore: 450,
+    winTokenReward: 60,
   },
   hard: {
     id: 'hard',
@@ -89,6 +97,8 @@ export const NUMBER_MERGE_DIFFICULTY_PRESETS: Record<NumberMergeDifficulty, Numb
     chainWindowPressureDecayMs: 160,
     attackAnimationLevel: 'reactive',
     targetRange: [6, 12],
+    winScore: 700,
+    winTokenReward: 120,
   },
   expert: {
     id: 'expert',
@@ -111,6 +121,8 @@ export const NUMBER_MERGE_DIFFICULTY_PRESETS: Record<NumberMergeDifficulty, Numb
     chainWindowPressureDecayMs: 180,
     attackAnimationLevel: 'aggressive',
     targetRange: [7, 14],
+    winScore: 1000,
+    winTokenReward: 220,
   },
 };
 

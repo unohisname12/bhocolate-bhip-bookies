@@ -123,6 +123,36 @@ const createFeedback = (tone: NumberMergeFeedback['tone'], message: string): Num
   message,
 });
 
+/**
+ * If the player's score has crossed the per-difficulty win threshold, mark
+ * the game as won. Called after a score update. Returns the snapshot as-is
+ * if no win occurred.
+ *
+ * Why: the merge game previously had only a `lost` terminal state — players
+ * could grind forever with nothing to reach for. Difficulty presets now
+ * carry a `winScore`, and the UI renders a victory card + awards tokens
+ * when `phase === 'won'`.
+ */
+const checkWinCondition = (
+  snapshot: NumberMergeGameSnapshot,
+): NumberMergeGameSnapshot => {
+  if (snapshot.phase === 'won' || snapshot.phase === 'lost') {
+    return snapshot;
+  }
+  const preset = getNumberMergeDifficultyPreset(snapshot.difficulty);
+  if (snapshot.score >= preset.winScore) {
+    return {
+      ...snapshot,
+      phase: 'won',
+      chainExpiresAt: null,
+      chainDurationMs: 0,
+      unstableCells: [],
+      feedback: createFeedback('success', `Target score reached! ${preset.winTokenReward} tokens earned.`),
+    };
+  }
+  return snapshot;
+};
+
 const getReachabilityWindow = (
   difficulty: NumberMergeDifficulty,
   turnsRemaining: number | null,
@@ -726,7 +756,7 @@ export const applyResolvedMove = (
 
   if (isTargetHit) {
     const nextTurnsRemaining = getSearchWindowTurns(snapshot.difficulty, random);
-    return withReachableGoal({
+    return checkWinCondition(withReachableGoal({
       ...snapshot,
       board: nextBoard,
       score: snapshot.score + resolveResult.scoreDelta + snapshot.searchTarget * 3,
@@ -751,7 +781,7 @@ export const applyResolvedMove = (
         random,
       ),
       feedback: createFeedback('success', `Target ${snapshot.searchTarget} found. Nice recovery.`),
-    }, random);
+    }, random));
   }
 
   const nextTurnsRemaining = snapshot.turnsRemaining === null

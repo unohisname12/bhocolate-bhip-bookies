@@ -7,7 +7,7 @@ export type NumberMergePetType = string | null;
 export type NumberMergeDifficulty = 'easy' | 'normal' | 'hard' | 'expert';
 export type NumberMergeTileKind = 'number' | 'corrupt' | 'broken';
 export type NumberMergeOverseerActionType = 'warning' | 'claim_gap' | 'corrupt_tile' | 'seal_cell' | 'break_tile' | 'life_loss';
-export type NumberMergeGamePhase = 'playing' | 'chain_window' | 'overseer_strike' | 'lost';
+export type NumberMergeGamePhase = 'playing' | 'chain_window' | 'overseer_strike' | 'lost' | 'won';
 export type NumberMergeFeedbackTone = 'neutral' | 'success' | 'warning' | 'danger';
 export type NumberMergeResolveAction = 'merge' | 'slide';
 

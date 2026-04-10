@@ -19,6 +19,8 @@ import {
 interface NumberMergeScreenProps {
   petSpeciesId: string | null;
   onExit: () => void;
+  /** Invoked once when the player first reaches the `won` phase. */
+  onWin?: (tokenReward: number) => void;
 }
 
 const OVERSEER_PORTRAIT = '/assets/generated/final/number-merge/overseer-portrait.png';
@@ -39,6 +41,7 @@ const formatGoalStars = (value: number, max: number): string => {
 export const NumberMergeScreen: React.FC<NumberMergeScreenProps> = ({
   petSpeciesId,
   onExit,
+  onWin,
 }) => {
   const [difficulty, setDifficulty] = useState<NumberMergeDifficulty>(DEFAULT_NUMBER_MERGE_DIFFICULTY);
   const preset = getNumberMergeDifficultyPreset(difficulty);
@@ -50,6 +53,19 @@ export const NumberMergeScreen: React.FC<NumberMergeScreenProps> = ({
     acknowledgeOverseerEvent,
   } = useNumberMergeGame(petSpeciesId, difficulty);
   const [strikeFlash, setStrikeFlash] = useState(false);
+  // Ensure onWin fires only once per victory, even across re-renders.
+  const [winAwarded, setWinAwarded] = useState(false);
+
+  useEffect(() => {
+    if (state.phase === 'won' && !winAwarded) {
+      setWinAwarded(true);
+      onWin?.(preset.winTokenReward);
+    }
+    if (state.phase !== 'won' && state.phase !== 'lost' && winAwarded) {
+      // New run started (e.g., after Reset) — re-arm the award gate.
+      setWinAwarded(false);
+    }
+  }, [state.phase, winAwarded, onWin, preset.winTokenReward]);
 
   const petConfig = petSpeciesId ? SPECIES_CONFIG[petSpeciesId] : null;
   const petPortrait = petSpeciesId ? ASSETS.petPortraits[petSpeciesId] : '';
@@ -74,6 +90,9 @@ export const NumberMergeScreen: React.FC<NumberMergeScreenProps> = ({
   }, [state.lastOverseerEvent, acknowledgeOverseerEvent]);
 
   const moveSummary = useMemo(() => {
+    if (state.phase === 'won') {
+      return `Target score reached! You earned ${preset.winTokenReward} tokens.`;
+    }
     if (state.phase === 'lost') {
       return 'You ran out of hearts. Lower the difficulty or reset and try again.';
     }
@@ -105,7 +124,7 @@ export const NumberMergeScreen: React.FC<NumberMergeScreenProps> = ({
     }
 
     return `Merged into ${lastMove.createdTileValue}. Keep steering the board toward ${state.searchTarget}.`;
-  }, [lastMove, state.feedback, state.phase, state.searchTarget, state.turnsRemaining]);
+  }, [lastMove, state.feedback, state.phase, state.searchTarget, state.turnsRemaining, preset.winTokenReward]);
 
   const feedbackToneStyles = useMemo(() => {
     if (state.feedback?.tone === 'success') {
@@ -144,7 +163,7 @@ export const NumberMergeScreen: React.FC<NumberMergeScreenProps> = ({
   }, [state.feedback?.tone]);
 
   const tryActivate = (position: NumberMergePosition) => {
-    if (state.phase === 'lost') {
+    if (state.phase === 'lost' || state.phase === 'won') {
       return;
     }
 
@@ -172,7 +191,7 @@ export const NumberMergeScreen: React.FC<NumberMergeScreenProps> = ({
   };
 
   const handleArrowMerge = (position: NumberMergePosition) => {
-    if (!state.selected || state.phase === 'lost') {
+    if (!state.selected || state.phase === 'lost' || state.phase === 'won') {
       return;
     }
 
@@ -546,6 +565,58 @@ export const NumberMergeScreen: React.FC<NumberMergeScreenProps> = ({
           </aside>
         </div>
       </div>
+
+      {state.phase === 'won' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4">
+          <div
+            className="w-full max-w-sm rounded-3xl border p-7 text-center text-white"
+            style={{
+              borderColor: 'rgba(250,204,21,0.4)',
+              background: 'linear-gradient(180deg, rgba(30,22,8,0.97) 0%, rgba(15,10,3,0.98) 100%)',
+              boxShadow: '0 20px 60px rgba(250,204,21,0.25)',
+            }}
+          >
+            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-300/80 mb-1">
+              Number Merge
+            </div>
+            <h2 className="text-3xl font-black tracking-wider text-yellow-200 mb-2">VICTORY!</h2>
+            <p className="text-sm text-slate-300 mb-5 leading-snug">
+              You hit the {preset.label.toLowerCase()} score target of{' '}
+              <span className="font-black text-yellow-200">{preset.winScore}</span>.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 mb-5 text-left">
+              <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3">
+                <div className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Final Score</div>
+                <div className="text-xl font-black text-white">{state.score}</div>
+              </div>
+              <div className="rounded-xl border border-yellow-500/25 bg-yellow-950/40 p-3">
+                <div className="text-[10px] font-black uppercase text-yellow-500/80 tracking-wider">Reward</div>
+                <div className="text-xl font-black text-yellow-200">+{preset.winTokenReward} tokens</div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={reset}
+                className="flex-1 rounded-full py-3 text-xs font-black uppercase tracking-widest text-slate-900"
+                style={{ background: 'linear-gradient(180deg, #fef08a 0%, #f59e0b 100%)' }}
+              >
+                Play Again
+              </button>
+              <button
+                type="button"
+                onClick={onExit}
+                className="flex-1 rounded-full border border-white/20 py-3 text-xs font-black uppercase tracking-widest text-white"
+                style={{ background: 'rgba(15,23,42,0.6)' }}
+              >
+                Back Home
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

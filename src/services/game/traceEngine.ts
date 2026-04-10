@@ -76,30 +76,23 @@ export function buildSegments(
 // ---------------------------------------------------------------------------
 
 /**
- * Given a pointer position, check if any unvisited segments in the tolerance
- * window around the furthest-visited segment are within hit radius.
+ * Given a pointer position, mark any unvisited segment within hit radius as
+ * visited. Direction-agnostic and start-point-agnostic so closed shapes
+ * (circles) and open shapes can both be traced naturally — start anywhere,
+ * go either way. Users still have to physically cover the path to finish;
+ * the hit radius is tight relative to segment spacing.
  *
- * Returns updated segments + how many new segments were visited + average distance.
+ * Returns updated segments + how many new segments were visited + distance sum
+ * (for accuracy scoring).
  */
 export function updateSegmentProgress(
   segments: TraceSegment[],
   pointerPos: TracePoint,
-  toleranceWindow = 4,
 ): { segments: TraceSegment[]; newVisits: number; distanceSum: number } {
-  // Find furthest visited index
-  let furthestVisited = -1;
-  for (let i = segments.length - 1; i >= 0; i--) {
-    if (segments[i].visited) { furthestVisited = i; break; }
-  }
-
-  const windowStart = Math.max(0, furthestVisited - 1);
-  const windowEnd = Math.min(segments.length - 1, furthestVisited + toleranceWindow + 1);
-
   let newVisits = 0;
   let distanceSum = 0;
-  const updated = segments.map((seg, i) => {
+  const updated = segments.map((seg) => {
     if (seg.visited) return seg;
-    if (i < windowStart || i > windowEnd) return seg;
 
     const dist = distance(pointerPos, seg.center);
     if (dist <= seg.hitRadius) {

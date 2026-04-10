@@ -56,9 +56,9 @@ const SEED_STATE = {
 
 test.describe('Animation Review Screen', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5000');
+    await page.goto('/');
     await page.evaluate((seed) => {
-      localStorage.setItem('vpet_save_v4', JSON.stringify(seed));
+      localStorage.setItem('vpet_save_auto', JSON.stringify(seed));
     }, SEED_STATE);
     await page.reload();
     await page.waitForTimeout(500);

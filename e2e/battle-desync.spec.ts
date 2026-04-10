@@ -75,7 +75,15 @@ async function enterBattle(page: import('@playwright/test').Page) {
 
   const practiceBtn = page.locator('button', { hasText: 'Battle' }).first();
   await practiceBtn.click({ timeout: 10000 });
+  await page.waitForTimeout(800);
+
+  // Click through the "Choose Your Fighter" species picker — pick Slime to match expected moves
+  const fighterBtn = page.locator('button', { hasText: 'Slime' }).first();
+  await fighterBtn.click({ timeout: 5000 });
   await page.waitForTimeout(1500);
+
+  // Disable CSS animations so Playwright doesn't consider animated buttons "not stable"
+  await page.addStyleTag({ content: '*, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }' });
 }
 
 async function waitForPlayerTurn(page: import('@playwright/test').Page): Promise<boolean> {

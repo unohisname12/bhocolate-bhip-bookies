@@ -66,18 +66,16 @@ test.describe('Room Navigation - Outside Scene Access', () => {
   test('navigate right arrow: inside → outside', async ({ page }) => {
     await expect(page.getByLabel('Home')).toBeVisible();
 
-    // Check inside background is showing
-    const insideBg = page.locator('img[src*="scene_inside"]');
-    await expect(insideBg).toBeVisible();
+    // Inside room has interactive objects like "Go Outside"
+    await expect(page.getByRole('button', { name: 'Go Outside' })).toBeVisible({ timeout: 8000 });
 
     // Click right to go outside
     await page.locator('button:has-text("›")').click();
     await page.waitForTimeout(600);
 
-    // Should now be at Yard
+    // Should now be at Yard — outside has "Enter House" and "Mailbox"
     await expect(page.getByLabel('Yard')).toBeVisible();
-    const outsideBg = page.locator('img[src*="scene_outside"]');
-    await expect(outsideBg).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Enter House' })).toBeVisible({ timeout: 8000 });
 
     // Pet should still be visible
     const pet = page.locator('.anim-sprite-idle');
@@ -108,9 +106,8 @@ test.describe('Room Navigation - Outside Scene Access', () => {
     if (await yardDot.count() > 0) {
       await yardDot.click();
       await page.waitForTimeout(600);
-      // Verify we navigated — outside background should be visible
-      const outsideBg = page.locator('img[src*="scene_outside"]');
-      await expect(outsideBg).toBeVisible();
+      // Verify we navigated — outside has "Enter House" button
+      await expect(page.getByRole('button', { name: 'Enter House' })).toBeVisible({ timeout: 8000 });
       console.log('Dot click navigates to outside ✓');
     } else {
       console.log('Could not find Yard dot — checking all dots');

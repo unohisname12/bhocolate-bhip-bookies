@@ -240,10 +240,11 @@ test.describe('Animation Audit', () => {
     await seedAndLoad(page);
 
     const shadowCount = await page.evaluate(() => {
-      const stage = document.querySelector('.z-20');
+      // SceneStage uses inline zIndex:20 and shadow uses radial-gradient (no blur)
+      const stage = document.querySelector('[style*="z-index: 20"]') ?? document.querySelector('[style*="z-index:20"]');
       if (!stage) return 0;
-      // Shadow uses inline filter:blur style, not a blur CSS class
-      const shadows = stage.querySelectorAll('[style*="blur"]');
+      // Shadow is a child div with radial-gradient background and border-radius: 100%
+      const shadows = stage.querySelectorAll('[style*="radial-gradient"]');
       return shadows.length;
     });
 

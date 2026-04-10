@@ -121,13 +121,13 @@ test.describe('Intent Visual Audit', () => {
     await expect(sprite).toBeVisible();
   });
 
-  test('dirty — low cleanliness (fallback expected)', async ({ page }) => {
+  test('dirty — low cleanliness (uses sick animation as placeholder)', async ({ page }) => {
     await loadWithSeed(page, makeSeed({ hunger: 80, happiness: 80, cleanliness: 10, health: 100 }));
     await page.screenshot({ path: 'e2e/screenshots/intent-dirty.png' });
 
-    // Dirty has no sprite sheet yet — should show fallback box
-    const fallback = page.locator('text=Missing Animation');
-    await expect(fallback).toBeVisible();
+    // Dirty intent maps to sick animation (wobble + grayscale) as visual placeholder
+    const sprite = page.locator('.anim-wobble');
+    await expect(sprite).toBeVisible();
   });
 
   test('sick — low health', async ({ page }) => {

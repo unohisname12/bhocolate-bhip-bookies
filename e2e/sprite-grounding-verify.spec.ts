@@ -103,8 +103,8 @@ test.describe('Sprite Grounding + Right Panel Verification', () => {
     await seedAndLoad(page);
     await page.waitForTimeout(1000);
 
-    // Click the tab handle to open panel — locate by the energy burst icon inside the tab button
-    const tabHandle = page.locator('button:has(img[src*="effect_energy_burst"])');
+    // Click the Command Deck tab handle to open panel
+    const tabHandle = page.getByRole('button', { name: 'Command Deck' });
     await tabHandle.click();
     await page.waitForTimeout(500);
 

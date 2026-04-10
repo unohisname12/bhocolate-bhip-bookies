@@ -130,6 +130,11 @@ async function enterBattle(page: import('@playwright/test').Page) {
   // Now click Battle inside the slide-out panel
   const practiceBtn = page.locator('button', { hasText: 'Battle' }).first();
   await practiceBtn.click({ timeout: 10000 });
+  await page.waitForTimeout(800);
+
+  // Click through the "Choose Your Fighter" species picker
+  const fighterBtn = page.locator('button', { hasText: '→' }).first();
+  await fighterBtn.click({ timeout: 5000 });
   await page.waitForTimeout(1500);
 }
 

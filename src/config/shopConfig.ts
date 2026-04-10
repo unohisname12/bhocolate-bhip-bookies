@@ -6,6 +6,18 @@ export interface ItemEffect {
   duration?: number;
 }
 
+/**
+ * How a shop item gets unlocked. Every rule is evaluated against the live
+ * `PlayerProgressSnapshot` built in `ShopScreen.tsx` from existing engine
+ * state (so no save migration is needed).
+ *
+ * `undefined` / absent = item is always unlocked from level 1.
+ */
+export type ShopUnlockRule =
+  | { kind: 'level'; threshold: number }
+  | { kind: 'battlesWon'; threshold: number }
+  | { kind: 'mpTier'; tier: 'silver' };
+
 export interface ShopItem {
   id: string;
   name: string;
@@ -15,24 +27,79 @@ export interface ShopItem {
   category: ShopItemCategory;
   stackable: boolean;
   effect: ItemEffect;
+  /** Legacy alias for `{ kind: 'mpTier', tier: 'silver' }` — kept for backward compat with existing saves. */
   requiredMPTier?: 'silver';
+  /** New unified unlock rule. If set, this takes precedence over `requiredMPTier`. */
+  unlockRule?: ShopUnlockRule;
+  /** Short hint shown to the player while the item is locked. */
+  unlockHint?: string;
 }
 
+export interface PlayerProgressSnapshot {
+  level: number;
+  battlesWon: number;
+  mpTier: 'bronze' | 'silver' | 'gold';
+}
+
+const matchesRule = (rule: ShopUnlockRule, progress: PlayerProgressSnapshot): boolean => {
+  switch (rule.kind) {
+    case 'level':
+      return progress.level >= rule.threshold;
+    case 'battlesWon':
+      return progress.battlesWon >= rule.threshold;
+    case 'mpTier':
+      return progress.mpTier === rule.tier || progress.mpTier === 'gold';
+  }
+};
+
+export const isShopItemUnlocked = (item: ShopItem, progress: PlayerProgressSnapshot): boolean => {
+  if (item.unlockRule) return matchesRule(item.unlockRule, progress);
+  if (item.requiredMPTier === 'silver') return progress.mpTier === 'silver' || progress.mpTier === 'gold';
+  return true;
+};
+
+export const describeUnlockRule = (item: ShopItem): string => {
+  if (item.unlockHint) return item.unlockHint;
+  if (item.unlockRule) {
+    switch (item.unlockRule.kind) {
+      case 'level':
+        return `Unlock at L${item.unlockRule.threshold}`;
+      case 'battlesWon':
+        return `Win ${item.unlockRule.threshold} battles`;
+      case 'mpTier':
+        return `Reach ${item.unlockRule.tier} MP tier`;
+    }
+  }
+  if (item.requiredMPTier === 'silver') return 'Reach silver MP tier';
+  return 'Locked';
+};
+
 export const SHOP_ITEMS: ShopItem[] = [
-  // Food
+  // ── Food (always available / early unlocks) ───────────────────────────────
   { id: 'apple', name: 'Apple', description: 'A crisp apple. +15 hunger.', icon: '/assets/generated/final/item_apple.png', cost: { tokens: 5 }, category: 'food', stackable: true, effect: { type: 'feed', value: 15 } },
-  { id: 'meat', name: 'Meat', description: 'Juicy protein. +30 hunger.', icon: '🥩', cost: { tokens: 10 }, category: 'food', stackable: true, effect: { type: 'feed', value: 30 } },
-  { id: 'cake', name: 'Cake', description: 'Sweet treat. +50 hunger +10 happiness.', icon: '/assets/generated/final/item_cake.png', cost: { tokens: 20 }, category: 'food', stackable: true, effect: { type: 'feed', value: 50 } },
-  { id: 'potion', name: 'Potion', description: 'Max hunger restore.', icon: '/assets/generated/final/item_potion.png', cost: { tokens: 50 }, category: 'food', stackable: true, effect: { type: 'feed', value: 100 } },
-  { id: 'golden_apple', name: 'Golden Apple', description: 'Premium apple. +40 hunger +10 happiness.', icon: '/assets/generated/final/item_apple.png', cost: { tokens: 25 }, category: 'food', stackable: true, effect: { type: 'feed', value: 40 }, requiredMPTier: 'silver' as const },
-  // Toys
-  { id: 'ball', name: 'Ball', description: 'A bouncy ball. +40 happiness.', icon: '⚽', cost: { tokens: 15 }, category: 'toy', stackable: true, effect: { type: 'play', value: 40 } },
-  { id: 'teddy', name: 'Teddy Bear', description: 'Snuggly companion. +60 happiness.', icon: '/assets/generated/final/item_teddy_bear.png', cost: { tokens: 30 }, category: 'toy', stackable: true, effect: { type: 'play', value: 60 } },
-  // Medicine
+  { id: 'meat', name: 'Meat', description: 'Juicy protein. +30 hunger.', icon: '🥩', cost: { tokens: 12 }, category: 'food', stackable: true, effect: { type: 'feed', value: 30 } },
+  { id: 'cake', name: 'Cake', description: 'Sweet treat. +50 hunger +10 happiness.', icon: '/assets/generated/final/item_cake.png', cost: { tokens: 28 }, category: 'food', stackable: true, effect: { type: 'feed', value: 50 } },
+  { id: 'potion', name: 'Potion', description: 'Max hunger restore.', icon: '/assets/generated/final/item_potion.png', cost: { tokens: 60 }, category: 'food', stackable: true, effect: { type: 'feed', value: 100 }, unlockRule: { kind: 'level', threshold: 3 } },
+  { id: 'golden_apple', name: 'Golden Apple', description: 'Premium apple. +40 hunger +10 happiness.', icon: '/assets/generated/final/item_apple.png', cost: { tokens: 120 }, category: 'food', stackable: true, effect: { type: 'feed', value: 40 }, requiredMPTier: 'silver' as const, unlockHint: 'Reach silver MP tier' },
+  { id: 'feast_platter', name: 'Feast Platter', description: 'A lavish spread. +80 hunger +20 happiness.', icon: '🍱', cost: { tokens: 180 }, category: 'food', stackable: true, effect: { type: 'feed', value: 80 }, unlockRule: { kind: 'level', threshold: 6 } },
+  { id: 'elixir', name: 'Elixir', description: 'Restores all needs to full.', icon: '🧪', cost: { tokens: 500 }, category: 'food', stackable: true, effect: { type: 'feed', value: 100 }, unlockRule: { kind: 'level', threshold: 10 } },
+
+  // ── Toys ──────────────────────────────────────────────────────────────────
+  { id: 'ball', name: 'Ball', description: 'A bouncy ball. +40 happiness.', icon: '⚽', cost: { tokens: 18 }, category: 'toy', stackable: true, effect: { type: 'play', value: 40 } },
+  { id: 'teddy', name: 'Teddy Bear', description: 'Snuggly companion. +60 happiness.', icon: '/assets/generated/final/item_teddy_bear.png', cost: { tokens: 45 }, category: 'toy', stackable: true, effect: { type: 'play', value: 60 } },
+  { id: 'puzzle_cube', name: 'Puzzle Cube', description: 'Stimulating brain-teaser. +75 happiness.', icon: '🧩', cost: { tokens: 90 }, category: 'toy', stackable: true, effect: { type: 'play', value: 75 }, unlockRule: { kind: 'battlesWon', threshold: 3 } },
+  { id: 'kite', name: 'Kite', description: 'Soars on the wind. +100 happiness.', icon: '🪁', cost: { tokens: 180 }, category: 'toy', stackable: true, effect: { type: 'play', value: 100 }, unlockRule: { kind: 'level', threshold: 5 } },
+
+  // ── Medicine ──────────────────────────────────────────────────────────────
   { id: 'bandage', name: 'Bandage', description: 'Basic first aid. +25 health.', icon: '/assets/generated/final/item_bandage.png', cost: { tokens: 20 }, category: 'medicine', stackable: true, effect: { type: 'heal', value: 25 } },
-  { id: 'medicine', name: 'Medicine', description: 'Full health restore.', icon: '/assets/generated/final/item_pill.png', cost: { tokens: 50 }, category: 'medicine', stackable: true, effect: { type: 'heal', value: 100 } },
-  // Cosmetic (coins)
+  { id: 'medicine', name: 'Medicine', description: 'Full health restore.', icon: '/assets/generated/final/item_pill.png', cost: { tokens: 75 }, category: 'medicine', stackable: true, effect: { type: 'heal', value: 100 } },
+  { id: 'revive_scroll', name: 'Revive Scroll', description: 'Ancient healing magic. +150 health.', icon: '📜', cost: { tokens: 250 }, category: 'medicine', stackable: true, effect: { type: 'heal', value: 100 }, unlockRule: { kind: 'battlesWon', threshold: 5 } },
+  { id: 'phoenix_tear', name: 'Phoenix Tear', description: 'Legendary restorative.', icon: '💧', cost: { tokens: 800 }, category: 'medicine', stackable: true, effect: { type: 'heal', value: 100 }, unlockRule: { kind: 'level', threshold: 8 } },
+
+  // ── Cosmetic ──────────────────────────────────────────────────────────────
   { id: 'hat', name: 'Party Hat', description: 'Festive head wear.', icon: '🎩', cost: { coins: 5 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 5 } },
+  { id: 'crown', name: 'Royal Crown', description: 'A mark of mastery.', icon: '👑', cost: { coins: 25 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 10 }, unlockRule: { kind: 'battlesWon', threshold: 10 } },
+  { id: 'wings', name: 'Ethereal Wings', description: 'Shimmering cosmetic wings.', icon: '🦋', cost: { coins: 50 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 15 }, unlockRule: { kind: 'level', threshold: 7 } },
 ];
 
 export const STREAK_THRESHOLDS: { streak: number; label: string }[] = [];

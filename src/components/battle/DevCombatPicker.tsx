@@ -1,13 +1,13 @@
 /**
- * DEV TEST FLOW — Pre-combat character picker.
- * Shows all registered playable species and lets the dev pick one for battle.
- *
- * TODO: Move pre-combat character selection into DevTools once multi-character testing panel exists.
+ * Pre-combat character picker.
+ * Shows all registered playable species and lets the player choose one to
+ * battle with. Ships to production so beta testers can actually pick a pet.
  */
 import React from 'react';
 import { SPECIES_CONFIG } from '../../config/speciesConfig';
 import { ASSETS } from '../../config/assetManifest';
 import { SPECIES_MOVES } from '../../config/battleConfig';
+import { isDevModeEnabled } from '../../utils/featureFlags';
 
 interface DevCombatPickerProps {
   onSelect: (speciesId: string) => void;
@@ -20,17 +20,18 @@ export const DevCombatPicker: React.FC<DevCombatPickerProps> = ({ onSelect, onCa
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80">
       <div className="bg-slate-900 border border-slate-600 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
-        {/* DEV badge */}
-        <div className="flex items-center gap-2 mb-1">
-          <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-[10px] font-bold uppercase rounded">
-            Dev Test
-          </span>
-        </div>
+        {isDevModeEnabled() && (
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-[10px] font-bold uppercase rounded">
+              Dev Test
+            </span>
+          </div>
+        )}
         <h2 className="text-lg font-black text-white mb-1">
-          Choose Combat Character
+          Choose Your Fighter
         </h2>
         <p className="text-xs text-slate-400 mb-4">
-          Which character do you want to use for this test battle?
+          Pick which character to bring into this battle.
         </p>
 
         <div className="space-y-2">

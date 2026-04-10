@@ -26,6 +26,7 @@ import { DevCombatPicker } from './components/battle/DevCombatPicker';
 import { FOOD_ITEMS } from './config/gameConfig';
 import { validateConfigs } from './config';
 import { DevToolsOverlay } from './devtools';
+import { isDevModeEnabled } from './utils/featureFlags';
 import * as SaveManager from './services/persistence/SaveManager';
 import { AchievementPopup } from './components/ui/AchievementPopup';
 import { HelpProvider } from './components/help/HelpProvider';
@@ -94,7 +95,7 @@ function loadInitialState(): EngineState {
 
 const TestModeButton = ({ dispatch }: { dispatch: (a: import('./engine/core/ActionTypes').GameEngineAction) => void }) => (
   <div className="fixed top-4 right-4 z-50 flex gap-2">
-    {import.meta.env.DEV && (
+    {isDevModeEnabled() && (
       <>
         <button
           className="px-3 py-1 bg-purple-500 hover:bg-purple-400 text-white font-bold rounded text-sm"
@@ -130,13 +131,17 @@ function App() {
   const { state, engine, dispatch } = useGameEngine(initialState);
   const [isFeeding, setIsFeeding] = useState(false);
 
-  // DEV: Pre-combat character picker — intercepts battle start in dev mode
-  // TODO: Move pre-combat character selection into DevTools once multi-character testing panel exists.
+  // Pre-combat character picker — intercepts practice-battle start so the
+  // player can choose which species to fight with. Previously gated behind
+  // `import.meta.env.DEV`, which meant beta testers on the deployed site
+  // hit battles with no way to pick a pet.
   const [showCombatPicker, setShowCombatPicker] = useState(false);
 
-  // In DEV mode, intercept START_BATTLE to show character picker first
+  // Intercept START_BATTLE (practice/wild) so we can always show the picker
+  // before committing to a battle. PvP (START_PVP_BATTLE) uses the player's
+  // own pet by design and is not intercepted here.
   const devDispatch: typeof dispatch = (action) => {
-    if (import.meta.env.DEV && action.type === 'START_BATTLE') {
+    if (action.type === 'START_BATTLE') {
       setShowCombatPicker(true);
       return;
     }
@@ -176,6 +181,7 @@ function App() {
         <NumberMergeScreen
           petSpeciesId={state.pet?.speciesId ?? null}
           onExit={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
+          onWin={(tokens) => dispatch({ type: 'AWARD_TOKENS', amount: tokens })}
         />
       );
     }
@@ -249,6 +255,8 @@ function App() {
           tokens={state.player.currencies.tokens}
           coins={state.player.currencies.coins}
           mpLifetime={state.player.currencies.mpLifetime}
+          level={state.pet?.progression.level ?? 1}
+          battlesWon={state.player.pvpRecord?.totalWins ?? 0}
           dispatch={dispatch}
           onClose={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
         />
@@ -330,7 +338,7 @@ function App() {
         <></>
       </HelpProvider>
       <AchievementPopup notifications={state.notifications} dispatch={dispatch} />
-      {/* DEV: Pre-combat character picker modal */}
+      {/* Pre-combat character picker modal (always available) */}
       {showCombatPicker && (
         <DevCombatPicker
           onSelect={(speciesId) => {
@@ -340,7 +348,7 @@ function App() {
           onCancel={() => setShowCombatPicker(false)}
         />
       )}
-      {import.meta.env.DEV && <DevToolsOverlay engine={engine} state={state} dispatch={dispatch} />}
+      {isDevModeEnabled() && <DevToolsOverlay engine={engine} state={state} dispatch={dispatch} />}
     </>
   );
 }

@@ -4,6 +4,7 @@ import type { RoomId } from '../../types/room';
 import type { TraceTier } from '../../types/trace';
 import type { DevToolsAction } from '../../devtools/devToolsActions';
 import type { FlashChoice, FusionTarget, MomentumDifficulty } from '../../types/momentum';
+import type { HandMode } from '../../types/interaction';
 
 export type GameEngineAction =
   | { type: 'START_ENGINE' }
@@ -103,5 +104,12 @@ export type GameEngineAction =
   | { type: 'REST_STABILIZE' }
   | { type: 'REST_FORTIFY' }
   | { type: 'EVENT_CHOOSE'; choiceIndex: number }
+  // Pet interaction system
+  | { type: 'SET_HAND_MODE'; mode: HandMode }
+  | { type: 'START_PET_INTERACTION'; mode: HandMode }
+  | { type: 'END_PET_INTERACTION' }
+  | { type: 'UNLOCK_INTERACTION'; mode: HandMode }
+  | { type: 'UPGRADE_TOOL_TIER'; mode: HandMode; tier: number }
+  | { type: 'CARE_GAME_COMPLETE'; mode: HandMode; quality: number }
   | DevToolsAction
   ;

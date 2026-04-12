@@ -26,6 +26,9 @@ import type { ActiveBattleState } from '../../types/battle';
 import type { GameEngineAction } from '../core/ActionTypes';
 import type { BattleTicket } from '../../types/battleTicket';
 import type { MatchResult } from '../../types/matchResult';
+import { canInteract as canInteractCheck, applyInteraction as applyInteractionFn, endInteraction as endInteractionFn, resetDailyUsage as resetInteractionUsage } from '../systems/InteractionSystem';
+import { createDefaultInteractionState } from '../../types/interaction';
+import { getCareToolById } from '../../config/careToolConfig';
 
 const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -354,6 +357,7 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
             ? new Date().toISOString()
             : state.classroom.lastRosterRefresh,
         },
+        interaction: state.interaction ? resetInteractionUsage(state.interaction) : state.interaction,
       };
     }
     case 'USE_HINT':
@@ -361,7 +365,7 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
     case 'PURCHASE_ITEM': {
       if (action.tokenCost > 0 && !canAfford(state, action.tokenCost)) return state;
       if (action.coinCost > 0 && state.player.currencies.coins < action.coinCost) return state;
-      const afterPurchase = {
+      let afterPurchase: EngineState = {
         ...state,
         player: {
           ...state.player,
@@ -373,6 +377,25 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
         },
         inventory: addItem(state.inventory, action.itemId, 1),
       };
+      // If this is a care tool, also unlock/upgrade the corresponding interaction
+      const careTool = getCareToolById(action.itemId);
+      if (careTool) {
+        const interaction = afterPurchase.interaction ?? createDefaultInteractionState();
+        if (careTool.toolType === 'unlock' && !interaction.unlockedTools.includes(careTool.targetMode)) {
+          afterPurchase = {
+            ...afterPurchase,
+            interaction: { ...interaction, unlockedTools: [...interaction.unlockedTools, careTool.targetMode] },
+          };
+        } else if (careTool.toolType === 'upgrade' && careTool.upgradeTier != null) {
+          afterPurchase = {
+            ...afterPurchase,
+            interaction: {
+              ...interaction,
+              equippedToolTiers: { ...interaction.equippedToolTiers, [careTool.targetMode]: careTool.upgradeTier },
+            },
+          };
+        }
+      }
       return afterPurchase;
     }
     case 'USE_ITEM': {
@@ -1220,6 +1243,85 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
     case 'DEV_SNAPSHOT_SAVE':
     case 'DEV_SNAPSHOT_LOAD':
       return state;
+
+    // ── Pet Interaction System ──────────────────────────────────────
+    case 'SET_HAND_MODE': {
+      const interaction = state.interaction ?? createDefaultInteractionState();
+      return { ...state, interaction: { ...interaction, activeMode: action.mode } };
+    }
+    case 'START_PET_INTERACTION': {
+      if (!state.pet) return state;
+      const interaction = state.interaction ?? createDefaultInteractionState();
+      const check = canInteractCheck(state.pet, action.mode, interaction, state.player.currencies.tokens);
+      if (!check.allowed) return state;
+      const result = applyInteractionFn(state.pet, action.mode, interaction);
+      let next: EngineState = {
+        ...state,
+        pet: result.pet,
+        interaction: result.interactionState,
+      };
+      if (result.tokenCost > 0) next = deductTokens(next, result.tokenCost);
+      next = logEvent(next, 'pet_interaction', { mode: action.mode, quality: result.quality });
+      return next;
+    }
+    case 'END_PET_INTERACTION': {
+      const interaction = state.interaction ?? createDefaultInteractionState();
+      return { ...state, interaction: endInteractionFn(interaction) };
+    }
+    case 'CARE_GAME_COMPLETE': {
+      if (!state.pet) return state;
+      const interaction = state.interaction ?? createDefaultInteractionState();
+      const check = canInteractCheck(state.pet, action.mode, interaction, state.player.currencies.tokens);
+      if (!check.allowed) {
+        return { ...state, interaction: endInteractionFn(interaction) };
+      }
+      const result = applyInteractionFn(state.pet, action.mode, interaction);
+      const q = Math.max(0.1, action.quality);
+      const scaledPet: typeof result.pet = {
+        ...result.pet,
+        bond: state.pet.bond + (result.pet.bond - state.pet.bond) * q,
+        trust: (state.pet.trust ?? 20) + ((result.pet.trust ?? 20) - (state.pet.trust ?? 20)) * q,
+        discipline: (state.pet.discipline ?? 0) + ((result.pet.discipline ?? 0) - (state.pet.discipline ?? 0)) * q,
+        groomingScore: (state.pet.groomingScore ?? 50) + ((result.pet.groomingScore ?? 50) - (state.pet.groomingScore ?? 50)) * q,
+        stress: (state.pet.stress ?? 0) + ((result.pet.stress ?? 0) - (state.pet.stress ?? 0)) * q,
+        needs: {
+          ...result.pet.needs,
+          happiness: state.pet.needs.happiness + (result.pet.needs.happiness - state.pet.needs.happiness) * q,
+          cleanliness: state.pet.needs.cleanliness + (result.pet.needs.cleanliness - state.pet.needs.cleanliness) * q,
+        },
+      };
+      let next: EngineState = {
+        ...state,
+        pet: scaledPet,
+        interaction: endInteractionFn(result.interactionState),
+      };
+      const scaledCost = Math.ceil(result.tokenCost * q);
+      if (scaledCost > 0) next = deductTokens(next, scaledCost);
+      next = logEvent(next, 'care_game_complete', { mode: action.mode, quality: action.quality });
+      return next;
+    }
+    case 'UNLOCK_INTERACTION': {
+      const interaction = state.interaction ?? createDefaultInteractionState();
+      if (interaction.unlockedTools.includes(action.mode)) return state;
+      return {
+        ...state,
+        interaction: {
+          ...interaction,
+          unlockedTools: [...interaction.unlockedTools, action.mode],
+        },
+      };
+    }
+    case 'UPGRADE_TOOL_TIER': {
+      const interaction = state.interaction ?? createDefaultInteractionState();
+      return {
+        ...state,
+        interaction: {
+          ...interaction,
+          equippedToolTiers: { ...interaction.equippedToolTiers, [action.mode]: action.tier },
+        },
+      };
+    }
+
     default:
       return state;
   }

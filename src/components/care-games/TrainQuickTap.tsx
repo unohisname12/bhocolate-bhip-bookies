@@ -15,12 +15,12 @@ const TARGET_LIFETIME_MS = 1500;
 const SPAWN_DELAY_MS = 600;
 
 export const TrainQuickTap: React.FC<CareGameProps> = ({
-  mode, onComplete, onCancel, scale,
+  mode, onComplete, scale,
 }) => {
   const config = CARE_GAME_DEFAULTS[mode];
   const [target, setTarget] = useState<Target | null>(null);
   const [hits, setHits] = useState(0);
-  const [totalSpawned, setTotalSpawned] = useState(0);
+  const [, setTotalSpawned] = useState(0);
   const [timeLeft, setTimeLeft] = useState(config.durationMs / 1000);
   const [flash, setFlash] = useState<'hit' | 'miss' | null>(null);
   const startRef = useRef(Date.now());

@@ -27,7 +27,7 @@ const AFTERGLOW_MS = 1500;
 
 export function usePetReaction(
   interaction: InteractionState | undefined,
-  pet: Pet | null,
+  _pet: Pet | null,
   isOverPet: boolean,
 ): UsePetReactionReturn {
   const [phase, setPhase] = useState<ReactionPhase>('idle');

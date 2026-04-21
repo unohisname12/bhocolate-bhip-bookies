@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 import { PetSprite } from '../../../components/pet/PetSprite';
 import { ReactionBurst } from '../../../components/pet/ReactionBurst';
 

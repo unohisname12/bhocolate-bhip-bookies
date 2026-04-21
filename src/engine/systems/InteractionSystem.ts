@@ -2,9 +2,8 @@ import type { Pet } from '../../types';
 import type {
   HandMode,
   InteractionState,
-  InteractionStatEffects,
 } from '../../types/interaction';
-import { INTERACTION_DEFS, STREAK_BONUSES, SPAM_DIMINISH_THRESHOLD, SPAM_WINDOW_MS } from '../../config/interactionConfig';
+import { INTERACTION_DEFS, STREAK_BONUSES, SPAM_DIMINISH_THRESHOLD } from '../../config/interactionConfig';
 
 const clamp = (v: number, min = 0, max = 100) => Math.min(max, Math.max(min, v));
 

@@ -20,7 +20,7 @@ interface InteractionToolbarProps {
  * Minimizes to a small toggle handle when closed.
  */
 export const InteractionToolbar: React.FC<InteractionToolbarProps> = ({
-  activeMode, interaction, pet, playerTokens, onSelectMode,
+  activeMode, interaction, playerTokens, onSelectMode,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [, setTick] = useState(0); // force re-render for cooldown timers

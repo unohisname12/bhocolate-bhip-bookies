@@ -9,7 +9,7 @@ const DRAIN_RATE = 0.04;
 const MOVE_THRESHOLD = 4;
 
 export const ComfortHoldZone: React.FC<CareGameProps> = ({
-  mode, onComplete, onCancel, scale,
+  mode, onComplete, scale,
 }) => {
   const config = CARE_GAME_DEFAULTS[mode];
   const [calmLevel, setCalmLevel] = useState(0);

@@ -49,6 +49,12 @@ const ACTION_CONFIG: Record<ActionId, {
     getValue: () => `${CARE_ACTIONS.clean.cost}`,
     getOnClick: (p) => p.onClean,
   },
+  care: {
+    icon: '/assets/generated/final/icon_heart.png',
+    label: 'Care',
+    glowColor: 'hover:shadow-purple-500/40',
+    getOnClick: () => undefined, // not wired through BottomActionBar; use RightSidePanel
+  },
   heal: {
     icon: '/assets/generated/final/item_pill.png',
     label: 'Heal',

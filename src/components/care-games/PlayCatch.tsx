@@ -28,7 +28,7 @@ function spawnBouncer(id: number, speedMult: number): Bouncer {
 }
 
 export const PlayCatch: React.FC<CareGameProps> = ({
-  mode, onComplete, onCancel, scale,
+  mode, onComplete, scale,
 }) => {
   const config = CARE_GAME_DEFAULTS[mode];
   const [bouncer, setBouncer] = useState<Bouncer>(() => spawnBouncer(0, 0));

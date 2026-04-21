@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { INTERACTION_DEFS, INTERACTION_ORDER } from '../../config/interactionConfig';
+import { INTERACTION_ORDER } from '../../config/interactionConfig';
 import { getCooldownRemaining, calculateMoodMultiplier, getStreakMultiplier } from '../../engine/systems/InteractionSystem';
-import type { InteractionState, HandMode } from '../../types/interaction';
+import type { InteractionState } from '../../types/interaction';
 import type { Pet } from '../../types';
 import type { GameEngineAction } from '../../engine/core/ActionTypes';
 

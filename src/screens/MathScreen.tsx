@@ -100,7 +100,7 @@ interface MathScreenProps {
   speciesId: string;
 }
 
-export const MathScreen: React.FC<MathScreenProps> = ({ dispatch, onExit, initialStreak = 0, speciesId }) => {
+export const MathScreen: React.FC<MathScreenProps> = ({ dispatch, onExit, initialStreak = 0 }) => {
   const [problem, setProblem] = useState<MathProblem | null>(() => generateMathProblem(1));
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showRewardBurst, setShowRewardBurst] = useState(false);

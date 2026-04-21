@@ -15,7 +15,7 @@ describe('saveMigrations v12 → v13', () => {
         lifetimeMathCorrect: 0,
       },
     };
-    const result = migrate({ version: 12, state: v12State }) as unknown as {
+    const result = migrate({ version: 12, state: v12State, timestamp: 0, checksum: '' } as never) as unknown as {
       player: { hasOnboarded: boolean };
     };
     expect(result.player.hasOnboarded).toBe(true);
@@ -31,7 +31,7 @@ describe('saveMigrations v12 → v13', () => {
         lifetimeMathCorrect: 0,
       },
     };
-    const result = migrate({ version: 12, state: v12State }) as unknown as {
+    const result = migrate({ version: 12, state: v12State, timestamp: 0, checksum: '' } as never) as unknown as {
       player: { hasOnboarded: boolean };
     };
     expect(result.player.hasOnboarded).toBe(false);

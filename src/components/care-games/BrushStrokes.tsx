@@ -22,7 +22,7 @@ function detectSwipeDirection(dx: number, dy: number): Direction | null {
 }
 
 export const BrushStrokes: React.FC<CareGameProps> = ({
-  mode, onComplete, onCancel, scale,
+  mode, onComplete, scale,
 }) => {
   const config = CARE_GAME_DEFAULTS[mode];
   const [currentDir, setCurrentDir] = useState<Direction>(randomDirection);

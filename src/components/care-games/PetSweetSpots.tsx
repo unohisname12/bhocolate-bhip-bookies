@@ -17,12 +17,12 @@ const SPOT_SIZE = 48;
 const SPAWN_INTERVAL_MS = 1000;
 
 export const PetSweetSpots: React.FC<CareGameProps> = ({
-  mode, onComplete, onCancel, scale,
+  mode, onComplete, scale,
 }) => {
   const config = CARE_GAME_DEFAULTS[mode];
   const [spots, setSpots] = useState<SweetSpot[]>([]);
   const [hits, setHits] = useState(0);
-  const [spawned, setSpawned] = useState(0);
+  const [, setSpawned] = useState(0);
   const [timeLeft, setTimeLeft] = useState(config.durationMs / 1000);
   const startRef = useRef(Date.now());
   const nextIdRef = useRef(0);

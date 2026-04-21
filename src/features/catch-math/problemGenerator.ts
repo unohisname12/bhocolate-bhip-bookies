@@ -186,7 +186,7 @@ export function nextStepFor(eq: LinearEquation): {
 
 /** Build an initial 1- or 2-step equation. */
 export function buildStepEquation(cfg: CatchConfig, rng: Rng): LinearEquation {
-  const [lo, hi] = cfg.numberRange;
+  const [, hi] = cfg.numberRange;
   const x = rng.int(cfg.allowNegative ? -hi : 1, hi);
   const wantTwoStep = cfg.maxSteps === 2 && rng.int(0, 1) === 1;
   const a = wantTwoStep ? rng.int(2, Math.min(6, hi)) : 1;

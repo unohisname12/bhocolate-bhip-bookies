@@ -23,7 +23,7 @@ function generateZones(count: number): DirtyZone[] {
 }
 
 export const WashScrubZones: React.FC<CareGameProps> = ({
-  mode, onComplete, onCancel, scale,
+  mode, onComplete, scale,
 }) => {
   const config = CARE_GAME_DEFAULTS[mode];
   const [zones, setZones] = useState<DirtyZone[]>(() => generateZones(config.targetCount));
@@ -58,7 +58,7 @@ export const WashScrubZones: React.FC<CareGameProps> = ({
   const handlePointerDown = useCallback(() => { pointerDownRef.current = true; }, []);
   const handlePointerUp = useCallback(() => { pointerDownRef.current = false; }, []);
 
-  const handlePointerMove = useCallback((e: React.PointerEvent, zoneId: number) => {
+  const handlePointerMove = useCallback((_e: React.PointerEvent, zoneId: number) => {
     if (!pointerDownRef.current) return;
     setZones(prev => prev.map(z =>
       z.id === zoneId && z.cleanProgress < 1

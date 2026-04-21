@@ -1225,7 +1225,7 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
 
       // resolveCombat may leave activeTeam stale — ensure it's 'enemy'
       // so selectPiece accepts enemy pieces
-      let momentum = { ...state.momentum, activeTeam: 'enemy' as const };
+      let momentum: typeof state.momentum = { ...state.momentum, activeTeam: 'enemy' };
       const aiAction = selectAIAction(momentum);
       if (aiAction) {
         momentum = selectPiece(momentum, aiAction.pieceId);

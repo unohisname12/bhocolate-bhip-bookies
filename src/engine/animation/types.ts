@@ -12,7 +12,9 @@ export type AnimationRange = {
  * that may not have sprites yet. When a name isn't in the sprite config,
  * the fallback system shows a black box — telling artists what to create.
  */
-export type AnimationName = PetState | 'dirty' | 'eating';
+export type AnimationName = PetState | 'dirty' | 'eating' | 'walking'
+  | 'being_petted' | 'being_washed' | 'being_brushed'
+  | 'being_comforted' | 'being_trained' | 'playing_with_hand';
 
 export type SpriteSheetConfig = {
   url: string;

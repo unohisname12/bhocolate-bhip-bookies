@@ -14,6 +14,13 @@ import type { MatchResult, MatchupTracker } from './matchResult';
 import type { TrophyCase } from './trophy';
 import type { HelpState } from './help';
 import type { RunState } from './run';
+import type { InteractionState } from './interaction';
+import type { QuestState } from './quest';
+import type { SeasonState } from './season';
+import type { CosmeticState } from './cosmetic';
+import type { DexState } from './dex';
+import type { CampaignState } from './campaign';
+import type { EventState } from './event';
 
 export type EngineMode = 'normal' | 'test';
 
@@ -75,4 +82,20 @@ export interface EngineState {
   trophyCase: TrophyCase;
   mailbox: MailboxState;
   help: HelpState;
+  interaction: InteractionState;
+  quests: QuestState;
+  season: SeasonState;
+  cosmetics: CosmeticState;
+  dex: DexState;
+  campaign: CampaignState;
+  seasonalEvents: EventState;
+  /** Ephemeral UI flag — shows the Daily Ritual "Power Path" modal on app load after midnight rollover. */
+  showDailyRitual?: boolean;
+  /** Ephemeral UI flag — when true, OnboardingGate mounts the intro tutorial. Set by SHOW_ONBOARDING, cleared by COMPLETE_ONBOARDING. */
+  showOnboarding?: boolean;
+  /** Ephemeral pre-battle warmup flag — when set, a math question modal gates entry into combat. */
+  pendingBattleWarmup?: {
+    kind: 'wild' | 'character';
+    speciesId?: string;
+  } | null;
 }

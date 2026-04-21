@@ -6,6 +6,9 @@ import type {
   BattleRewards,
   ComboState,
 } from '../../types/battle';
+import type { MathBuffs } from '../../types/player';
+import { hasAnyMathBuffs } from '../../config/mathBuffConfig';
+import { computeForgeBonuses, type PowerForgeState } from '../../config/powerForgeConfig';
 import type { ClassmateProfile } from '../../types/classroom';
 import { SPECIES_MOVES, BATTLE_CONSTANTS, ENEMY_SCALING, SPECIES_BASE_STATS, STAGE_MULTIPLIERS, MOOD_HINT_MULTIPLIERS } from '../../config/battleConfig';
 import { SPECIES_CONFIG } from '../../config/speciesConfig';
@@ -22,6 +25,95 @@ const INITIAL_TRACE_BUFFS: TraceBuffState = {
 const INITIAL_COMBO: ComboState = { count: 0, multiplier: 1.0, lastAction: '' };
 
 const clampHP = (hp: number) => Math.max(0, hp);
+
+/**
+ * Apply accumulated math-prep buffs to a freshly-initialized battle.
+ * Boosts player's strength, defense, maxHP, and currentHP, and adds a
+ * log line so the kid sees the reward for their math work.
+ * No-op if no buffs are present.
+ */
+export const applyMathBuffsToBattle = (
+  battle: ActiveBattleState,
+  buffs: MathBuffs,
+): ActiveBattleState => {
+  if (!hasAnyMathBuffs(buffs)) {
+    // Math-gate #1: untrained — player deals reduced damage until they earn any buff.
+    return {
+      ...battle,
+      untrained: true,
+      log: [
+        ...battle.log,
+        {
+          turn: 0,
+          actor: 'player',
+          action: 'math_prep',
+          message: 'Untrained: no Math Prep applied. Damage reduced.',
+        },
+      ],
+    };
+  }
+  const boostedPet: BattlePet = {
+    ...battle.playerPet,
+    strength: battle.playerPet.strength + buffs.atk,
+    defense: battle.playerPet.defense + buffs.def,
+    maxHP: battle.playerPet.maxHP + buffs.hp,
+    currentHP: battle.playerPet.currentHP + buffs.hp,
+  };
+  const parts: string[] = [];
+  if (buffs.atk > 0) parts.push(`+${buffs.atk} ATK`);
+  if (buffs.def > 0) parts.push(`+${buffs.def} DEF`);
+  if (buffs.hp > 0) parts.push(`+${buffs.hp} HP`);
+  return {
+    ...battle,
+    playerPet: boostedPet,
+    log: [
+      ...battle.log,
+      {
+        turn: 0,
+        actor: 'player',
+        action: 'math_prep',
+        message: `Math Prep applied: ${parts.join(', ')}!`,
+      },
+    ],
+  };
+};
+
+/**
+ * Apply persistent Power Forge bonuses to a battle. Stacks with math buffs —
+ * they're unrelated currencies (MP spent long-ago vs. math done this session).
+ * No-op if the player has no forge upgrades.
+ */
+export const applyPowerForgeToBattle = (
+  battle: ActiveBattleState,
+  forge: PowerForgeState | undefined,
+): ActiveBattleState => {
+  const bonuses = computeForgeBonuses(forge);
+  if (bonuses.atk === 0 && bonuses.def === 0 && bonuses.hp === 0) return battle;
+  const boostedPet: BattlePet = {
+    ...battle.playerPet,
+    strength: battle.playerPet.strength + bonuses.atk,
+    defense: battle.playerPet.defense + bonuses.def,
+    maxHP: battle.playerPet.maxHP + bonuses.hp,
+    currentHP: battle.playerPet.currentHP + bonuses.hp,
+  };
+  const parts: string[] = [];
+  if (bonuses.atk > 0) parts.push(`+${bonuses.atk} ATK`);
+  if (bonuses.def > 0) parts.push(`+${bonuses.def} DEF`);
+  if (bonuses.hp > 0) parts.push(`+${bonuses.hp} HP`);
+  return {
+    ...battle,
+    playerPet: boostedPet,
+    log: [
+      ...battle.log,
+      {
+        turn: 0,
+        actor: 'player',
+        action: 'math_prep',
+        message: `Forge bonus: ${parts.join(', ')}.`,
+      },
+    ],
+  };
+};
 
 /** Returns a 0–100 readiness score based on pet needs. Used by UI and battle init. */
 export const getPetReadiness = (pet: import('../../types').Pet): number => {
@@ -354,17 +446,20 @@ export const executePlayerMove = (battle: ActiveBattleState, moveId: string): Ac
     message = `${player.name} healed for ${healAmt} HP!`;
   } else {
     const result = calcDamage(player, enemy, move, battle.mathBuffActive, battle.traceBuffs, combo);
-    enemy = { ...enemy, currentHP: clampHP(enemy.currentHP - result.damage) };
-    if (result.damage === 0) {
+    // Math-gate #1: untrained players (zero math buffs at battle start) deal reduced damage.
+    const untrainedFloor = battle.untrained ? 0.6 : 1.0;
+    const finalDamage = result.damage === 0 ? 0 : Math.max(1, Math.floor(result.damage * untrainedFloor));
+    enemy = { ...enemy, currentHP: clampHP(enemy.currentHP - finalDamage) };
+    if (finalDamage === 0) {
       // Miss resets combo
       combo = resetCombo();
       message = `${player.name} used ${move.name} but missed!`;
     } else if (result.isCrit) {
       combo = incrementCombo(combo, move.id);
-      message = `CRITICAL! ${player.name} used ${move.name} for ${result.damage} damage!`;
+      message = `CRITICAL! ${player.name} used ${move.name} for ${finalDamage} damage!`;
     } else {
       combo = incrementCombo(combo, move.id);
-      message = `${player.name} used ${move.name} for ${result.damage} damage!`;
+      message = `${player.name} used ${move.name} for ${finalDamage} damage!`;
     }
   }
 

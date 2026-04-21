@@ -28,7 +28,7 @@ export const CareGameOverlay: React.FC<CareGameOverlayProps> = ({
   interaction, scale, onComplete, onCancel,
 }) => {
   const mode = interaction.activeMode;
-  if (mode === 'idle' || !interaction.isInteracting) return null;
+  if (mode === 'idle' || !interaction.careGameActive) return null;
 
   const GameComponent = GAME_MAP[mode];
   if (!GameComponent) return null;

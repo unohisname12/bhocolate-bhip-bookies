@@ -21,26 +21,37 @@ export const addXP = (pet: Pet, amount: number): Pet => {
   return { ...pet, progression: { ...pet.progression, xp: newXP } };
 };
 
-const EVOLUTION_REQUIREMENTS: Record<string, { level: number; bond: number }> = {
-  juvenile: { level: 5, bond: 20 },
-  adult: { level: 15, bond: 50 },
-  elder: { level: 30, bond: 80 },
+export const EVOLUTION_REQUIREMENTS: Record<string, { level: number; bond: number; lifetimeMathCorrect: number }> = {
+  juvenile: { level: 3, bond: 15, lifetimeMathCorrect: 10 },
+  adult:    { level: 10, bond: 40, lifetimeMathCorrect: 30 },
+  elder:    { level: 20, bond: 70, lifetimeMathCorrect: 80 },
 };
 
 const STAGE_ORDER: PetStage[] = ['baby', 'juvenile', 'adult', 'elder'];
 
-export const checkEvolution = (pet: Pet): { canEvolve: boolean; nextStage: PetStage | null } => {
+export type EvolutionBlocker = 'level' | 'bond' | 'math' | null;
+
+export const checkEvolution = (
+  pet: Pet,
+  lifetimeMathCorrect: number = 0,
+): { canEvolve: boolean; nextStage: PetStage | null; blocker: EvolutionBlocker; requirement?: { level: number; bond: number; lifetimeMathCorrect: number } } => {
   const currentIdx = STAGE_ORDER.indexOf(pet.stage);
-  if (currentIdx < 0 || currentIdx >= STAGE_ORDER.length - 1) return { canEvolve: false, nextStage: null };
+  if (currentIdx < 0 || currentIdx >= STAGE_ORDER.length - 1) {
+    return { canEvolve: false, nextStage: null, blocker: null };
+  }
   const nextStage = STAGE_ORDER[currentIdx + 1];
   const req = EVOLUTION_REQUIREMENTS[nextStage];
-  if (!req) return { canEvolve: false, nextStage: null };
-  const canEvolve = pet.progression.level >= req.level && pet.bond >= req.bond;
-  return { canEvolve, nextStage: canEvolve ? nextStage : null };
+  if (!req) return { canEvolve: false, nextStage: null, blocker: null };
+  const levelOK = pet.progression.level >= req.level;
+  const bondOK = pet.bond >= req.bond;
+  const mathOK = lifetimeMathCorrect >= req.lifetimeMathCorrect;
+  const canEvolve = levelOK && bondOK && mathOK;
+  const blocker: EvolutionBlocker = canEvolve ? null : !levelOK ? 'level' : !bondOK ? 'bond' : 'math';
+  return { canEvolve, nextStage: canEvolve ? nextStage : null, blocker, requirement: req };
 };
 
-export const evolvePet = (pet: Pet): Pet => {
-  const { canEvolve, nextStage } = checkEvolution(pet);
+export const evolvePet = (pet: Pet, lifetimeMathCorrect: number = 0): Pet => {
+  const { canEvolve, nextStage } = checkEvolution(pet, lifetimeMathCorrect);
   if (!canEvolve || !nextStage) return pet;
   return {
     ...pet,

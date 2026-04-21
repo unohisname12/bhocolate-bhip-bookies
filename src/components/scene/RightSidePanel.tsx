@@ -11,16 +11,16 @@ interface RightSidePanelProps {
   pet: Pet;
   ticketCount: number;
   onFeed: () => void;
-  onPlay: () => void;
   onHeal: () => void;
-  onClean: () => void;
   onTrain: () => void;
   onShop: () => void;
   onBattle: () => void;
   onArena: () => void;
   onNumberMerge: () => void;
   onMomentum: () => void;
+  onCatchMath: () => void;
   onDungeon: () => void;
+  onCare: () => void;
 }
 
 const ACTION_CONFIG: Record<ActionId, {
@@ -42,14 +42,20 @@ const ACTION_CONFIG: Record<ActionId, {
     label: 'Play',
     glowColor: 'hover:shadow-blue-500/40',
     getValue: () => `${CARE_ACTIONS.play.cost}`,
-    getOnClick: (p) => p.pet.state === 'sleeping' ? undefined : p.onPlay,
+    getOnClick: () => undefined, // legacy — kept for type safety, unused in primaryActions
   },
   clean: {
     icon: '/assets/generated/final/icon_clean.png',
     label: 'Clean',
     glowColor: 'hover:shadow-cyan-500/40',
     getValue: () => `${CARE_ACTIONS.clean.cost}`,
-    getOnClick: (p) => p.onClean,
+    getOnClick: () => undefined, // legacy — kept for type safety, unused in primaryActions
+  },
+  care: {
+    icon: '/assets/generated/final/icon_heart.png',
+    label: 'Care',
+    glowColor: 'hover:shadow-purple-500/40',
+    getOnClick: (p) => p.onCare,
   },
   heal: {
     icon: '/assets/generated/final/item_pill.png',
@@ -363,6 +369,27 @@ export const RightSidePanel: React.FC<RightSidePanelProps> = (props) => {
                   </span>
                   <span className="text-[9px] font-black text-purple-100">5x5</span>
                 </button>
+                <button
+                  onClick={props.onCatchMath}
+                  data-testid="right-panel-catch-math"
+                  className="relative flex flex-col items-center justify-center gap-2 rounded-xl p-4 transition-all duration-150 cursor-pointer hover:shadow-amber-500/40"
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(120,53,15,0.92) 0%, rgba(180,83,9,0.88) 100%)',
+                    boxShadow: '0 2px 12px rgba(251,191,36,0.3)',
+                    border: '1px solid rgba(253,224,71,0.4)',
+                  }}
+                >
+                  <img
+                    src="/assets/generated/final/icon_energy.png"
+                    alt="Catch"
+                    className="w-10 h-10 drop-shadow-sm"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  <span className="text-xs font-bold text-amber-50 uppercase tracking-wide">
+                    Catch
+                  </span>
+                  <span className="text-[9px] font-black text-amber-100">Math</span>
+                </button>
               </>
             ) : (
               <>
@@ -420,6 +447,35 @@ export const RightSidePanel: React.FC<RightSidePanelProps> = (props) => {
                     }}
                   >
                     5x5
+                  </span>
+                </button>
+                <button
+                  onClick={props.onCatchMath}
+                  data-testid="right-panel-catch-math"
+                  className="relative flex items-center gap-3 w-full rounded-xl px-4 py-3 transition-all duration-150 cursor-pointer hover:shadow-amber-500/40"
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(120,53,15,0.92) 0%, rgba(180,83,9,0.88) 100%)',
+                    boxShadow: '0 2px 12px rgba(251,191,36,0.3)',
+                    border: '1px solid rgba(253,224,71,0.4)',
+                  }}
+                >
+                  <img
+                    src="/assets/generated/final/icon_energy.png"
+                    alt="Catch"
+                    className="w-7 h-7 drop-shadow-sm flex-shrink-0"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  <span className="text-sm font-bold text-amber-50 uppercase tracking-wide flex-1 text-left">
+                    Catch
+                  </span>
+                  <span
+                    className="text-[10px] font-black text-amber-100 rounded-md px-1.5 py-0.5"
+                    style={{
+                      background: 'rgba(69,26,3,0.6)',
+                      border: '1px solid rgba(253,224,71,0.35)',
+                    }}
+                  >
+                    Math
                   </span>
                 </button>
               </>

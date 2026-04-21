@@ -4,6 +4,7 @@ import { createInitialEngineState } from './engine/state/createInitialEngineStat
 import { IncubationScreen } from './screens/IncubationScreen';
 import { GameSceneShell } from './components/scene/GameSceneShell';
 import { MathScreen } from './screens/MathScreen';
+import { CatchNumberScreen } from './features/catch-math/CatchNumberScreen';
 import { FeedingScreen } from './screens/FeedingScreen';
 import { ShopScreen } from './screens/ShopScreen';
 import { BattleScreen } from './screens/BattleScreen';
@@ -22,6 +23,14 @@ import { RunMapScreen } from './screens/RunMapScreen';
 import { RunRestScreen } from './screens/RunRestScreen';
 import { RunEventScreen } from './screens/RunEventScreen';
 import { TestModeScreen } from './screens/TestModeScreen';
+import { PetCareScreen } from './screens/PetCareScreen';
+import { QuestLogScreen } from './screens/QuestLogScreen';
+import { SeasonPassScreen } from './screens/SeasonPassScreen';
+import { GachaScreen } from './screens/GachaScreen';
+import { PowerForgeScreen } from './screens/PowerForgeScreen';
+import { ComingSoonScreen } from './screens/ComingSoonScreen';
+import { WarmHomeSceneReview } from './screens/WarmHomeSceneReview';
+import { FeatureHUD } from './components/scene/FeatureHUD';
 import { DevCombatPicker } from './components/battle/DevCombatPicker';
 import { FOOD_ITEMS } from './config/gameConfig';
 import { validateConfigs } from './config';
@@ -30,6 +39,8 @@ import { isDevModeEnabled } from './utils/featureFlags';
 import * as SaveManager from './services/persistence/SaveManager';
 import { AchievementPopup } from './components/ui/AchievementPopup';
 import { HelpProvider } from './components/help/HelpProvider';
+import { OnboardingGate } from './components/help/OnboardingGate';
+import { PreBattleWarmup } from './components/battle/PreBattleWarmup';
 import { registerAllHelp } from './config/help';
 import type { EngineState } from './engine/core/EngineTypes';
 import type { PetState } from './types';
@@ -81,6 +92,8 @@ function loadInitialState(): EngineState {
             coins: legacy.player?.currencies?.coins ?? 0,
             mp: 0,
             mpLifetime: 0,
+            seasonPoints: 0,
+            shards: 0,
           },
         },
         screen: migratedPet ? 'home' : 'incubation',
@@ -130,6 +143,7 @@ function App() {
   const [initialState] = useState<EngineState>(() => loadInitialState());
   const { state, engine, dispatch } = useGameEngine(initialState);
   const [isFeeding, setIsFeeding] = useState(false);
+  const [lastFoodIcon, setLastFoodIcon] = useState<string | null>(null);
 
   // Pre-combat character picker — intercepts practice-battle start so the
   // player can choose which species to fight with. Previously gated behind
@@ -257,6 +271,78 @@ function App() {
           mpLifetime={state.player.currencies.mpLifetime}
           level={state.pet?.progression.level ?? 1}
           battlesWon={state.player.pvpRecord?.totalWins ?? 0}
+          bond={state.pet?.bond ?? 0}
+          dispatch={dispatch}
+          onClose={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
+        />
+      );
+    }
+    if (state.screen === 'quest_log') {
+      return (
+        <QuestLogScreen
+          state={state}
+          dispatch={dispatch}
+          onClose={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
+        />
+      );
+    }
+    if (state.screen === 'season_pass') {
+      return (
+        <SeasonPassScreen
+          state={state}
+          dispatch={dispatch}
+          onClose={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
+        />
+      );
+    }
+    if (state.screen === 'gacha') {
+      return (
+        <GachaScreen
+          state={state}
+          dispatch={dispatch}
+          onClose={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
+        />
+      );
+    }
+    if (state.screen === 'power_forge') {
+      return (
+        <PowerForgeScreen
+          mp={state.player.currencies.mp}
+          mpLifetime={state.player.currencies.mpLifetime}
+          forge={state.player.powerForge}
+          dispatch={dispatch}
+          onClose={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
+        />
+      );
+    }
+    if (state.screen === 'coming_soon') {
+      return (
+        <ComingSoonScreen
+          state={state}
+          dispatch={dispatch}
+          onClose={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
+        />
+      );
+    }
+    if (state.screen === 'warm_preview') {
+      return (
+        <WarmHomeSceneReview
+          dispatch={dispatch}
+          petSpriteSrc={state.pet ? '/assets/pets/blue-koala/portrait.png' : undefined}
+          equippedCosmetics={state.pet ? state.cosmetics.equipped[state.pet.id] ?? undefined : undefined}
+          interaction={state.interaction}
+          cosmetics={state.cosmetics}
+          petId={state.pet?.id}
+        />
+      );
+    }
+    if (state.screen === 'pet_care' && state.pet) {
+      return (
+        <PetCareScreen
+          pet={state.pet}
+          interaction={state.interaction}
+          inventory={state.inventory}
+          playerTokens={state.player.currencies.tokens}
           dispatch={dispatch}
           onClose={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
         />
@@ -270,6 +356,20 @@ function App() {
             dispatch={dispatch}
             onExit={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
             initialStreak={state.player.streaks.correctAnswers}
+            speciesId={state.pet?.speciesId ?? 'koala_sprite'}
+          />
+        </>
+      );
+    }
+    if (state.screen === 'catch_math') {
+      return (
+        <>
+          <TestModeButton dispatch={dispatch} />
+          <CatchNumberScreen
+            dispatch={dispatch}
+            pet={state.pet}
+            initialStreak={state.player.streaks.correctAnswers}
+            onExit={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
           />
         </>
       );
@@ -278,25 +378,35 @@ function App() {
       return (
         <>
           <TestModeButton dispatch={dispatch} />
+          <FeatureHUD state={state} dispatch={dispatch} />
           <GameSceneShell
             pet={state.pet}
             currentRoom={state.currentRoom}
             playerTokens={state.player.currencies.tokens}
             mp={state.player.currencies.mp}
             mpLifetime={state.player.currencies.mpLifetime}
+            mathBuffs={state.player.mathBuffs}
             dailyGoals={state.dailyGoals}
             ticketCount={state.battleTickets.tickets.length}
             mailbox={state.mailbox}
+            interaction={state.interaction}
             dispatch={devDispatch}
             onFeed={() => setIsFeeding(true)}
+            lastFoodIcon={lastFoodIcon}
+            equippedCosmetics={state.cosmetics.equipped[state.pet.id] ?? undefined}
+            loginStreak={state.player.streaks.login}
+            dailyQuests={state.quests.daily}
+            showDailyRitual={state.showDailyRitual ?? false}
           />
           <FeedingScreen
             isOpen={isFeeding}
             onClose={() => setIsFeeding(false)}
             currentTokens={state.player.currencies.tokens}
+            mpLifetime={state.player.currencies.mpLifetime}
             onFeed={(foodId) => {
               const foundFood = FOOD_ITEMS.find((item) => item.id === foodId);
               if (!foundFood) return;
+              setLastFoodIcon(foundFood.icon);
               dispatch({ type: 'FEED_PET', food: foundFood });
             }}
           />
@@ -337,6 +447,20 @@ function App() {
         {/* HelpProvider renders its own overlays; children slot is unused but required */}
         <></>
       </HelpProvider>
+      {/* Intro tutorial — only fires when explicitly requested via SHOW_ONBOARDING (dev tools / help panel) */}
+      {state.pet && (
+        <OnboardingGate
+          showOnboarding={state.showOnboarding === true}
+          dispatch={dispatch}
+        />
+      )}
+      {/* Pre-battle warmup — math question before every wild battle */}
+      {state.pendingBattleWarmup && (
+        <PreBattleWarmup
+          difficulty={Math.min(3, Math.max(1, Math.floor((state.pet?.progression.level ?? 1) / 5) + 1))}
+          dispatch={dispatch}
+        />
+      )}
       <AchievementPopup notifications={state.notifications} dispatch={dispatch} />
       {/* Pre-combat character picker modal (always available) */}
       {showCombatPicker && (

@@ -12,8 +12,8 @@ interface StateInspectorProps {
   dispatch: (action: GameEngineAction) => void;
 }
 
-const GOD_MODE_CURRENCIES = { tokens: 99999, coins: 9999, mp: 9999, mpLifetime: 9999 };
-const NORMAL_CURRENCIES = { tokens: 100, coins: 0, mp: 0, mpLifetime: 0 };
+const GOD_MODE_CURRENCIES = { tokens: 99999, coins: 9999, mp: 9999, mpLifetime: 9999, seasonPoints: 9999, shards: 9999 };
+const NORMAL_CURRENCIES = { tokens: 100, coins: 0, mp: 0, mpLifetime: 0, seasonPoints: 0, shards: 0 };
 
 export const StateInspector: React.FC<StateInspectorProps> = ({ state, dispatch }) => {
   const [jsonDraft, setJsonDraft] = useState('');
@@ -69,6 +69,15 @@ export const StateInspector: React.FC<StateInspectorProps> = ({ state, dispatch 
         {isGodMode ? 'GOD MODE ON — Click to Reset' : 'GOD MODE — Max All Currencies'}
       </button>
 
+      {/* Replay Onboarding */}
+      <button
+        type="button"
+        onClick={() => dispatch({ type: 'SHOW_ONBOARDING' })}
+        className="w-full rounded px-3 py-2 font-black text-sm uppercase tracking-wider bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
+      >
+        Replay Onboarding Tutorial
+      </button>
+
       <div className="grid grid-cols-3 gap-2">
         <label className="space-y-1">
           <span className="text-slate-300">Force Pet State</span>
@@ -90,7 +99,7 @@ export const StateInspector: React.FC<StateInspectorProps> = ({ state, dispatch 
             value={state.screen}
             onChange={(event) => onJumpScreen(event.target.value)}
           >
-            {['incubation', 'home', 'math', 'feeding', 'battle', 'test'].map((screen) => (
+            {['incubation', 'home', 'math', 'catch_math', 'feeding', 'battle', 'test'].map((screen) => (
               <option key={screen} value={screen}>{screen}</option>
             ))}
           </select>

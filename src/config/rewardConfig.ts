@@ -5,7 +5,7 @@ export const REWARD_CONFIG = {
     maxStreakBonus: 50,
   },
   careAction: {
-    bondIncrease: 5,
+    bondIncrease: 0.5,
     xpGain: 10,
   },
   eggTap: {

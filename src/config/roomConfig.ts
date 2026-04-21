@@ -1,6 +1,6 @@
 import type { RoomId } from '../types/room';
 
-export type ActionId = 'feed' | 'play' | 'clean' | 'heal' | 'train' | 'shop' | 'arena' | 'practice' | 'dungeon';
+export type ActionId = 'feed' | 'play' | 'clean' | 'heal' | 'train' | 'shop' | 'arena' | 'practice' | 'dungeon' | 'care';
 
 export interface PropPlacement {
   assetId: string;
@@ -32,7 +32,7 @@ export const HOUSE_ROOMS: HouseRoom[] = [
     background: 'linear-gradient(180deg, #38bdf8 0%, #22c55e 60%, #854d0e 100%)',
     floorGradient: 'from-green-900/60 to-transparent',
     backgroundImage: `${F}/scene_outside.png`,
-    primaryActions: ['play', 'train', 'arena', 'practice', 'dungeon'],
+    primaryActions: ['care', 'train', 'arena', 'practice', 'dungeon'],
     props: [],
   },
   {
@@ -42,7 +42,7 @@ export const HOUSE_ROOMS: HouseRoom[] = [
     background: 'radial-gradient(ellipse at 50% 40%, #78350f 0%, #1c1917 100%)',
     floorGradient: 'from-amber-950/60 to-transparent',
     backgroundImage: `${F}/scene_inside.png`,
-    primaryActions: ['feed', 'clean', 'heal', 'shop', 'practice', 'dungeon'],
+    primaryActions: ['feed', 'care', 'heal', 'shop', 'practice', 'dungeon'],
     props: [],
   },
 ];

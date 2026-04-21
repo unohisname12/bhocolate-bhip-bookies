@@ -663,9 +663,11 @@ export function calculateRewards(state: ActiveMomentumState): MomentumRewards {
     0,
     (DIFFICULTY_SETTINGS[state.difficulty].maxTurns - state.turnCount) * MOMENTUM_REWARDS.perTurnBonus,
   );
+  const shardBonus = MOMENTUM_REWARDS.difficultyShardBonus[state.difficulty] ?? 0;
   return {
     tokens: MOMENTUM_REWARDS.baseTokens + turnBonus,
     xp: MOMENTUM_REWARDS.baseXP,
+    shards: MOMENTUM_REWARDS.baseShards + shardBonus,
   };
 }
 

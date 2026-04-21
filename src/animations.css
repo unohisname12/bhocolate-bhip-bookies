@@ -100,6 +100,34 @@
   animation: sprite-happy-glow 2s ease-in-out infinite;
 }
 
+@keyframes held-chomp {
+  0%   { transform: translateX(-50%) translateY(0)    scale(1);    opacity: 1; }
+  35%  { transform: translateX(-50%) translateY(-3px) scale(0.95); opacity: 1; }
+  45%  { transform: translateX(-50%) translateY(-6px) scale(0.6);  opacity: 0.3; }
+  55%  { transform: translateX(-50%) translateY(-2px) scale(1.05); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(0)    scale(1);    opacity: 1; }
+}
+.anim-chomp {
+  animation: held-chomp 0.8s ease-in-out infinite;
+}
+
+/* Eating lean — pet tilts forward toward the held food and head-bobs
+   in sync with held-chomp. Matches the 0.8s cycle so lean bottoms out
+   exactly at the bite moment (~45%). transform-origin: bottom center
+   lives on the wrapper element; a lean from the feet reads as "leaning
+   into food" rather than a body shake. */
+@keyframes sprite-eating-lean {
+  0%   { transform: translateY(0)    rotate(0deg); }
+  35%  { transform: translateY(1px)  rotate(2deg); }
+  45%  { transform: translateY(3px)  rotate(4deg); }
+  55%  { transform: translateY(1px)  rotate(2deg); }
+  100% { transform: translateY(0)    rotate(0deg); }
+}
+.anim-sprite-eating {
+  animation: sprite-eating-lean 0.8s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
 .anim-sprite-sleep {
   animation: sprite-sleep-float 4s ease-in-out infinite;
 }
@@ -869,3 +897,73 @@
   80% { transform: translate(-50%, -50%) scale(0.6); }
   100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
 }
+
+/* ── VPet Design System keyframes (warm tavern palette, Phase A) ─ */
+/* Namespaced with `vpet` prefix to avoid collisions with existing  */
+/* keyframes (shake/float/pop/breathe live above).                  */
+
+@keyframes vpetIdle {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+
+@keyframes vpetWalkStep {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1px); }
+}
+
+/* Sprite-sheet frame cycler for 16-frame horizontal sheets rendered at
+   112x112 (native 128x128). Use with `steps(16)` timing function and
+   backgroundSize: 1792px 112px so each step advances one frame. */
+@keyframes vpetSheet16 {
+  from { background-position: 0 0; }
+  to   { background-position: -1792px 0; }
+}
+
+@keyframes vpetFireStep {
+  to { background-position: -384px 0; }
+}
+
+@keyframes vpetCandleStep {
+  to { background-position: -16px 0; }
+}
+
+@keyframes vpetKoalaEat {
+  to { background-position: -2048px 0; }
+}
+
+@keyframes vpetBounce {
+  0%   { transform: translateY(0)    scale(1,1); }
+  40%  { transform: translateY(-8px) scale(1.05, 0.95); }
+  100% { transform: translateY(0)    scale(1,1); }
+}
+
+@keyframes vpetShake {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-4px); }
+  75%      { transform: translateX(4px); }
+}
+
+@keyframes vpetDamagePop {
+  0%   { transform: scale(0.5) translateY(0);    opacity: 0; }
+  30%  { transform: scale(1.2) translateY(-6px); opacity: 1; }
+  100% { transform: scale(1.0) translateY(-20px); opacity: 0; }
+}
+
+@keyframes math-power-idle {
+  0%, 100% { filter: brightness(1.15) drop-shadow(0 0 6px rgba(250,204,21,0.55)); transform: scaleY(1); }
+  50%      { filter: brightness(1.35) drop-shadow(0 0 14px rgba(250,204,21,0.85)); transform: scaleY(1.03); }
+}
+.anim-math-power-idle { animation: math-power-idle 1.4s ease-in-out infinite; transform-origin: bottom center; }
+
+@keyframes math-correct-flash {
+  0%   { opacity: 0.4; }
+  100% { opacity: 0; }
+}
+.anim-math-correct-flash { animation: math-correct-flash 0.3s ease-out forwards; }
+
+@keyframes math-wrong-flash {
+  0%, 100% { opacity: 0; }
+  40%      { opacity: 0.35; }
+}
+.anim-math-wrong-flash { animation: math-wrong-flash 0.5s ease-out forwards; }

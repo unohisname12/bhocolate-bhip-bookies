@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { SHOP_ITEMS, isShopItemUnlocked, describeUnlockRule } from '../config/shopConfig';
 import type { ShopItemCategory, PlayerProgressSnapshot } from '../config/shopConfig';
 import { GameButton } from '../components/ui/GameButton';
@@ -14,8 +14,18 @@ interface ShopScreenProps {
   level: number;
   /** Lifetime PvP+wild wins; used for battle-count unlocks. */
   battlesWon: number;
+  /** Pet bond level; used for bond-gated unlocks. */
+  bond: number;
   dispatch: (action: GameEngineAction) => void;
   onClose: () => void;
+}
+
+interface PurchaseFloat {
+  id: number;
+  text: string;
+  color: string;
+  x: number;
+  y: number;
 }
 
 const CATEGORIES: { id: ShopItemCategory | 'all'; label: string }[] = [
@@ -24,14 +34,22 @@ const CATEGORIES: { id: ShopItemCategory | 'all'; label: string }[] = [
   { id: 'toy', label: '⚽ Toys' },
   { id: 'medicine', label: '💊 Medicine' },
   { id: 'cosmetic', label: '✨ Cosmetic' },
+  { id: 'care_tool', label: '🧼 Care' },
 ];
 
 const SEEN_KEY = 'mp_shop_seen';
 
-export const ShopScreen: React.FC<ShopScreenProps> = ({ tokens, coins, mpLifetime, level, battlesWon, dispatch, onClose }) => {
+let floatIdCounter = 0;
+
+export const ShopScreen: React.FC<ShopScreenProps> = ({ tokens, coins, mpLifetime, level, battlesWon, bond, dispatch, onClose }) => {
   const [activeCategory, setActiveCategory] = useState<ShopItemCategory | 'all'>('all');
   const playerTier = getMPTier(mpLifetime);
-  const progress: PlayerProgressSnapshot = { level, battlesWon, mpTier: playerTier };
+  const progress: PlayerProgressSnapshot = { level, battlesWon, mpTier: playerTier, bond };
+
+  // Purchase feedback
+  const [floats, setFloats] = useState<PurchaseFloat[]>([]);
+  const [currencyPulse, setCurrencyPulse] = useState<'tokens' | 'coins' | null>(null);
+  const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track which tier-gated items the player has seen
   const [seenItems, setSeenItems] = useState<Set<string>>(() => {
@@ -54,46 +72,87 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ tokens, coins, mpLifetim
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Cleanup pulse timer
+  useEffect(() => {
+    return () => { if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current); };
+  }, []);
+
   // Show all items (locked ones render greyed out so players see a progression curve)
   const filtered = activeCategory === 'all'
     ? SHOP_ITEMS
     : SHOP_ITEMS.filter((i) => i.category === activeCategory);
 
-  const handleBuy = (itemId: string, tokenCost: number, coinCost: number) => {
+  const handleBuy = useCallback((itemId: string, tokenCost: number, coinCost: number, e: React.MouseEvent) => {
     dispatch({ type: 'PURCHASE_ITEM', itemId, tokenCost, coinCost });
-  };
+
+    // Spawn floating cost text at click position
+    const cost = tokenCost > 0 ? tokenCost : coinCost;
+    const currency = tokenCost > 0 ? 'tokens' : 'coins';
+    const id = ++floatIdCounter;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setFloats(prev => [...prev, {
+      id,
+      text: `-${cost}`,
+      color: currency === 'tokens' ? '#fbbf24' : '#22d3ee',
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+    }]);
+    // Remove after animation
+    setTimeout(() => setFloats(prev => prev.filter(f => f.id !== id)), 1000);
+
+    // Pulse the currency counter
+    setCurrencyPulse(currency);
+    if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+    pulseTimerRef.current = setTimeout(() => setCurrencyPulse(null), 500);
+  }, [dispatch]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-900 w-full max-w-lg mx-auto p-4 pb-20">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-black text-slate-100 uppercase tracking-widest">Shop</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-amber-400 font-black text-lg flex items-center gap-1">{tokens} <img src="/assets/generated/final/icon_token.png" alt="" className="w-5 h-5 inline" style={{ imageRendering: 'pixelated' }} /></span>
-          <span className="text-cyan-400 font-black text-lg flex items-center gap-1">{coins} <img src="/assets/generated/final/icon_coin.png" alt="" className="w-5 h-5 inline" style={{ imageRendering: 'pixelated' }} /></span>
-          <GameButton variant="secondary" size="sm" onClick={onClose}>✕</GameButton>
+    <div
+      className="relative flex flex-col min-h-screen w-full max-w-lg mx-auto bg-slate-900"
+      style={{
+        backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.92)), url('/assets/generated/final/scene_shop_interior.png')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+      }}
+    >
+      {/* Sticky header — always visible while scrolling */}
+      <div className="sticky top-0 z-20 bg-slate-900/95 backdrop-blur-sm px-4 pt-4 pb-2 border-b border-slate-800/50">
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-2xl font-black text-slate-100 uppercase tracking-widest">Shop</h1>
+          <div className="flex items-center gap-4">
+            <span className={`text-amber-400 font-black text-lg flex items-center gap-1 transition-transform ${currencyPulse === 'tokens' ? 'animate-shop-spend' : ''}`}>
+              {tokens} <img src="/assets/generated/final/icon_token.png" alt="" className="w-5 h-5 inline" style={{ imageRendering: 'pixelated' }} />
+            </span>
+            <span className={`text-cyan-400 font-black text-lg flex items-center gap-1 transition-transform ${currencyPulse === 'coins' ? 'animate-shop-spend' : ''}`}>
+              {coins} <img src="/assets/generated/final/icon_coin.png" alt="" className="w-5 h-5 inline" style={{ imageRendering: 'pixelated' }} />
+            </span>
+            <GameButton variant="secondary" size="sm" onClick={onClose}>✕</GameButton>
+          </div>
+        </div>
+
+        {/* Category tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setActiveCategory(cat.id)}
+              className={`px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
+                activeCategory === cat.id
+                  ? 'bg-cyan-600 text-white'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Category tabs */}
-      <div className="flex gap-2 overflow-x-auto mb-4 pb-1">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat.id}
-            type="button"
-            onClick={() => setActiveCategory(cat.id)}
-            className={`px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
-              activeCategory === cat.id
-                ? 'bg-cyan-600 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
-      </div>
-
       {/* Item grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 p-4 pb-20">
         {filtered.map((item) => {
           const tokenCost = item.cost.tokens ?? 0;
           const coinCost = item.cost.coins ?? 0;
@@ -114,7 +173,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ tokens, coins, mpLifetim
                       ? 'bg-slate-700/50 border-slate-600 hover:bg-slate-600 hover:-translate-y-0.5 cursor-pointer'
                       : 'bg-slate-800/50 border-slate-700 opacity-50 cursor-not-allowed'
               } ${unlocked && !isNew && canAfford ? 'cursor-pointer' : ''}`}
-              onClick={() => unlocked && canAfford && handleBuy(item.id, tokenCost, coinCost)}
+              onClick={(e) => unlocked && canAfford && handleBuy(item.id, tokenCost, coinCost, e)}
             >
               {isNew && (
                 <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-lg">
@@ -154,6 +213,25 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ tokens, coins, mpLifetim
           );
         })}
       </div>
+
+      {/* Floating purchase cost text */}
+      {floats.map((f) => (
+        <div
+          key={f.id}
+          className="fixed pointer-events-none z-50 animate-shop-cost-float"
+          style={{
+            left: f.x,
+            top: f.y,
+            color: f.color,
+            fontWeight: 900,
+            fontSize: 22,
+            textShadow: '0 2px 8px rgba(0,0,0,0.6)',
+            transform: 'translateX(-50%)',
+          }}
+        >
+          {f.text}
+        </div>
+      ))}
     </div>
   );
 };

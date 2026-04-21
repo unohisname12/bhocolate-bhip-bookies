@@ -101,6 +101,10 @@ export interface ActiveBattleState {
   combo: ComboState;
   enemyIntent: EnemyIntent | null;
   focusUsedThisTurn: boolean;
+  /** When true, player entered with zero math buffs — all player damage is reduced. */
+  untrained?: boolean;
+  /** Temp +3 ATK from pre-battle warmup, consumed at battle start via playerPet.strength. */
+  warmupAtkBonus?: number;
   combatFeel?: CombatFeelState;
   pvpMeta?: {
     opponentId: string;

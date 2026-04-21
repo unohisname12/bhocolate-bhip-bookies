@@ -1,4 +1,6 @@
 import type { EngineState } from '../core/EngineTypes';
+import { createDefaultInteractionState } from '../../types/interaction';
+import { CURRENT_SEASON } from '../../config/seasonConfig';
 
 export const createInitialEngineState = (): EngineState => ({
   initialized: false,
@@ -21,7 +23,10 @@ export const createInitialEngineState = (): EngineState => ({
     activePetId: null,
     mathMastery: { arithmetic: 0, geometry: 0, fractions: 0 },
     streaks: { login: 0, correctAnswers: 0 },
-    currencies: { tokens: 100, coins: 0, mp: 0, mpLifetime: 0 },
+    currencies: { tokens: 100, coins: 0, mp: 0, mpLifetime: 0, seasonPoints: 0, shards: 0 },
+    mathBuffs: { atk: 0, def: 0, hp: 0 },
+    lifetimeMathCorrect: 0,
+    hasOnboarded: true,
     unlockedRoomItems: [],
     quizOutcome: null,
   },
@@ -97,5 +102,36 @@ export const createInitialEngineState = (): EngineState => ({
     encounteredFeatures: [],
     hintCounts: {},
     hintTimestamps: {},
+  },
+  interaction: createDefaultInteractionState(),
+  quests: {
+    lastDailyRollDate: '',
+    lastWeeklyRollWeek: '',
+    daily: [],
+    weekly: [],
+  },
+  season: {
+    activeSeasonId: CURRENT_SEASON.id,
+    points: 0,
+    claimedTiers: [],
+    titles: [],
+  },
+  cosmetics: {
+    owned: [],
+    equipped: {},
+    gachaPullsSinceRare: 0,
+    gachaPullsSinceEpic: 0,
+  },
+  dex: {
+    species: [],
+    classmateIds: [],
+  },
+  campaign: {
+    activeChapterId: null,
+    completedChapters: [],
+  },
+  seasonalEvents: {
+    participated: [],
+    progress: [],
   },
 });

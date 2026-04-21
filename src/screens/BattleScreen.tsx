@@ -228,6 +228,14 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
                 <span className="font-black text-cyan-300 uppercase tracking-wide text-sm truncate">{playerPet.name}</span>
                 <span className="text-[10px] text-slate-400 flex-shrink-0">Lv.{playerPet.level}</span>
                 <span className="text-[10px] text-slate-500 flex-shrink-0">+4/turn</span>
+                {battle.untrained && (
+                  <span
+                    className="ml-1 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded bg-amber-600/80 text-amber-50 flex-shrink-0"
+                    title="No Math Prep buffs — damage reduced. Train in Math Arena!"
+                  >
+                    Untrained
+                  </span>
+                )}
               </div>
               <div className="space-y-0.5">
                 <BattleHPBar current={playerPet.currentHP} max={playerPet.maxHP} label="HP" />

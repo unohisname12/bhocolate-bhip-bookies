@@ -31,6 +31,11 @@ export const HelpProvider: React.FC<HelpProviderProps> = ({
     setActiveTutorial(featureId);
   }, [dispatch]);
 
+  const handleReplayIntro = useCallback(() => {
+    setShowPanel(false);
+    dispatch({ type: 'SHOW_ONBOARDING' });
+  }, [dispatch]);
+
   const handleHintDone = useCallback(() => {
     setActiveHint(null);
   }, []);
@@ -48,6 +53,7 @@ export const HelpProvider: React.FC<HelpProviderProps> = ({
           encounteredFeatures={helpState.encounteredFeatures}
           onClose={() => setShowPanel(false)}
           onReplayTutorial={handleReplayTutorial}
+          onReplayIntro={handleReplayIntro}
         />
       )}
 

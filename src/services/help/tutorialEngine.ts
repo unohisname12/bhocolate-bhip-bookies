@@ -26,3 +26,12 @@ export const shouldStartTutorial = (
   const steps = getTutorialSteps(featureId);
   return steps.length > 0;
 };
+
+/** First-run onboarding gate — only fires if the player has never onboarded. */
+export const shouldStartOnboarding = (
+  hasOnboarded: boolean,
+  completedTutorials: string[],
+): boolean => {
+  if (hasOnboarded) return false;
+  return shouldStartTutorial('first-run-onboarding', completedTutorials);
+};

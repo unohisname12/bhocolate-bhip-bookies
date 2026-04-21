@@ -8,6 +8,7 @@ interface HelpPanelProps {
   encounteredFeatures: string[];
   onClose: () => void;
   onReplayTutorial: (featureId: string) => void;
+  onReplayIntro: () => void;
 }
 
 const RefEntry: React.FC<{ entry: QuickRefEntry }> = ({ entry }) => (
@@ -62,6 +63,7 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({
   encounteredFeatures,
   onClose,
   onReplayTutorial,
+  onReplayIntro,
 }) => {
   const allConfigs = getAllHelpConfigs();
   // Only show features the player has encountered
@@ -86,6 +88,15 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({
               ×
             </button>
           </div>
+
+          {/* Replay Intro — always available so players can re-watch the 5-beat tour */}
+          <button
+            onClick={onReplayIntro}
+            className="w-full mb-3 flex items-center justify-between rounded bg-indigo-600/80 hover:bg-indigo-500 px-3 py-2 text-sm font-bold text-white transition-colors"
+          >
+            <span>Replay Intro Tutorial</span>
+            <span className="text-xs opacity-80">▶</span>
+          </button>
 
           {/* Content */}
           <div className="overflow-y-auto flex-1 -mx-1 px-1">

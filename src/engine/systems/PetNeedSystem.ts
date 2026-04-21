@@ -1,13 +1,28 @@
 import type { Pet } from '../../types';
-import { DECAY_RATES, GRACE_PERIOD_MS } from '../../config/gameConfig';
+import {
+  DECAY_RATES,
+  GRACE_PERIOD_MS,
+  PET_STATE_THRESHOLDS,
+  SLEEP_DECAY_MULTIPLIER,
+} from '../../config/gameConfig';
 import { SPECIES_CONFIG } from '../../config/speciesConfig';
 
 const clamp = (value: number) => Math.min(100, Math.max(0, value));
 
+const isSleepingHour = (date: Date): boolean => {
+  const h = date.getHours();
+  const { sleepStart, sleepEnd } = PET_STATE_THRESHOLDS;
+  // sleepStart may wrap past midnight (e.g. 22..6)
+  return sleepStart <= sleepEnd
+    ? h >= sleepStart && h < sleepEnd
+    : h >= sleepStart || h < sleepEnd;
+};
+
 export const applyPetDecay = (pet: Pet, deltaMs: number): Pet => {
   if (pet.state === 'dead') return pet;
 
-  const decayFactor = deltaMs / 60000;
+  const sleepMult = isSleepingHour(new Date()) ? SLEEP_DECAY_MULTIPLIER : 1;
+  const decayFactor = (deltaMs / 60000) * sleepMult;
   const species = SPECIES_CONFIG[pet.speciesId];
   const dm = species?.decayModifiers ?? { hunger: 1, happiness: 1, cleanliness: 1, health: 1 };
 
@@ -36,6 +51,14 @@ export const applyPetDecay = (pet: Pet, deltaMs: number): Pet => {
     graceTimer = undefined;
   }
 
+  // Interaction-stat decay (optional fields — safe for old saves)
+  const newTrust = clamp((pet.trust ?? 20) - 0.5 * decayFactor);
+  const newGrooming = clamp((pet.groomingScore ?? 50) - 1.0 * decayFactor);
+  const newDiscipline = clamp((pet.discipline ?? 0) - 0.2 * decayFactor);
+  // Stress builds when needs are critically low
+  const stressGain = (newHunger < 30 || newHappiness < 20) ? 0.3 * decayFactor : 0;
+  const newStress = clamp((pet.stress ?? 0) + stressGain);
+
   return {
     ...pet,
     graceTimer,
@@ -45,6 +68,10 @@ export const applyPetDecay = (pet: Pet, deltaMs: number): Pet => {
       cleanliness: newCleanliness,
       health: newHealth,
     },
+    trust: newTrust,
+    groomingScore: newGrooming,
+    discipline: newDiscipline,
+    stress: newStress,
     timestamps: {
       ...pet.timestamps,
       lastInteraction: new Date().toISOString(),

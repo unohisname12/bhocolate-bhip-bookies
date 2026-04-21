@@ -5,6 +5,7 @@ import { momentumHelp } from './momentumHelp';
 import { petCareHelp } from './petCareHelp';
 import { navigationHelp } from './navigationHelp';
 import { mathHelp } from './mathHelp';
+import { onboardingTutorial } from './onboardingTutorial';
 
 /** Register all feature help configs. Call once at app startup. */
 export const registerAllHelp = (): void => {
@@ -14,4 +15,5 @@ export const registerAllHelp = (): void => {
   registerHelp(petCareHelp);
   registerHelp(navigationHelp);
   registerHelp(mathHelp);
+  registerHelp(onboardingTutorial);
 };

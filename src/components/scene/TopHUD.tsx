@@ -1,32 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CurrencyDisplay } from '../ui/CurrencyDisplay';
 import { getMPTier, MP_TIERS } from '../../config/mpConfig';
+import { hasAnyMathBuffs } from '../../config/mathBuffConfig';
 import type { Pet } from '../../types';
+import type { MathBuffs } from '../../types/player';
 
 interface TopHUDProps {
   pet: Pet;
   playerTokens: number;
   mp: number;
   mpLifetime: number;
+  mathBuffs?: MathBuffs;
 }
 
-export const TopHUD: React.FC<TopHUDProps> = ({ pet, playerTokens, mp, mpLifetime }) => {
+export const TopHUD: React.FC<TopHUDProps> = ({ pet, playerTokens, mp, mpLifetime, mathBuffs }) => {
   const tierName = getMPTier(mpLifetime);
   const tierConfig = MP_TIERS.find(t => t.name === tierName)!;
 
-  // Tier-up banner — track previous tier in state, schedule dismiss via setTimeout
-  const [prevTier, setPrevTier] = useState(tierName);
+  // Tier-up banner — detect tier change via useEffect to avoid setState during render
+  const prevTierRef = useRef(tierName);
   const [showTierUp, setShowTierUp] = useState(false);
   const [tierUpExiting, setTierUpExiting] = useState(false);
-  if (prevTier !== tierName) {
-    setPrevTier(tierName);
-    if (prevTier === 'bronze' && tierName === 'silver') {
-      setShowTierUp(true);
-      setTierUpExiting(false);
-      setTimeout(() => setTierUpExiting(true), 1500);
-      setTimeout(() => setShowTierUp(false), 1900);
+
+  useEffect(() => {
+    if (prevTierRef.current !== tierName) {
+      const wasBronze = prevTierRef.current === 'bronze';
+      prevTierRef.current = tierName;
+      if (wasBronze && tierName === 'silver') {
+        setShowTierUp(true);
+        setTierUpExiting(false);
+        const t1 = setTimeout(() => setTierUpExiting(true), 1500);
+        const t2 = setTimeout(() => setShowTierUp(false), 1900);
+        return () => { clearTimeout(t1); clearTimeout(t2); };
+      }
     }
-  }
+  }, [tierName]);
 
   return (
     <div className="fixed top-0 inset-x-0 z-30 pointer-events-none">
@@ -51,6 +59,26 @@ export const TopHUD: React.FC<TopHUDProps> = ({ pet, playerTokens, mp, mpLifetim
               {tierConfig.label}
             </span>
           </div>
+          {mathBuffs && hasAnyMathBuffs(mathBuffs) && (
+            <div
+              className="mt-1 rounded-lg border-2 border-amber-400/60 px-2.5 py-1 shadow-[0_0_14px_rgba(251,191,36,0.45)]"
+              style={{
+                background: 'linear-gradient(180deg, rgba(120,53,15,0.92) 0%, rgba(69,26,3,0.92) 100%)',
+              }}
+            >
+              <div className="text-[9px] font-black uppercase tracking-widest text-amber-200">
+                ⚔️ Math Prep
+              </div>
+              <div className="flex gap-2 text-[11px] font-black text-amber-100 mt-0.5">
+                {mathBuffs.atk > 0 && <span>+{mathBuffs.atk} ATK</span>}
+                {mathBuffs.def > 0 && <span>+{mathBuffs.def} DEF</span>}
+                {mathBuffs.hp > 0 && <span>+{mathBuffs.hp} HP</span>}
+              </div>
+              <div className="text-[8px] font-semibold text-amber-300/80 mt-0.5 tracking-wide">
+                applied next battle
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

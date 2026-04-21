@@ -18,12 +18,17 @@ import { InteractionVFX } from '../interaction/InteractionVFX';
 import { InteractionFeedback } from '../interaction/InteractionFeedback';
 import { CareGameOverlay } from '../care-games/CareGameOverlay';
 import { InteractionDebug } from '../interaction/InteractionDebug';
+import { CharacterPicker } from './CharacterPicker';
+import { DailyRitualCard } from './DailyRitualCard';
+import { PowerPathStrip } from './PowerPathStrip';
 import { getRoomConfig } from '../../config/roomConfig';
 import { getSceneConfig } from '../../config/sceneConfig';
 import { useSceneScale } from '../../hooks/useSceneScale';
 import { useIdleWander } from '../../hooks/useIdleWander';
 import { useHandInteraction } from '../../hooks/useHandInteraction';
 import { usePetReaction } from '../../hooks/usePetReaction';
+import { usePetOneShot } from '../../hooks/usePetOneShot';
+import { useScriptedMove } from '../../hooks/useScriptedMove';
 import { getPetIntent, resolveIntentAnimation, type PetIntent } from '../../engine/systems/PetIntentSystem';
 import { ANIMATION_DEFAULTS } from '../../config/gameConfig';
 import { createDefaultInteractionState } from '../../types/interaction';
@@ -32,6 +37,9 @@ import type { RoomId } from '../../types/room';
 import type { DailyGoals, MailboxState } from '../../types/engine';
 import type { InteractionState } from '../../types/interaction';
 import type { GameEngineAction } from '../../engine/core/ActionTypes';
+import type { CosmeticSlot } from '../../types/cosmetic';
+import type { MathBuffs } from '../../types/player';
+import type { QuestProgress } from '../../types/quest';
 
 interface GameSceneShellProps {
   pet: Pet;
@@ -39,12 +47,23 @@ interface GameSceneShellProps {
   playerTokens: number;
   mp: number;
   mpLifetime: number;
+  mathBuffs?: MathBuffs;
   dailyGoals: DailyGoals;
   ticketCount: number;
   mailbox: MailboxState;
   interaction?: InteractionState;
   dispatch: (action: GameEngineAction) => void;
   onFeed: () => void;
+  /** Icon (URL or emoji) of the last food fed — shown in pet's hand while eating. */
+  lastFoodIcon?: string | null;
+  /** Cosmetics equipped on this pet (home scene only). */
+  equippedCosmetics?: Partial<Record<CosmeticSlot, string | null>>;
+  /** Current login streak — displayed in the daily ritual card. */
+  loginStreak?: number;
+  /** Daily quest progress — drives the Power Path rows. */
+  dailyQuests?: QuestProgress[];
+  /** Whether to show the daily ritual modal on mount. */
+  showDailyRitual?: boolean;
 }
 
 /** Mailbox gives a daily reward — check if one is available today */
@@ -74,12 +93,18 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
   playerTokens,
   mp,
   mpLifetime,
+  mathBuffs,
   dailyGoals,
   ticketCount,
   mailbox,
   interaction: interactionProp,
   dispatch,
   onFeed,
+  lastFoodIcon,
+  equippedCosmetics,
+  loginStreak = 0,
+  dailyQuests = [],
+  showDailyRitual = false,
 }) => {
   const room = getRoomConfig(currentRoom);
   const scene = getSceneConfig(currentRoom);
@@ -88,6 +113,8 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
   const [debugHideUI, setDebugHideUI] = useState(false);
   const [debugSprite, setDebugSprite] = useState(false);
   const [debugInteraction, setDebugInteraction] = useState(false);
+  const [speciesOverride, setSpeciesOverride] = useState<string | null>(null);
+  const displaySpeciesId = speciesOverride ?? pet.type;
 
   const interaction = interactionProp ?? createDefaultInteractionState();
 
@@ -95,10 +122,75 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
   const intent = getPetIntent(pet);
   const animationName = resolveIntentAnimation(intent);
 
-  // Idle wander — pauses when sleeping, dead, or any care mode is active
+  // One-shot action animations (eating, happy burst, wash) + scripted
+  // walks. When a care action fires, the pet walks to the matching
+  // activity spot, plays an expressive anim, then walks home.
+  const oneShot = usePetOneShot();
+  const scripted = useScriptedMove();
+  const { moveTo: scriptedMoveTo, release: scriptedRelease } = scripted;
+  const { trigger: oneShotTrigger } = oneShot;
+
+  const activitySpots = useMemo(() => {
+    const { minX, maxX } = scene.walkBounds;
+    const range = maxX - minX;
+    return {
+      feed:  minX + range * 0.30,
+      play:  minX + range * 0.75,
+      clean: minX + range * 0.50,
+    };
+  }, [scene.walkBounds]);
+
+  // Idle wander — paused during sleep/death, care touch, one-shot anim,
+  // or scripted movement. When scripted move releases, wander resumes
+  // from the scripted final x (no teleport).
   const careActive = interaction.activeMode !== 'idle';
-  const wanderPaused = intent === 'sleep' || intent === 'dead' || careActive;
-  const { x: petX, facingLeft } = useIdleWander(scene.walkBounds, wanderPaused);
+  const wanderPaused = intent === 'sleep' || intent === 'dead' || careActive
+    || oneShot.animName !== null || scripted.x !== null;
+  const lastScriptedXRef = React.useRef<number | null>(null);
+  if (scripted.x !== null) lastScriptedXRef.current = scripted.x;
+  const wander = useIdleWander(scene.walkBounds, wanderPaused, lastScriptedXRef);
+  const petX = scripted.x ?? wander.x;
+  const facingLeft = scripted.x !== null ? scripted.facingLeft : wander.facingLeft;
+  const petXRef = React.useRef(petX);
+  petXRef.current = petX;
+
+  // Care-action watchers — walk to spot, play anim, walk back home.
+  const lastFedAtRef = React.useRef(pet.timestamps.lastFedAt);
+  const lastPlayedAtRef = React.useRef(pet.timestamps.lastPlayedAt);
+  const lastCleanedAtRef = React.useRef(pet.timestamps.lastCleanedAt);
+
+  const runActivity = React.useCallback(
+    async (targetX: number, anim: 'eating' | 'happy' | 'being_washed', holdMs: number) => {
+      const startX = petXRef.current;
+      await scriptedMoveTo(startX, targetX);
+      oneShotTrigger(anim, holdMs);
+      await new Promise<void>((resolve) => setTimeout(resolve, holdMs));
+      const { minX, maxX } = scene.walkBounds;
+      const returnX = minX + Math.random() * (maxX - minX);
+      await scriptedMoveTo(targetX, returnX);
+      scriptedRelease();
+    },
+    [scriptedMoveTo, scriptedRelease, oneShotTrigger, scene.walkBounds],
+  );
+
+  React.useEffect(() => {
+    if (pet.timestamps.lastFedAt !== lastFedAtRef.current) {
+      lastFedAtRef.current = pet.timestamps.lastFedAt;
+      void runActivity(activitySpots.feed, 'eating', 3500);
+    }
+  }, [pet.timestamps.lastFedAt, runActivity, activitySpots.feed]);
+  React.useEffect(() => {
+    if (pet.timestamps.lastPlayedAt && pet.timestamps.lastPlayedAt !== lastPlayedAtRef.current) {
+      lastPlayedAtRef.current = pet.timestamps.lastPlayedAt;
+      void runActivity(activitySpots.play, 'happy', 2500);
+    }
+  }, [pet.timestamps.lastPlayedAt, runActivity, activitySpots.play]);
+  React.useEffect(() => {
+    if (pet.timestamps.lastCleanedAt !== lastCleanedAtRef.current) {
+      lastCleanedAtRef.current = pet.timestamps.lastCleanedAt;
+      void runActivity(activitySpots.clean, 'being_washed', 2800);
+    }
+  }, [pet.timestamps.lastCleanedAt, runActivity, activitySpots.clean]);
 
   // Hand interaction system
   const hand = useHandInteraction({
@@ -118,13 +210,21 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
   // Pet reaction state machine
   const reaction = usePetReaction(interaction, pet, hand.isOverPet);
 
-  // Override animation: care mode selected → idle (waiting for touch),
-  // actively touching → care sprite, otherwise normal intent anim
-  const displayAnimName = reaction.reactionAnim
-    ? resolveIntentAnimation(reaction.reactionAnim as PetIntent)
-    : careActive
-      ? 'idle'
-      : animationName;
+  // Override animation priority:
+  //   1. One-shot action (eating, happy, being_washed) — highest
+  //   2. Scripted walking to/from an activity spot
+  //   3. Active care touch (being_petted, being_washed, ...)
+  //   4. Care mode selected but not touching — idle
+  //   5. Default intent animation
+  const displayAnimName = oneShot.animName
+    ? oneShot.animName
+    : scripted.walking
+      ? 'walking'
+      : reaction.reactionAnim
+        ? resolveIntentAnimation(reaction.reactionAnim as PetIntent)
+        : careActive
+          ? 'idle'
+          : animationName;
 
   // Interaction callbacks
   const handleInteract = useCallback((mode: typeof interaction.activeMode) => {
@@ -198,14 +298,19 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
       {/* z-20: Pet grounded on scene floor, idle-wandering */}
       <SceneStage groundY={scene.groundY} scale={scale} petX={petX} facingLeft={facingLeft}
         shadow={scene.shadowConfig} ambientTint={scene.ambientTint} footEmbed={scene.footEmbed}>
-        <PetSprite speciesId={pet.type} animationName={displayAnimName} intent={intent} needs={pet.needs}
-          scale={scene.petScale ?? ANIMATION_DEFAULTS.scale} debug={debugSprite} />
+        <PetSprite speciesId={displaySpeciesId} animationName={displayAnimName} intent={intent} needs={pet.needs}
+          scale={scene.petScale ?? ANIMATION_DEFAULTS.scale} debug={debugSprite}
+          petX={petX} reactionPhase={reaction.phase}
+          heldItemIcon={oneShot.animName === 'eating' ? lastFoodIcon ?? null : null}
+          equippedCosmetics={equippedCosmetics} />
       </SceneStage>
 
       {/* z-21: Foreground accents (overlap pet feet for depth) */}
       <SceneForegroundAccents scene={scene} scale={scale} />
 
-      {/* z-23: Pet touch zone (invisible, captures pointer events) */}
+      {/* z-23: Pet touch zone (gesture → interaction dispatcher). Pointer
+           tracking is now handled globally by the useHandInteraction hook, so
+           this component no longer attaches its own pointer handlers. */}
       <PetTouchZone
         petX={petX}
         groundY={scene.groundY}
@@ -214,17 +319,14 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
         handMode={interaction.activeMode}
         gesture={hand.gesture}
         isOverPet={hand.isOverPet}
-        onPointerDown={hand.handlePointerDown}
-        onPointerMove={hand.handlePointerMove}
-        onPointerUp={hand.handlePointerUp}
         onInteract={handleInteract}
         onInteractEnd={handleInteractEnd}
       />
 
-      {/* z-24: Floating hand cursor */}
+      {/* z-24: Floating hand cursor — position written directly to DOM via
+           ref by the hook, so mouse moves don't trigger React re-renders. */}
       <HandCursor
-        x={hand.handX}
-        y={hand.handY}
+        handRef={hand.setHandEl}
         animState={hand.handAnimState}
         isOverPet={hand.isOverPet}
         active={interaction.activeMode !== 'idle'}
@@ -262,7 +364,7 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
       {!debugHideUI && (
         <>
           {/* z-30: Top HUD */}
-          <TopHUD pet={pet} playerTokens={playerTokens} mp={mp} mpLifetime={mpLifetime} />
+          <TopHUD pet={pet} playerTokens={playerTokens} mp={mp} mpLifetime={mpLifetime} mathBuffs={mathBuffs} />
 
           {/* z-35: Info drawer (collapsible status panel) */}
           <InfoDrawer pet={pet} dailyGoals={dailyGoals} />
@@ -298,10 +400,20 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
             onArena={() => dispatch({ type: 'SET_SCREEN', screen: 'class_roster' })}
             onNumberMerge={() => dispatch({ type: 'SET_SCREEN', screen: 'number_merge' })}
             onMomentum={() => dispatch({ type: 'START_MOMENTUM' })}
+            onCatchMath={() => dispatch({ type: 'SET_SCREEN', screen: 'catch_math' })}
             onDungeon={() => dispatch({ type: 'SET_SCREEN', screen: 'run_start' })}
             onCare={() => dispatch({ type: 'SET_SCREEN', screen: 'pet_care' })}
           />
         </>
+      )}
+
+      {/* z-60: Character picker (dev preview) */}
+      {!debugHideUI && (
+        <CharacterPicker
+          currentSpeciesId={displaySpeciesId}
+          hasOverride={speciesOverride !== null}
+          onSelect={setSpeciesOverride}
+        />
       )}
 
       {/* z-100: Interaction debug panel (toggle with I key) */}
@@ -321,6 +433,28 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
           reward={mailReward}
           onClaim={handleMailboxClaim}
           onClose={handleMailboxClose}
+        />
+      )}
+
+      {/* Power Path strip — persistent slim progress chip */}
+      {!debugHideUI && dailyQuests.length > 0 && (
+        <div className="fixed top-16 right-3 z-30 w-[200px] pointer-events-auto">
+          <PowerPathStrip dailyQuests={dailyQuests} />
+        </div>
+      )}
+
+      {/* z-60: Daily ritual modal — shown once per new day */}
+      {showDailyRitual && (
+        <DailyRitualCard
+          loginStreak={loginStreak}
+          dailyQuests={dailyQuests}
+          mathBuffs={mathBuffs ?? { atk: 0, def: 0, hp: 0 }}
+          onDismiss={() => dispatch({ type: 'DISMISS_DAILY_RITUAL' })}
+          onChoose={(mode) => {
+            if (mode === 'math') dispatch({ type: 'SET_SCREEN', screen: 'math' });
+            else if (mode === 'momentum') dispatch({ type: 'SET_SCREEN', screen: 'momentum' });
+            else dispatch({ type: 'SET_SCREEN', screen: 'number_merge' });
+          }}
         />
       )}
     </div>

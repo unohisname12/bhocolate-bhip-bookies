@@ -112,9 +112,77 @@ const migrations: Record<number, Migration> = {
         }
       : state.run ?? { active: false },
   }),
+  // v9 → v10: add pet interaction system state
+  9: (state) => ({
+    ...state,
+    interaction: state.interaction ?? {
+      activeMode: 'idle',
+      isInteracting: false,
+      currentInteractionStart: null,
+      streak: { count: 0, lastInteractionTime: 0, lastMode: 'idle' },
+      cooldowns: { idle: 0, pet: 0, wash: 0, brush: 0, comfort: 0, train: 0, play: 0 },
+      usageCounts: { idle: 0, pet: 0, wash: 0, brush: 0, comfort: 0, train: 0, play: 0 },
+      unlockedTools: ['pet', 'comfort', 'play'],
+      equippedToolTiers: { idle: 0, pet: 0, wash: 0, brush: 0, comfort: 0, train: 0, play: 0 },
+      lastReactionText: null,
+      petResponseAnim: null,
+    },
+  }),
+  // v10 → v11: add quests, season pass, cosmetics, dex, campaign, events
+  // + new currencies (seasonPoints, shards)
+  10: (state) => ({
+    ...state,
+    player: {
+      ...state.player,
+      currencies: {
+        ...state.player.currencies,
+        seasonPoints: state.player?.currencies?.seasonPoints ?? 0,
+        shards: state.player?.currencies?.shards ?? 0,
+      },
+    },
+    quests: state.quests ?? {
+      lastDailyRollDate: '',
+      lastWeeklyRollWeek: '',
+      daily: [],
+      weekly: [],
+    },
+    season: state.season ?? {
+      activeSeasonId: 'season_1_cozy',
+      points: 0,
+      claimedTiers: [],
+      titles: [],
+    },
+    cosmetics: state.cosmetics ?? {
+      owned: [],
+      equipped: {},
+      gachaPullsSinceRare: 0,
+      gachaPullsSinceEpic: 0,
+    },
+    dex: state.dex ?? { species: [], classmateIds: [] },
+    campaign: state.campaign ?? { activeChapterId: null, completedChapters: [] },
+    seasonalEvents: state.seasonalEvents ?? { participated: [], progress: [] },
+  }),
+  // v11 → v12: add mathBuffs + lifetimeMathCorrect (math-to-battle prep loop)
+  11: (state) => ({
+    ...state,
+    player: {
+      ...state.player,
+      mathBuffs: state.player?.mathBuffs ?? { atk: 0, def: 0, hp: 0 },
+      lifetimeMathCorrect: state.player?.lifetimeMathCorrect ?? 0,
+    },
+  }),
+  // v12 → v13: add hasOnboarded (first-run tutorial flag). Existing saves
+  // already played, so default true to skip onboarding.
+  12: (state) => ({
+    ...state,
+    player: {
+      ...state.player,
+      hasOnboarded: state.player?.hasOnboarded ?? true,
+    },
+  }),
 };
 
-export const CURRENT_SAVE_VERSION = 9;
+export const CURRENT_SAVE_VERSION = 13;
 
 export const migrate = (data: SaveData): EngineState => {
   let { state, version } = data;

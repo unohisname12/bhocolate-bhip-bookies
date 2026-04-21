@@ -28,6 +28,10 @@ export const MOMENTUM_REWARDS = {
   baseTokens: 30,
   perTurnBonus: 2,
   baseXP: 20,
+  /** Shards are the dedicated reward — Momentum = shard farm. */
+  baseShards: 5,
+  /** Harder difficulties give more shards; indexed by MomentumDifficulty. */
+  difficultyShardBonus: { easy: 0, medium: 2, hard: 5 } as const,
 } as const;
 
 export const STARTING_COLUMNS = [0, 2, 4] as const;

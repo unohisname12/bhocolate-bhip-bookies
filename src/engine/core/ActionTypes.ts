@@ -5,6 +5,7 @@ import type { TraceTier } from '../../types/trace';
 import type { DevToolsAction } from '../../devtools/devToolsActions';
 import type { FlashChoice, FusionTarget, MomentumDifficulty } from '../../types/momentum';
 import type { HandMode } from '../../types/interaction';
+import type { CosmeticSlot } from '../../types/cosmetic';
 
 export type GameEngineAction =
   | { type: 'START_ENGINE' }
@@ -46,6 +47,7 @@ export type GameEngineAction =
   | { type: 'CHECK_DAILY_GOALS' }
   | { type: 'START_BATTLE' }
   | { type: 'START_BATTLE_WITH_CHARACTER'; speciesId: string }
+  | { type: 'RESOLVE_WARMUP'; correct: boolean; skipped?: boolean }
   | { type: 'PLAYER_MOVE'; moveId: string }
   | { type: 'MATH_BONUS_CORRECT' }
   | { type: 'END_BATTLE' }
@@ -83,6 +85,7 @@ export type GameEngineAction =
   | { type: 'MOMENTUM_SKIP_TURN' }
   | { type: 'MOMENTUM_FLASH_CHOICE'; choice: FlashChoice; fusionTarget?: FusionTarget }
   | { type: 'MOMENTUM_ANIMATION_DONE' }
+  | { type: 'MOMENTUM_AI_EXECUTE' }
   | { type: 'END_MOMENTUM' }
   // Help system
   | { type: 'HELP_START_TUTORIAL'; featureId: string }
@@ -91,6 +94,10 @@ export type GameEngineAction =
   | { type: 'HELP_SKIP_TUTORIAL'; featureId: string }
   | { type: 'HELP_ENCOUNTER_FEATURE'; featureId: string }
   | { type: 'HELP_SHOW_HINT'; hintId: string }
+  | { type: 'COMPLETE_ONBOARDING' }
+  | { type: 'SHOW_ONBOARDING' }
+  | { type: 'DISMISS_DAILY_RITUAL' }
+  | { type: 'SHOW_DAILY_RITUAL' }
   // Roguelike Run
   | { type: 'START_RUN' }
   | { type: 'SELECT_RUN_ENCOUNTER' }
@@ -111,5 +118,20 @@ export type GameEngineAction =
   | { type: 'UNLOCK_INTERACTION'; mode: HandMode }
   | { type: 'UPGRADE_TOOL_TIER'; mode: HandMode; tier: number }
   | { type: 'CARE_GAME_COMPLETE'; mode: HandMode; quality: number }
+  // Quests
+  | { type: 'REFRESH_QUESTS' }
+  | { type: 'CLAIM_QUEST'; templateId: string }
+  // Season Pass
+  | { type: 'CLAIM_SEASON_TIER'; tier: number }
+  // Gacha / Cosmetics
+  | { type: 'GACHA_PULL' }
+  | { type: 'GACHA_CRAFT'; craftId: string }
+  | { type: 'EQUIP_COSMETIC'; petId: string; cosmeticId: string | null }
+  | { type: 'UNEQUIP_COSMETIC_SLOT'; petId: string; slot: CosmeticSlot }
+  // Power Forge (MP sink)
+  | { type: 'BUY_FORGE_UPGRADE'; upgradeId: import('../../config/powerForgeConfig').PowerForgeUpgradeId }
+  // Dex (phase 2 foundation)
+  | { type: 'DEX_MARK_SEEN'; speciesId: string }
+  | { type: 'DEX_MARK_OWNED'; speciesId: string }
   | DevToolsAction
   ;

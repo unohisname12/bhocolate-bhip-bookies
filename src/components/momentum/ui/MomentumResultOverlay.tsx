@@ -32,7 +32,7 @@ export const MomentumResultOverlay: React.FC<MomentumResultOverlayProps> = ({ st
         {isVictory && state.rewards && (
           <div className="bg-slate-800/50 rounded-lg p-3 mb-4 border border-slate-700/30">
             <div className="text-xs text-slate-500 uppercase font-bold mb-2">Rewards</div>
-            <div className="flex justify-center gap-6">
+            <div className="flex justify-center gap-6 flex-wrap">
               <div>
                 <span className="text-amber-400 font-bold text-lg">{state.rewards.tokens}</span>
                 <span className="text-slate-400 text-xs block">tokens</span>
@@ -41,6 +41,12 @@ export const MomentumResultOverlay: React.FC<MomentumResultOverlayProps> = ({ st
                 <span className="text-purple-400 font-bold text-lg">{state.rewards.xp}</span>
                 <span className="text-slate-400 text-xs block">XP</span>
               </div>
+              {state.rewards.shards !== undefined && state.rewards.shards > 0 && (
+                <div>
+                  <span className="text-cyan-300 font-bold text-lg">{state.rewards.shards}</span>
+                  <span className="text-slate-400 text-xs block">shards 💎</span>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -3,7 +3,8 @@ import { evaluatePetMood } from '../systems/MoodSystem';
 import { addItem, removeItem } from '../systems/InventorySystem';
 import { placeItem, removeRoomItem, changeBackground, calculateRoomMoodBonus } from '../systems/RoomSystem';
 import { checkAchievements } from '../systems/AchievementSystem';
-import { initBattle, initBattleWithSpecies, initPvPBattle, executePlayerMove, executeEnemyTurn, resolveRound, executeFocus, executeDefendAction, attemptFlee } from '../systems/BattleSystem';
+import { initBattle, initBattleWithSpecies, initPvPBattle, executePlayerMove, executeEnemyTurn, resolveRound, executeFocus, executeDefendAction, attemptFlee, applyMathBuffsToBattle, applyPowerForgeToBattle } from '../systems/BattleSystem';
+import { EMPTY_MATH_BUFFS } from '../../config/mathBuffConfig';
 import { BATTLE_CONSTANTS } from '../../config/battleConfig';
 import { checkLoginStreak, updateMathStreak, updateMastery } from '../systems/StreakSystem';
 import { generateClassroom, refreshNPCClassmates } from '../systems/ClassroomSimulator';
@@ -18,6 +19,7 @@ import { PVP_CONFIG } from '../../config/pvpConfig';
 import { EGG_CONFIG, CARE_ACTIONS, HINT_COST } from '../../config/gameConfig';
 import { SHOP_ITEMS } from '../../config/shopConfig';
 import { MP_EARN } from '../../config/mpConfig';
+import { MATH_BUFF_PER_CORRECT, addMathBuffs } from '../../config/mathBuffConfig';
 import { startRun, startRunBattle, handleRunVictory, handleRunDefeat, selectRunReward, endRun, selectMapNode, handleRestLight, handleRestStabilize, handleRestFortify, handleEventChoice } from '../systems/RunSystem';
 import { applyTurnStartEffects, applyPostPlayerAttack, applyPostEnemyAttack, applyFortifiedReduction, checkPhaseShift } from '../systems/RunPassiveEffects';
 import { createCombatFeelState, afterPlayerAttack as cfAfterPlayerAttack, afterEnemyAttack as cfAfterEnemyAttack, onTurnStart as cfOnTurnStart, afterTrace as cfAfterTrace, shouldTriggerCollapse, triggerCollapse, resolveCollapse, applyReflect } from '../systems/CombatFeelSystem';
@@ -26,9 +28,15 @@ import type { ActiveBattleState } from '../../types/battle';
 import type { GameEngineAction } from '../core/ActionTypes';
 import type { BattleTicket } from '../../types/battleTicket';
 import type { MatchResult } from '../../types/matchResult';
-import { canInteract as canInteractCheck, applyInteraction as applyInteractionFn, endInteraction as endInteractionFn, resetDailyUsage as resetInteractionUsage } from '../systems/InteractionSystem';
+import { canInteract as canInteractCheck, applyInteraction as applyInteractionFn, endInteraction as endInteractionFn, resetDailyUsage as resetInteractionUsage, getPetResponseAnim as getPetResponseAnimFn } from '../systems/InteractionSystem';
 import { createDefaultInteractionState } from '../../types/interaction';
 import { getCareToolById } from '../../config/careToolConfig';
+import { rollQuestsIfNeeded, progressOnEvent as questProgressOnEvent, progressOnSnapshot as questProgressOnSnapshot, claimQuest } from '../systems/QuestSystem';
+import { claimTier as claimSeasonTier } from '../systems/SeasonSystem';
+import { gachaPull, gachaCraftWithShards, equipCosmetic, unequipSlot } from '../systems/GachaSystem';
+import { POWER_FORGE_UPGRADES, nextForgeCost, computeForgeBonuses } from '../../config/powerForgeConfig';
+import { markSeen as dexMarkSeen, markOwned as dexMarkOwned } from '../systems/DexSystem';
+import type { GameEventType } from '../../types/events';
 
 const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -79,7 +87,11 @@ const logEvent = (state: EngineState, eventType: string, payload?: Record<string
   };
   const events = [...state.events, event].slice(-500);
   const withEvent = { ...state, events };
-  return checkAchievements(withEvent).state;
+  const afterAchievements = checkAchievements(withEvent).state;
+  // Quest progress hook: increment any active quest targeting this event,
+  // then re-evaluate snapshot quests (bond/level/streak/distinct-*).
+  const afterQuestEvent = questProgressOnEvent(afterAchievements, eventType as GameEventType);
+  return questProgressOnSnapshot(afterQuestEvent);
 };
 
 const todayISO = (): string => new Date().toISOString().slice(0, 10);
@@ -203,14 +215,14 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       const afterDeduct = deductTokens(state, action.food.cost);
       let pet = evaluatePetMood(applyPetFeed(state.pet, action.food.nutrition));
       pet = { ...pet, bond: pet.bond + REWARD_CONFIG.careAction.bondIncrease };
-      const { canEvolve } = checkEvolution(pet);
-      if (canEvolve) pet = evolvePet(pet);
+      const { canEvolve } = checkEvolution(pet, state.player.lifetimeMathCorrect);
+      if (canEvolve) pet = evolvePet(pet, state.player.lifetimeMathCorrect);
       let result: EngineState = { ...afterDeduct, pet };
       // Track care-toward-ticket
       const feedCare = { ...result.battleTickets.careActionsToday, fed: true };
       result = { ...result, battleTickets: { ...result.battleTickets, careActionsToday: feedCare } };
       if (feedCare.fed && feedCare.cleaned && feedCare.played) result = earnTicket(result, 'care');
-      result = logEvent(result, 'pet_fed');
+      result = logEvent(result, 'pet_fed', { foodId: action.food.id });
       if (canEvolve) result = logEvent(result, 'pet_evolved');
       return result;
     }
@@ -219,8 +231,8 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       const afterDeduct = deductTokens(state, CARE_ACTIONS.clean.cost);
       let pet = evaluatePetMood(applyPetClean(state.pet, CARE_ACTIONS.clean.impact));
       pet = { ...pet, bond: pet.bond + REWARD_CONFIG.careAction.bondIncrease };
-      const { canEvolve } = checkEvolution(pet);
-      if (canEvolve) pet = evolvePet(pet);
+      const { canEvolve } = checkEvolution(pet, state.player.lifetimeMathCorrect);
+      if (canEvolve) pet = evolvePet(pet, state.player.lifetimeMathCorrect);
       let result: EngineState = { ...afterDeduct, pet };
       const cleanCare = { ...result.battleTickets.careActionsToday, cleaned: true };
       result = { ...result, battleTickets: { ...result.battleTickets, careActionsToday: cleanCare } };
@@ -234,8 +246,8 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       const afterDeduct = deductTokens(state, CARE_ACTIONS.play.cost);
       let pet = evaluatePetMood(applyPetPlay(state.pet, CARE_ACTIONS.play.impact));
       pet = { ...pet, bond: pet.bond + REWARD_CONFIG.careAction.bondIncrease };
-      const { canEvolve } = checkEvolution(pet);
-      if (canEvolve) pet = evolvePet(pet);
+      const { canEvolve } = checkEvolution(pet, state.player.lifetimeMathCorrect);
+      if (canEvolve) pet = evolvePet(pet, state.player.lifetimeMathCorrect);
       let result: EngineState = { ...afterDeduct, pet };
       const playCare = { ...result.battleTickets.careActionsToday, played: true };
       result = { ...result, battleTickets: { ...result.battleTickets, careActionsToday: playCare } };
@@ -249,8 +261,8 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       const afterDeduct = deductTokens(state, CARE_ACTIONS.heal.cost);
       let pet = evaluatePetMood(applyMoodBoost(state.pet, CARE_ACTIONS.heal.impact));
       pet = { ...pet, bond: pet.bond + REWARD_CONFIG.careAction.bondIncrease };
-      const { canEvolve } = checkEvolution(pet);
-      if (canEvolve) pet = evolvePet(pet);
+      const { canEvolve } = checkEvolution(pet, state.player.lifetimeMathCorrect);
+      if (canEvolve) pet = evolvePet(pet, state.player.lifetimeMathCorrect);
       let result: EngineState = { ...afterDeduct, pet };
       result = logEvent(result, 'pet_healed');
       if (canEvolve) result = logEvent(result, 'pet_evolved');
@@ -280,21 +292,33 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
         },
       };
       if (!action.correct) return { ...state, player: playerWithMP };
+      // Correct answer — accumulate battle-prep buffs + lifetime counter
+      const playerWithBuffs = {
+        ...playerWithMP,
+        mathBuffs: addMathBuffs(playerWithMP.mathBuffs, MATH_BUFF_PER_CORRECT),
+        lifetimeMathCorrect: playerWithMP.lifetimeMathCorrect + 1,
+      };
       const xpGain = action.difficulty * 5;
-      const petWithXP = state.pet ? addXP(state.pet, xpGain) : state.pet;
+      let petWithXP = state.pet ? addXP(state.pet, xpGain) : state.pet;
+      // Math-to-bond link: every correct answer grows the pet's bond (+1).
+      if (petWithXP) {
+        petWithXP = { ...petWithXP, bond: petWithXP.bond + 1 };
+      }
       const newMathSolved = state.dailyGoals.mathSolved + 1;
       const mathGoalJustMet = newMathSolved === DAILY_MATH_GOAL;
       // Track math-toward-ticket
       const mathForTicket = state.battleTickets.mathForNextTicket + 1;
       const ticketEarned = mathForTicket >= PVP_CONFIG.mathProblemsPerTicket;
+      const forgeMathMult = computeForgeBonuses(state.player.powerForge).mathRewardMult;
+      const forgedReward = Math.round(action.reward * forgeMathMult);
       let solveResult: EngineState = {
         ...state,
         pet: petWithXP,
         player: {
-          ...playerWithMP,
+          ...playerWithBuffs,
           currencies: {
-            ...playerWithMP.currencies,
-            tokens: playerWithMP.currencies.tokens + action.reward,
+            ...playerWithBuffs.currencies,
+            tokens: playerWithBuffs.currencies.tokens + forgedReward,
           },
         },
         dailyGoals: { ...state.dailyGoals, mathSolved: newMathSolved },
@@ -328,20 +352,50 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
           ...state.notifications,
           { id: `login_${Date.now()}`, message: `Day ${streak} streak! +${reward} tokens`, icon: '/assets/generated/final/icon_streak_flame.png', timestamp: Date.now() },
         ],
+        // Reveal the Power Path modal once per new day — only if onboarding
+        // is complete (don't stack it on top of the first-run tutorial).
+        showDailyRitual: state.player.hasOnboarded ? true : state.showDailyRitual,
       };
     }
     case 'CHECK_DAILY_GOALS': {
       const today = todayISO();
       if (state.dailyGoals.date === today) return state; // already today's goals
+      // Math-absence penalty: if yesterday had real play (date was set) but zero math, pet sulks.
+      const missedMath = !!state.dailyGoals.date
+        && state.dailyGoals.date !== today
+        && state.dailyGoals.mathSolved === 0;
+      let pet = state.pet;
+      let notifications = state.notifications;
+      if (missedMath && pet) {
+        pet = {
+          ...pet,
+          bond: Math.max(0, pet.bond - 1),
+          needs: {
+            ...pet.needs,
+            happiness: Math.max(0, pet.needs.happiness - 5),
+          },
+        };
+        notifications = [
+          ...notifications,
+          {
+            id: `miss_math_${Date.now()}`,
+            message: 'Your pet missed you — do some math today.',
+            icon: '/assets/generated/final/icon_math_generic.png',
+            timestamp: Date.now(),
+          },
+        ];
+      }
       // Reset daily ticket counters and refresh NPC classmates
       const daysSinceRefresh = state.classroom.lastRosterRefresh
         ? Math.max(0, Math.floor((Date.now() - new Date(state.classroom.lastRosterRefresh).getTime()) / 86400000))
         : 0;
       const refreshedClassmates = daysSinceRefresh > 0 && state.classroom.classmates.length > 0
-        ? refreshNPCClassmates(state.classroom.classmates, state.pet?.progression.level ?? 1, daysSinceRefresh)
+        ? refreshNPCClassmates(state.classroom.classmates, pet?.progression.level ?? 1, daysSinceRefresh)
         : state.classroom.classmates;
       return {
         ...state,
+        pet,
+        notifications,
         dailyGoals: { date: today, mathSolved: 0, battlesWon: 0, rewardClaimed: false },
         battleTickets: {
           ...state.battleTickets,
@@ -414,7 +468,9 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
     case 'ADD_XP':
       return state.pet ? { ...state, pet: addXP(state.pet, action.amount) } : state;
     case 'EVOLVE_PET':
-      return state.pet ? { ...state, pet: evolvePet(state.pet) } : state;
+      return state.pet
+        ? { ...state, pet: evolvePet(state.pet, state.player.lifetimeMathCorrect) }
+        : state;
     case 'PLACE_ROOM_ITEM': {
       const updatedRoom = placeItem(state.room, action.itemId, action.position);
       return { ...state, room: { ...updatedRoom, moodBonus: calculateRoomMoodBonus(updatedRoom) } };
@@ -460,16 +516,57 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       return { ...state, notifications: state.notifications.filter((n) => n.id !== action.id) };
     case 'START_BATTLE': {
       if (!state.pet || state.pet.state === 'sick' || state.pet.state === 'dead') return state;
-      // Unready pet faces a tougher enemy (enemy level +2)
-      const ready = isPetBattleReady(state.pet);
-      const battle = initBattle(state.pet, ready ? 0 : 2);
-      return { ...state, battle: { ...battle, combatFeel: createCombatFeelState() }, screen: 'battle' };
+      // Math-gate #2: queue a warmup question before the wild battle begins.
+      return { ...state, pendingBattleWarmup: { kind: 'wild' } };
     }
     // DEV: Start battle with a specific species (pre-combat character picker)
     case 'START_BATTLE_WITH_CHARACTER': {
-      const level = state.pet?.progression.level ?? 5;
-      const battle = initBattleWithSpecies(action.speciesId, level);
-      return { ...state, battle: { ...battle, combatFeel: createCombatFeelState() }, screen: 'battle' };
+      return {
+        ...state,
+        pendingBattleWarmup: { kind: 'character', speciesId: action.speciesId },
+      };
+    }
+    case 'RESOLVE_WARMUP': {
+      const pending = state.pendingBattleWarmup;
+      if (!pending) return state;
+      const warmupBonus = action.correct && !action.skipped ? 3 : 0;
+      let baseBattle: ActiveBattleState | null = null;
+      if (pending.kind === 'wild') {
+        if (!state.pet) return { ...state, pendingBattleWarmup: null };
+        const ready = isPetBattleReady(state.pet);
+        baseBattle = initBattle(state.pet, ready ? 0 : 2);
+      } else {
+        const level = state.pet?.progression.level ?? 5;
+        baseBattle = initBattleWithSpecies(pending.speciesId ?? 'default', level);
+      }
+      if (warmupBonus > 0) {
+        baseBattle = {
+          ...baseBattle,
+          playerPet: {
+            ...baseBattle.playerPet,
+            strength: baseBattle.playerPet.strength + warmupBonus,
+          },
+          warmupAtkBonus: warmupBonus,
+          log: [
+            ...baseBattle.log,
+            {
+              turn: 0,
+              actor: 'player',
+              action: 'math_prep',
+              message: `Warmup correct! +${warmupBonus} ATK for this fight.`,
+            },
+          ],
+        };
+      }
+      const forged = applyPowerForgeToBattle(baseBattle, state.player.powerForge);
+      const battle = applyMathBuffsToBattle(forged, state.player.mathBuffs);
+      return {
+        ...state,
+        pendingBattleWarmup: null,
+        player: { ...state.player, mathBuffs: EMPTY_MATH_BUFFS },
+        battle: { ...battle, combatFeel: createCombatFeelState() },
+        screen: 'battle',
+      };
     }
     case 'PLAYER_MOVE': {
       if (!state.battle.active || state.battle.phase !== 'player_turn') return state;
@@ -1116,27 +1213,27 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
     }
     case 'MOMENTUM_ANIMATION_DONE': {
       if (!state.momentum.active) return state;
-      let momentum = advanceAfterAnimation(state.momentum);
+      const momentum = advanceAfterAnimation(state.momentum);
+      // Leave the UI on `ai_turn` — MomentumScreen will dispatch
+      // MOMENTUM_AI_EXECUTE after a short delay so the "Enemy Turn" banner
+      // can land before the enemy moves.
+      return { ...state, momentum };
+    }
+    case 'MOMENTUM_AI_EXECUTE': {
+      if (!state.momentum.active) return state;
+      if (state.momentum.phase !== 'ai_turn') return state;
 
-      // If it's AI's turn after animation, execute AI move
-      if (momentum.phase === 'ai_turn') {
-        // resolveCombat may leave activeTeam stale — ensure it's 'enemy'
-        // so selectPiece accepts enemy pieces
-        momentum = { ...momentum, activeTeam: 'enemy' };
-        const aiAction = selectAIAction(momentum);
-        if (aiAction) {
-          // Select the AI's piece and compute valid moves
-          momentum = selectPiece(momentum, aiAction.pieceId);
-          // Execute the move
-          momentum = beginMove(momentum, aiAction.moveIndex);
-          // Set phase to animating_ai so UI can show the animation
-          momentum = { ...momentum, phase: 'animating_ai' };
-        } else {
-          // AI has no valid moves, skip
-          momentum = skipTurn(momentum);
-        }
+      // resolveCombat may leave activeTeam stale — ensure it's 'enemy'
+      // so selectPiece accepts enemy pieces
+      let momentum = { ...state.momentum, activeTeam: 'enemy' as const };
+      const aiAction = selectAIAction(momentum);
+      if (aiAction) {
+        momentum = selectPiece(momentum, aiAction.pieceId);
+        momentum = beginMove(momentum, aiAction.moveIndex);
+        momentum = { ...momentum, phase: 'animating_ai' };
+      } else {
+        momentum = skipTurn(momentum);
       }
-
       return { ...state, momentum };
     }
     case 'END_MOMENTUM': {
@@ -1153,6 +1250,7 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
           currencies: {
             ...state.player.currencies,
             tokens: state.player.currencies.tokens + mRewards.tokens,
+            shards: state.player.currencies.shards + (mRewards.shards ?? 0),
           },
         } : state.player,
       };
@@ -1208,6 +1306,38 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
         },
       };
     }
+    case 'COMPLETE_ONBOARDING': {
+      const alreadyCompleted = state.player.hasOnboarded && !state.showOnboarding;
+      if (alreadyCompleted) return state;
+      const firstTime = !state.player.hasOnboarded;
+      return {
+        ...state,
+        showOnboarding: false,
+        player: {
+          ...state.player,
+          hasOnboarded: true,
+          currencies: firstTime
+            ? { ...state.player.currencies, tokens: state.player.currencies.tokens + 50 }
+            : state.player.currencies,
+        },
+      };
+    }
+    case 'SHOW_ONBOARDING': {
+      const ONBOARDING_ID = 'first-run-onboarding';
+      return {
+        ...state,
+        showOnboarding: true,
+        player: { ...state.player, hasOnboarded: false },
+        help: {
+          ...state.help,
+          completedTutorials: state.help.completedTutorials.filter((id) => id !== ONBOARDING_ID),
+        },
+      };
+    }
+    case 'SHOW_DAILY_RITUAL':
+      return { ...state, showDailyRitual: true };
+    case 'DISMISS_DAILY_RITUAL':
+      return { ...state, showDailyRitual: false };
     case 'DEV_SET_NEEDS':
       return state.pet
         ? {
@@ -1254,18 +1384,24 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       const interaction = state.interaction ?? createDefaultInteractionState();
       const check = canInteractCheck(state.pet, action.mode, interaction, state.player.currencies.tokens);
       if (!check.allowed) return state;
-      const result = applyInteractionFn(state.pet, action.mode, interaction);
-      let next: EngineState = {
+      // Don't apply stats yet — the care mini-game will do that via CARE_GAME_COMPLETE.
+      // Just mark interaction as active so the game overlay mounts.
+      return {
         ...state,
-        pet: result.pet,
-        interaction: result.interactionState,
+        interaction: {
+          ...interaction,
+          isInteracting: true,
+          careGameActive: true,
+          currentInteractionStart: Date.now(),
+          activeMode: action.mode,
+          petResponseAnim: action.mode !== 'idle' ? getPetResponseAnimFn(action.mode) : null,
+        },
       };
-      if (result.tokenCost > 0) next = deductTokens(next, result.tokenCost);
-      next = logEvent(next, 'pet_interaction', { mode: action.mode, quality: result.quality });
-      return next;
     }
     case 'END_PET_INTERACTION': {
       const interaction = state.interaction ?? createDefaultInteractionState();
+      // Don't end if a care game is still active — CARE_GAME_COMPLETE handles cleanup.
+      if (interaction.careGameActive) return state;
       return { ...state, interaction: endInteractionFn(interaction) };
     }
     case 'CARE_GAME_COMPLETE': {
@@ -1321,6 +1457,59 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
         },
       };
     }
+
+    // ---------- Quests ----------
+    case 'REFRESH_QUESTS':
+      return rollQuestsIfNeeded(state);
+    case 'CLAIM_QUEST':
+      return claimQuest(state, action.templateId);
+
+    // ---------- Season Pass ----------
+    case 'CLAIM_SEASON_TIER':
+      return claimSeasonTier(state, action.tier);
+
+    // ---------- Gacha / Cosmetics ----------
+    case 'GACHA_PULL':
+      return gachaPull(state).state;
+    case 'GACHA_CRAFT':
+      return gachaCraftWithShards(state, action.craftId).state;
+    case 'EQUIP_COSMETIC':
+      return equipCosmetic(state, action.petId, action.cosmeticId);
+    case 'UNEQUIP_COSMETIC_SLOT':
+      return unequipSlot(state, action.petId, action.slot);
+
+    // ---------- Power Forge (MP sink) ----------
+    case 'BUY_FORGE_UPGRADE': {
+      const upgrade = POWER_FORGE_UPGRADES.find((u) => u.id === action.upgradeId);
+      if (!upgrade) return state;
+      const forge = state.player.powerForge ?? {};
+      const currentLevel = forge[upgrade.id] ?? 0;
+      const cost = nextForgeCost(upgrade, currentLevel);
+      if (cost === null || state.player.currencies.mp < cost) return state;
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          currencies: { ...state.player.currencies, mp: state.player.currencies.mp - cost },
+          powerForge: { ...forge, [upgrade.id]: currentLevel + 1 },
+        },
+        notifications: [
+          ...state.notifications,
+          {
+            id: `forge_${upgrade.id}_${Date.now()}`,
+            message: `Forged ${upgrade.label} L${currentLevel + 1}!`,
+            icon: upgrade.icon,
+            timestamp: Date.now(),
+          },
+        ],
+      };
+    }
+
+    // ---------- Dex (foundation) ----------
+    case 'DEX_MARK_SEEN':
+      return dexMarkSeen(state, action.speciesId);
+    case 'DEX_MARK_OWNED':
+      return dexMarkOwned(state, action.speciesId);
 
     default:
       return state;

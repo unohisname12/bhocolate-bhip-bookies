@@ -7,6 +7,14 @@ import { computeSpriteStyle } from '../../engine/animation/SpriteRenderer';
 import type { AnimationName, SpriteSheetConfig } from '../../engine/animation/types';
 import type { PetIntent } from '../../engine/systems/PetIntentSystem';
 import type { PetNeeds } from '../../types';
+import { usePetMotion } from '../../hooks/usePetMotion';
+import { AccessoryLayer } from './AccessoryLayer';
+import type { CosmeticSlot } from '../../types/cosmetic';
+
+// Proof-of-concept motion layer targets Blue Koala only. If pet.type
+// maps to this species, we wire the motion hook; otherwise the pet
+// renders unchanged.
+const BLUE_KOALA_IDS = new Set(['koala_sprite', 'blue_koala']);
 
 interface PetSpriteProps {
   speciesId: string;
@@ -21,7 +29,61 @@ interface PetSpriteProps {
   className?: string;
   /** Show debug overlay with intent + animation name + needs */
   debug?: boolean;
+  /** Current X in native px — used by motion layer for tilt. */
+  petX?: number;
+  /** Care interaction phase — motion layer pulses on edges. */
+  reactionPhase?: 'idle' | 'anticipation' | 'reacting' | 'afterglow';
+  /** Icon (image URL or emoji glyph) to render in the pet's hand. */
+  heldItemIcon?: string | null;
+  /** Equipped cosmetics keyed by slot. Omit to render pet without cosmetics
+   *  (e.g. battle screen). */
+  equippedCosmetics?: Partial<Record<CosmeticSlot, string | null>>;
 }
+
+/**
+ * Renders a small food/item sprite at the pet's hands/mouth so the player
+ * can see what the pet is eating. Sized small enough to read as "held"
+ * (not a floating billboard) and bobs toward the mouth on each chomp.
+ */
+const HeldItem: React.FC<{ icon: string; scale: number }> = ({ icon, scale }) => {
+  // Native pet frame is 128px. Hands sit ~45% from bottom; keep item
+  // ~24px native (fits in pet's paws). Scale with sprite scale so it
+  // tracks the pet at any zoom level.
+  const size = 26 * scale;
+  const isImageUrl = /^[\/\.]|^https?:/.test(icon);
+  return (
+    <div
+      className="absolute pointer-events-none anim-chomp"
+      style={{
+        left: '50%',
+        bottom: `${48 * scale}px`,
+        transform: 'translateX(-50%)',
+        width: size,
+        height: size,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 2,
+        filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.5))',
+      }}
+    >
+      {isImageUrl ? (
+        <img
+          src={icon}
+          alt=""
+          style={{
+            width: size,
+            height: size,
+            imageRendering: 'pixelated',
+            objectFit: 'contain',
+          }}
+        />
+      ) : (
+        <span style={{ fontSize: size * 0.9, lineHeight: 1 }}>{icon}</span>
+      )}
+    </div>
+  );
+};
 
 /**
  * Black box fallback — rendered when a sprite sheet or animation is missing.
@@ -120,6 +182,10 @@ export const PetSprite: React.FC<PetSpriteProps> = ({
   onFrameChange,
   className = '',
   debug = false,
+  petX = 0,
+  reactionPhase = 'idle',
+  heldItemIcon = null,
+  equippedCosmetics,
 }) => {
   // Check for a mood-specific override sheet (e.g. koala_sprite__idle)
   const overrideKey = `${speciesId}__${animationName}`;
@@ -135,6 +201,7 @@ export const PetSprite: React.FC<PetSpriteProps> = ({
   const controllerRef = useRef<AnimationController | null>(null);
   const rafRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef<number | null>(null);
+  const motionTargetRef = useRef<HTMLDivElement | null>(null);
   const [frame, setFrame] = useState(0);
 
   // Check if the specific animation exists in this sprite config
@@ -154,6 +221,15 @@ export const PetSprite: React.FC<PetSpriteProps> = ({
     }
     return 'idle';
   }, [animationName, hasAnimation]);
+
+  // Gate the proof motion layer to Blue Koala. Other species render as before.
+  const motionEnabled = !paused && BLUE_KOALA_IDS.has(speciesId);
+  usePetMotion(motionTargetRef, {
+    animationName: safeAnimationName,
+    petX,
+    reactionPhase,
+    enabled: motionEnabled,
+  });
 
   // Initialize controller once in an effect, not during render
   useEffect(() => {
@@ -228,20 +304,41 @@ export const PetSprite: React.FC<PetSpriteProps> = ({
         <div className="absolute -top-12 z-20 text-3xl font-bold text-red-500 drop-shadow-md anim-wobble">🥩!</div>
       )}
 
-      {/* Sprite or fallback — fallback shows for BOTH missing sheet and missing animation */}
-      {showFallback ? (
-        <SpriteFallback
-          animationName={animationName}
-          speciesId={speciesId}
-          scale={scale}
-          reason={!hasSpriteSheet ? 'no_sheet' : 'no_animation'}
-        />
-      ) : (
-        <div
-          className="relative z-10 cursor-pointer"
-          style={computeSpriteStyle(spriteConfig, frame, scale)}
-        />
-      )}
+      {/* Motion target — inner div owns the fake-physics transform.
+          Transforms on this inner element compose cleanly with the CSS
+          class-based breathing on the outer wrapper. */}
+      <div
+        ref={motionTargetRef}
+        className="relative z-10"
+        style={{ transformOrigin: 'bottom center', willChange: 'transform' }}
+      >
+        {showFallback ? (
+          <SpriteFallback
+            animationName={animationName}
+            speciesId={speciesId}
+            scale={scale}
+            reason={!hasSpriteSheet ? 'no_sheet' : 'no_animation'}
+          />
+        ) : (
+          <div className="relative">
+            {/* Aura layer — renders BEHIND the pet sprite */}
+            {equippedCosmetics && (
+              <AccessoryLayer equipped={equippedCosmetics} scale={scale} behind />
+            )}
+            <div
+              className="cursor-pointer"
+              style={computeSpriteStyle(spriteConfig, frame, scale)}
+            />
+            {/* Front cosmetics (collar/eyewear/hat) render on top of pet */}
+            {equippedCosmetics && (
+              <AccessoryLayer equipped={equippedCosmetics} scale={scale} />
+            )}
+            {/* Held item rendered as sibling of clipped sprite so it is
+                not cut off by the sprite's overflow: hidden. */}
+            {heldItemIcon && <HeldItem icon={heldItemIcon} scale={scale} />}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

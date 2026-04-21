@@ -66,6 +66,7 @@ export interface MomentumLogEntry {
 export interface MomentumRewards {
   tokens: number;
   xp: number;
+  shards?: number;
 }
 
 export type MomentumGameEvent =

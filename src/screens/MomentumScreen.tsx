@@ -169,6 +169,27 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
   // we show move first, then impact
   const [attackSubPhase, setAttackSubPhase] = useState<'lunge' | 'impact' | null>(null);
 
+  // Turn transition banner
+  const [turnBanner, setTurnBanner] = useState<{ team: 'player' | 'enemy'; key: number } | null>(
+    null,
+  );
+  const turnBannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // "Zzz" skip feedback
+  const [skipFx, setSkipFx] = useState<{ team: 'player' | 'enemy'; key: number } | null>(null);
+  const skipFxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Rank promotion burst trigger (piece id + key) — cleared after the anim runs
+  const [promoteFx, setPromoteFx] = useState<{ pieceId: string; key: number } | null>(null);
+  const promoteFxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Show board entrance only on first mount
+  const [boardEntered, setBoardEntered] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setBoardEntered(true), 650);
+    return () => clearTimeout(t);
+  }, []);
+
   // ─── Event handlers ──────────────────────────────────────────────────
 
   const handlePieceClick = useCallback(
@@ -205,6 +226,45 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
     const prevPhase = prevPhaseRef.current;
     const prevState = prevStateRef.current;
     const currentPhase = state.phase;
+
+    // ── Turn-banner: phase-based so it fires on every transition ────
+    // Player attack keeps activeTeam=player even when phase flips to ai_turn,
+    // so we key off phase, not team.
+    const bannerTeam =
+      prevPhase !== 'ai_turn' && currentPhase === 'ai_turn'
+        ? 'enemy'
+        : (currentPhase === 'player_select' &&
+            (prevPhase === 'animating_ai' || prevPhase === 'ai_turn'))
+          ? 'player'
+          : null;
+    if (bannerTeam) {
+      if (turnBannerTimerRef.current) clearTimeout(turnBannerTimerRef.current);
+      setTurnBanner({ team: bannerTeam, key: Date.now() });
+      turnBannerTimerRef.current = setTimeout(() => setTurnBanner(null), 1250);
+    }
+
+    // ── Skip event detection ────────────────────────────────────────
+    if (
+      state.lastEvent &&
+      state.lastEvent.type === 'turn_skipped' &&
+      prevState.lastEvent !== state.lastEvent
+    ) {
+      if (skipFxTimerRef.current) clearTimeout(skipFxTimerRef.current);
+      setSkipFx({ team: state.lastEvent.team, key: Date.now() });
+      skipFxTimerRef.current = setTimeout(() => setSkipFx(null), 1400);
+    }
+
+    // ── Piece promotion detection ───────────────────────────────────
+    if (
+      state.lastEvent &&
+      state.lastEvent.type === 'piece_promoted' &&
+      prevState.lastEvent !== state.lastEvent
+    ) {
+      if (promoteFxTimerRef.current) clearTimeout(promoteFxTimerRef.current);
+      const pieceId = state.lastEvent.pieceId;
+      setPromoteFx({ pieceId, key: Date.now() });
+      promoteFxTimerRef.current = setTimeout(() => setPromoteFx(null), 1100);
+    }
 
     // Update refs
     prevPhaseRef.current = currentPhase;
@@ -282,6 +342,16 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
     }
   }, [state, dispatch]);
 
+  // ─── AI turn pacing — delay so "Enemy Turn" banner can land ────────
+
+  useEffect(() => {
+    if (state.phase !== 'ai_turn') return;
+    const timer = setTimeout(() => {
+      dispatch({ type: 'MOMENTUM_AI_EXECUTE' });
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [state.phase, dispatch]);
+
   // ─── Visibility change handler — prevent animation phase stuck ──────
 
   useEffect(() => {
@@ -295,6 +365,8 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
         ];
         if (animPhases.includes(state.phase)) {
           dispatch({ type: 'MOMENTUM_ANIMATION_DONE' });
+        } else if (state.phase === 'ai_turn') {
+          dispatch({ type: 'MOMENTUM_AI_EXECUTE' });
         }
       }
     };
@@ -303,11 +375,14 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [state.phase, dispatch]);
 
-  // ─── Cleanup shake timer ────────────────────────────────────────────
+  // ─── Cleanup timers ─────────────────────────────────────────────────
 
   useEffect(() => {
     return () => {
       if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+      if (turnBannerTimerRef.current) clearTimeout(turnBannerTimerRef.current);
+      if (skipFxTimerRef.current) clearTimeout(skipFxTimerRef.current);
+      if (promoteFxTimerRef.current) clearTimeout(promoteFxTimerRef.current);
     };
   }, []);
 
@@ -345,6 +420,11 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
       ? 'rgba(103, 232, 249, 0.8)'
       : 'rgba(252, 165, 165, 0.8)';
 
+  // AI "thinking" dim — enemy is acting and the board is not player-interactive
+  const aiThinking =
+    state.phase === 'ai_turn' ||
+    (state.phase === 'animating_ai' && state.activeTeam === 'enemy');
+
   // ─── Render ─────────────────────────────────────────────────────────
 
   return (
@@ -352,72 +432,189 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
       className="min-h-screen relative overflow-hidden"
       style={{ background: theme.backdrop }}
     >
-      {/* Backdrop: full screen themed gradient */}
-      <div className="absolute inset-0" style={{ background: theme.backdrop }} />
+      {/* Backdrop: strategy chamber scene, full screen */}
+      <img
+        src="/assets/generated/final/scene_strategy_chamber.png"
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ imageRendering: 'pixelated' }}
+      />
+      {/* Dark vignette for focus on the board */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.65) 100%)' }}
+      />
 
-      {/* Content layer */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 gap-3">
-        {/* HUD */}
-        <MomentumHUD state={state} />
+      {/* ===== HUD — floats at top like a hanging banner ===== */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
+        <div
+          className="px-4 py-2 rounded-xl border-2 border-cyan-400/40 shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
+          style={{
+            background: 'linear-gradient(180deg, rgba(15,23,42,0.9) 0%, rgba(30,41,59,0.9) 100%)',
+            backdropFilter: 'blur(3px)',
+          }}
+        >
+          <MomentumHUD state={state} />
+        </div>
+      </div>
 
-        {/* Board area with shake wrapper and effect overlays */}
-        <div data-help="momentum-board" className="relative">
-          {/* Board shake wrapper */}
-          <div className={shakeActive ? 'momentum-board-shake' : ''}>
-            <MomentumBoard
-              state={state}
-              onCellClick={handleCellClick}
-              onPieceClick={handlePieceClick}
-            />
-          </div>
-
-          {/* Animation overlays positioned relative to board's inner area */}
-          {/* Offset by board padding (8px) so pixel coords align with grid cells */}
-          <div
-            className="absolute pointer-events-none"
-            style={{ top: 8, left: 8, width: BOARD_SIZE, height: BOARD_SIZE }}
-          >
-            {/* Piece move animator */}
-            {showMoveAnim && animMeta.movingPiece && animMeta.moveFrom && animMeta.moveTo && (
-              <PieceMoveAnimator
-                key={`${animMeta.movingPieceId}-${animMeta.moveFrom.x},${animMeta.moveFrom.y}-${animMeta.moveTo.x},${animMeta.moveTo.y}`}
-                piece={animMeta.movingPiece}
-                from={animMeta.moveFrom}
-                to={animMeta.moveTo}
-                theme={theme}
-                cellSize={cellSize}
-                gridGap={GRID_GAP}
-                onComplete={handleMoveLungeComplete}
-              />
-            )}
-
-            {/* Attack impact */}
-            {showAttackImpact && animMeta.attackPosition && (
-              <AttackImpact
-                position={animMeta.attackPosition}
-                cellSize={cellSize}
-                gridGap={GRID_GAP}
-                teamColor={attackTeamColor}
-                onComplete={handleAnimationDone}
-              />
-            )}
-          </div>
+      {/* ===== BOARD — sits on the altar with a perspective tilt ===== */}
+      <div
+        data-help="momentum-board"
+        className="absolute left-1/2 z-10"
+        style={{
+          top: '42%',
+          transform: 'translateX(-50%) perspective(1200px) rotateX(12deg)',
+          transformOrigin: 'center bottom',
+          filter: 'drop-shadow(0 20px 24px rgba(0,0,0,0.6))',
+        }}
+      >
+        {/* Board shake + AI-thinking + entrance wrapper */}
+        <div
+          className={[
+            shakeActive ? 'momentum-board-shake' : '',
+            aiThinking ? 'momentum-ai-thinking' : '',
+            boardEntered ? '' : 'momentum-board-entrance',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <MomentumBoard
+            state={state}
+            onCellClick={handleCellClick}
+            onPieceClick={handlePieceClick}
+            promoteFx={promoteFx}
+          />
         </div>
 
-        {/* Action log */}
-        <MomentumLog log={state.log} />
+        {/* Animation overlays aligned to the board's grid */}
+        <div
+          className="absolute pointer-events-none"
+          style={{ top: 8, left: 8, width: BOARD_SIZE, height: BOARD_SIZE }}
+        >
+          {showMoveAnim && animMeta.movingPiece && animMeta.moveFrom && animMeta.moveTo && (
+            <PieceMoveAnimator
+              key={`${animMeta.movingPieceId}-${animMeta.moveFrom.x},${animMeta.moveFrom.y}-${animMeta.moveTo.x},${animMeta.moveTo.y}`}
+              piece={animMeta.movingPiece}
+              from={animMeta.moveFrom}
+              to={animMeta.moveTo}
+              theme={theme}
+              cellSize={cellSize}
+              gridGap={GRID_GAP}
+              onComplete={handleMoveLungeComplete}
+            />
+          )}
+          {showAttackImpact && animMeta.attackPosition && (
+            <AttackImpact
+              position={animMeta.attackPosition}
+              cellSize={cellSize}
+              gridGap={GRID_GAP}
+              teamColor={attackTeamColor}
+              onComplete={handleAnimationDone}
+            />
+          )}
+        </div>
+      </div>
 
-        {/* Action bar */}
-        <MomentumActionBar
-          phase={state.phase}
-          onSkip={() => dispatch({ type: 'MOMENTUM_SKIP_TURN' })}
-          onForfeit={() => dispatch({ type: 'END_MOMENTUM' })}
-        />
+      {/* ===== Action log — carved stone tablet on the left ===== */}
+      <div className="absolute left-3 top-24 z-10 max-w-[200px]">
+        <div
+          className="p-2 rounded-lg border-2 border-cyan-400/30 shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+          style={{
+            background: 'linear-gradient(180deg, rgba(15,23,42,0.85) 0%, rgba(30,41,59,0.85) 100%)',
+            backdropFilter: 'blur(3px)',
+          }}
+        >
+          <MomentumLog log={state.log} />
+        </div>
+      </div>
+
+      {/* ===== Action bar — bottom center ===== */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
+        <div
+          className="px-3 py-2 rounded-xl border-2 border-cyan-400/40 shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
+          style={{
+            background: 'linear-gradient(180deg, rgba(15,23,42,0.9) 0%, rgba(30,41,59,0.9) 100%)',
+            backdropFilter: 'blur(3px)',
+          }}
+        >
+          <MomentumActionBar
+            phase={state.phase}
+            onSkip={() => dispatch({ type: 'MOMENTUM_SKIP_TURN' })}
+            onForfeit={() => dispatch({ type: 'END_MOMENTUM' })}
+          />
+        </div>
       </div>
 
       {/* Pet overlay — bottom-left, z-30 */}
       {petSpeciesId && (
         <PetOverlay speciesId={petSpeciesId} lastEvent={state.lastEvent} />
+      )}
+
+      {/* ===== Turn Transition Banner + Flash ===== */}
+      {turnBanner && (
+        <>
+          <div
+            key={`flash-${turnBanner.key}`}
+            className="absolute inset-0 pointer-events-none z-[35] momentum-turn-flash"
+            style={{
+              background:
+                turnBanner.team === 'player'
+                  ? 'radial-gradient(ellipse at center, rgba(103,232,249,0.55) 0%, transparent 70%)'
+                  : 'radial-gradient(ellipse at center, rgba(252,165,165,0.55) 0%, transparent 70%)',
+            }}
+          />
+          <div className="absolute inset-0 pointer-events-none z-[36] flex items-center justify-center overflow-hidden">
+            <div
+              key={`banner-${turnBanner.key}`}
+              className="momentum-turn-banner px-10 py-3 border-y-4"
+              style={{
+                background:
+                  turnBanner.team === 'player'
+                    ? 'linear-gradient(90deg, rgba(8,47,73,0.95) 0%, rgba(22,78,99,0.95) 50%, rgba(8,47,73,0.95) 100%)'
+                    : 'linear-gradient(90deg, rgba(69,10,10,0.95) 0%, rgba(127,29,29,0.95) 50%, rgba(69,10,10,0.95) 100%)',
+                borderColor:
+                  turnBanner.team === 'player' ? 'rgba(103,232,249,0.8)' : 'rgba(252,165,165,0.8)',
+                boxShadow:
+                  turnBanner.team === 'player'
+                    ? '0 0 40px rgba(34,211,238,0.6)'
+                    : '0 0 40px rgba(239,68,68,0.6)',
+              }}
+            >
+              <div
+                className="text-3xl font-black tracking-[0.2em] uppercase"
+                style={{
+                  color: turnBanner.team === 'player' ? '#a5f3fc' : '#fecaca',
+                  textShadow:
+                    turnBanner.team === 'player'
+                      ? '0 0 12px rgba(34,211,238,0.9)'
+                      : '0 0 12px rgba(239,68,68,0.9)',
+                }}
+              >
+                {turnBanner.team === 'player' ? 'Your Turn' : 'Enemy Turn'}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ===== Skip "Zzz" Feedback ===== */}
+      {skipFx && (
+        <div
+          key={`skip-${skipFx.key}`}
+          className="absolute z-[32] pointer-events-none momentum-zzz-float"
+          style={{
+            left: '50%',
+            top: '40%',
+            transform: 'translate(-50%, -50%)',
+            fontSize: '48px',
+            color: skipFx.team === 'player' ? '#a5f3fc' : '#fecaca',
+            textShadow: '0 2px 8px rgba(0,0,0,0.8)',
+            fontWeight: 900,
+          }}
+        >
+          💤
+        </div>
       )}
 
       {/* Flash sequence overlay — full screen, z-40+ */}

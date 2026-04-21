@@ -10,6 +10,10 @@ interface MomentumBoardProps {
   theme?: BoardTheme;
   onCellClick: (x: number, y: number) => void;
   onPieceClick: (pieceId: string) => void;
+  /** Signals a one-shot promotion burst on the piece with this id. */
+  promoteFx?: { pieceId: string; key: number } | null;
+  /** Cells that are threatened by the enemy on its upcoming turn. */
+  threatenedPieceIds?: Set<string>;
 }
 
 export const MomentumBoard: React.FC<MomentumBoardProps> = ({
@@ -17,6 +21,8 @@ export const MomentumBoard: React.FC<MomentumBoardProps> = ({
   theme = DEFAULT_THEME,
   onCellClick,
   onPieceClick,
+  promoteFx = null,
+  threatenedPieceIds,
 }) => {
   const { pieces, board, selectedPieceId, validMoves, phase, clutchTile } = state;
   const isInteractive = phase === 'player_select' || phase === 'player_move';
@@ -74,6 +80,8 @@ export const MomentumBoard: React.FC<MomentumBoardProps> = ({
             }
           };
 
+          const isThreatened = piece != null && threatenedPieceIds?.has(piece.id) === true;
+
           return (
             <BoardCell
               key={`${x}-${y}`}
@@ -82,6 +90,7 @@ export const MomentumBoard: React.FC<MomentumBoardProps> = ({
               isAttackTarget={isAttackTarget}
               isSelected={isSelected}
               isClutchTile={isClutchTile}
+              isThreatened={isThreatened}
               onClick={isInteractive ? handleClick : undefined}
             >
               {piece && (
@@ -96,6 +105,7 @@ export const MomentumBoard: React.FC<MomentumBoardProps> = ({
                   }
                   boardTheme={theme}
                   onClick={isInteractive ? () => onPieceClick(piece.id) : undefined}
+                  promoteKey={promoteFx?.pieceId === piece.id ? promoteFx.key : null}
                 />
               )}
             </BoardCell>

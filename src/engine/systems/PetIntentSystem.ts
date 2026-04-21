@@ -21,7 +21,14 @@ export type PetIntent =
   | 'hurt'
   // Future-proof
   | 'play'
-  | 'clean';
+  | 'clean'
+  // Interaction intents (set by interaction system during touch)
+  | 'being_petted'
+  | 'being_washed'
+  | 'being_brushed'
+  | 'being_comforted'
+  | 'being_trained'
+  | 'playing_with_hand';
 
 /**
  * Maps a PetIntent to the animation key used in sprite sheet configs.
@@ -45,6 +52,13 @@ const INTENT_TO_ANIMATION: Record<PetIntent, AnimationName> = {
   hurt:    'idle',
   play:    'happy',
   clean:   'idle',
+  // Interaction intents — each has a dedicated care sprite sheet per species
+  being_petted:       'being_petted',
+  being_washed:       'being_washed',
+  being_brushed:      'being_brushed',
+  being_comforted:    'being_comforted',
+  being_trained:      'being_trained',
+  playing_with_hand:  'playing_with_hand',
 };
 
 /**

@@ -31,6 +31,12 @@ export const Z = {
   ACCENTS_FG: 21,
   PROPS_FG: 22,
 
+  // Interaction system
+  TOUCH_ZONE: 23,
+  HAND: 24,
+  INTERACTION_VFX: 25,
+  INTERACTION_TEXT: 26,
+
   // Post-processing
   OVERLAY: 28,
 

@@ -7,6 +7,7 @@ interface BoardCellProps {
   isAttackTarget: boolean;
   isSelected: boolean;
   isClutchTile?: boolean;
+  isThreatened?: boolean;
   onClick?: () => void;
   children?: React.ReactNode;
 }
@@ -17,6 +18,7 @@ export const BoardCell: React.FC<BoardCellProps> = ({
   isAttackTarget,
   isSelected,
   isClutchTile = false,
+  isThreatened = false,
   onClick,
   children,
 }) => {
@@ -33,6 +35,8 @@ export const BoardCell: React.FC<BoardCellProps> = ({
   } else if (isValidMove) {
     highlightShadow = `inset 0 0 10px ${tileTheme.highlightMove}, 0 0 4px ${tileTheme.highlightMove}`;
     highlightClass = 'momentum-valid-move-pulse';
+  } else if (isThreatened) {
+    highlightClass = 'momentum-incoming-threat';
   }
 
   if (isSelected) {

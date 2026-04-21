@@ -7,7 +7,7 @@ export const ANIMATION_CONFIG = {
     sick: 'anim-wobble filter grayscale opacity-80',
     dead: 'filter grayscale rotate-180 opacity-50',
     dirty: 'anim-sprite-hungry opacity-90',   // reuse shake + dim until real dirty anim exists
-    eating: 'anim-sprite-happy',              // placeholder until eating anim exists
+    eating: 'anim-sprite-eating',
   } as Record<string, string>,
   ui: {
     buttonPress: 'anim-pop',

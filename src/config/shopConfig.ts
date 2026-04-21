@@ -1,4 +1,4 @@
-export type ShopItemCategory = 'food' | 'toy' | 'medicine' | 'cosmetic';
+export type ShopItemCategory = 'food' | 'toy' | 'medicine' | 'cosmetic' | 'care_tool';
 
 export interface ItemEffect {
   type: 'feed' | 'play' | 'heal' | 'clean' | 'buff';
@@ -16,7 +16,8 @@ export interface ItemEffect {
 export type ShopUnlockRule =
   | { kind: 'level'; threshold: number }
   | { kind: 'battlesWon'; threshold: number }
-  | { kind: 'mpTier'; tier: 'silver' };
+  | { kind: 'mpTier'; tier: 'silver' | 'gold' }
+  | { kind: 'bond'; threshold: number };
 
 export interface ShopItem {
   id: string;
@@ -39,6 +40,7 @@ export interface PlayerProgressSnapshot {
   level: number;
   battlesWon: number;
   mpTier: 'bronze' | 'silver' | 'gold';
+  bond: number;
 }
 
 const matchesRule = (rule: ShopUnlockRule, progress: PlayerProgressSnapshot): boolean => {
@@ -48,7 +50,10 @@ const matchesRule = (rule: ShopUnlockRule, progress: PlayerProgressSnapshot): bo
     case 'battlesWon':
       return progress.battlesWon >= rule.threshold;
     case 'mpTier':
-      return progress.mpTier === rule.tier || progress.mpTier === 'gold';
+      if (rule.tier === 'gold') return progress.mpTier === 'gold';
+      return progress.mpTier === 'silver' || progress.mpTier === 'gold';
+    case 'bond':
+      return progress.bond >= rule.threshold;
   }
 };
 
@@ -68,6 +73,8 @@ export const describeUnlockRule = (item: ShopItem): string => {
         return `Win ${item.unlockRule.threshold} battles`;
       case 'mpTier':
         return `Reach ${item.unlockRule.tier} MP tier`;
+      case 'bond':
+        return `Reach bond ${item.unlockRule.threshold}`;
     }
   }
   if (item.requiredMPTier === 'silver') return 'Reach silver MP tier';
@@ -100,6 +107,19 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'hat', name: 'Party Hat', description: 'Festive head wear.', icon: '🎩', cost: { coins: 5 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 5 } },
   { id: 'crown', name: 'Royal Crown', description: 'A mark of mastery.', icon: '👑', cost: { coins: 25 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 10 }, unlockRule: { kind: 'battlesWon', threshold: 10 } },
   { id: 'wings', name: 'Ethereal Wings', description: 'Shimmering cosmetic wings.', icon: '🦋', cost: { coins: 50 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 15 }, unlockRule: { kind: 'level', threshold: 7 } },
+  { id: 'silver_halo', name: 'Silver Halo', description: 'A quiet ring of light. Silver scholars only.', icon: '😇', cost: { coins: 40 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 20 }, unlockRule: { kind: 'mpTier', tier: 'silver' }, unlockHint: 'Reach silver math tier' },
+  { id: 'golden_crown', name: 'Golden Crown', description: 'Legendary regalia for gold-tier masters.', icon: '🏅', cost: { coins: 120 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 30 }, unlockRule: { kind: 'mpTier', tier: 'gold' }, unlockHint: 'Reach gold math tier' },
+  { id: 'prism_aura', name: 'Prism Aura', description: 'Shimmering field only gold minds can sustain.', icon: '🌈', cost: { coins: 200 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 40 }, unlockRule: { kind: 'mpTier', tier: 'gold' }, unlockHint: 'Reach gold math tier' },
+
+  // ── Care Tools (unlock / upgrade pet interactions) ──────────────────────────
+  { id: 'soap_kit', name: 'Soap Kit', description: 'Unlocks the Wash interaction.', icon: '/assets/generated/final/icon_clean.png', cost: { tokens: 25 }, category: 'care_tool', stackable: false, effect: { type: 'clean', value: 0 }, unlockRule: { kind: 'level', threshold: 2 }, unlockHint: 'Reach level 2' },
+  { id: 'brush_set', name: 'Brush Set', description: 'Unlocks the Brush interaction.', icon: '/assets/generated/final/icon_clean.png', cost: { tokens: 30 }, category: 'care_tool', stackable: false, effect: { type: 'clean', value: 0 }, unlockRule: { kind: 'bond', threshold: 10 }, unlockHint: 'Reach bond level 10' },
+  { id: 'training_manual', name: 'Training Manual', description: 'Unlocks Training interaction.', icon: '/assets/generated/final/icon_energy.png', cost: { tokens: 40 }, category: 'care_tool', stackable: false, effect: { type: 'buff', value: 0 }, unlockRule: { kind: 'level', threshold: 3 }, unlockHint: 'Reach level 3' },
+  { id: 'premium_soap', name: 'Premium Soap', description: '1.5x wash effectiveness.', icon: '/assets/generated/final/icon_clean.png', cost: { tokens: 60 }, category: 'care_tool', stackable: false, effect: { type: 'clean', value: 0 }, unlockRule: { kind: 'level', threshold: 4 }, unlockHint: 'Reach level 4' },
+  { id: 'grooming_kit', name: 'Grooming Kit', description: '1.5x brush effectiveness.', icon: '/assets/generated/final/icon_clean.png', cost: { tokens: 80 }, category: 'care_tool', stackable: false, effect: { type: 'clean', value: 0 }, unlockRule: { kind: 'battlesWon', threshold: 5 }, unlockHint: 'Win 5 battles' },
+  { id: 'training_weights', name: 'Training Weights', description: '1.5x discipline gain.', icon: '/assets/generated/final/icon_energy.png', cost: { tokens: 100 }, category: 'care_tool', stackable: false, effect: { type: 'buff', value: 0 }, unlockRule: { kind: 'level', threshold: 5 }, unlockHint: 'Reach level 5' },
+  { id: 'comfort_blanket', name: 'Comfort Blanket', description: '2x stress reduction.', icon: '/assets/generated/final/icon_heart.png', cost: { tokens: 45 }, category: 'care_tool', stackable: false, effect: { type: 'buff', value: 0 }, unlockRule: { kind: 'level', threshold: 3 }, unlockHint: 'Reach level 3' },
+  { id: 'deluxe_toy', name: 'Deluxe Toy', description: '1.5x play happiness.', icon: '/assets/generated/final/item_teddy_bear.png', cost: { tokens: 65 }, category: 'care_tool', stackable: false, effect: { type: 'play', value: 0 }, unlockRule: { kind: 'bond', threshold: 20 }, unlockHint: 'Reach bond level 20' },
 ];
 
 export const STREAK_THRESHOLDS: { streak: number; label: string }[] = [];

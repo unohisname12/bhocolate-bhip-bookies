@@ -13,6 +13,8 @@ interface BoardPieceProps {
   pieceTheme: PieceTheme;
   boardTheme: BoardTheme;
   onClick?: () => void;
+  /** When set to a fresh value, plays a one-shot promotion burst. */
+  promoteKey?: number | null;
 }
 
 const RANK_SYMBOLS: Record<number, string> = {
@@ -31,6 +33,7 @@ export const BoardPiece: React.FC<BoardPieceProps> = ({
   pieceTheme,
   boardTheme,
   onClick,
+  promoteKey,
 }) => {
   const size = boardTheme.pieceScales[rank];
   const maxEnergy = RANK_ENERGY[rank]?.max ?? rank * 2;
@@ -41,11 +44,32 @@ export const BoardPiece: React.FC<BoardPieceProps> = ({
       className={`
         relative flex items-center justify-center cursor-pointer
         transition-all duration-200
-        ${isSelected ? 'momentum-piece-selected scale-108' : ''}
+        ${isSelected ? 'momentum-piece-selected scale-108' : 'momentum-piece-ambient'}
       `}
       style={{ width: size, height: size }}
       onClick={onClick}
     >
+      {/* Rank promotion burst (one-shot on promoteKey change) */}
+      {promoteKey != null && (
+        <>
+          <div
+            key={`burst-${promoteKey}`}
+            className="absolute inset-0 rounded-full pointer-events-none momentum-promote-burst"
+            style={{
+              background: `radial-gradient(circle, ${pieceTheme.glowColor} 0%, transparent 70%)`,
+              zIndex: 1,
+            }}
+          />
+          <div
+            key={`ring-${promoteKey}`}
+            className="absolute inset-0 rounded-full pointer-events-none momentum-promote-ring"
+            style={{
+              border: `4px solid ${pieceTheme.glowColor}`,
+              zIndex: 1,
+            }}
+          />
+        </>
+      )}
       {/* Ground shadow */}
       <div
         className="absolute bottom-0 left-1/2"

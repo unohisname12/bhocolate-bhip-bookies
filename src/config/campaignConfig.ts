@@ -1,0 +1,118 @@
+import type { CampaignChapter } from '../types/campaign';
+
+/**
+ * Story Campaign — 12 chapters drip-released across year 1.
+ * Chapter 1 is available immediately; the rest show as "coming soon"
+ * so kids can see the roadmap from day 1.
+ */
+
+export const CAMPAIGN_CHAPTERS: CampaignChapter[] = [
+  {
+    id: 'ch_01_welcome',
+    chapterNumber: 1,
+    title: 'The Academy Gates',
+    blurb: "Your pet has arrived at the Academy. Learn the ropes and meet your first classmates.",
+    unlockRequirement: { kind: 'immediate' },
+    releaseTarget: '2026-04-19',
+    status: 'available',
+  },
+  {
+    id: 'ch_02_first_rival',
+    chapterNumber: 2,
+    title: 'First Rival',
+    blurb: 'A classmate challenges you to your very first ranked duel.',
+    unlockRequirement: { kind: 'level', level: 3 },
+    releaseTarget: '2026-05-17',
+    status: 'coming_soon',
+  },
+  {
+    id: 'ch_03_forest',
+    chapterNumber: 3,
+    title: 'Into the Forest',
+    blurb: 'Wild pets have been spotted in the forest outside the Academy.',
+    unlockRequirement: { kind: 'prev_chapter' },
+    releaseTarget: '2026-06-14',
+    status: 'coming_soon',
+  },
+  {
+    id: 'ch_04_mystery_gift',
+    chapterNumber: 4,
+    title: 'The Mystery Gift',
+    blurb: 'A strange package arrives. What is inside?',
+    unlockRequirement: { kind: 'prev_chapter' },
+    releaseTarget: '2026-07-12',
+    status: 'coming_soon',
+  },
+  {
+    id: 'ch_05_beach_tournament',
+    chapterNumber: 5,
+    title: 'The Beach Tournament',
+    blurb: 'The summer tournament begins. Can you bring home the trophy?',
+    unlockRequirement: { kind: 'prev_chapter' },
+    releaseTarget: '2026-08-09',
+    status: 'coming_soon',
+  },
+  {
+    id: 'ch_06_shadow_pet',
+    chapterNumber: 6,
+    title: 'The Shadow Pet',
+    blurb: 'Rumors of a mysterious shadow-colored pet spread through campus.',
+    unlockRequirement: { kind: 'prev_chapter' },
+    releaseTarget: '2026-09-06',
+    status: 'coming_soon',
+  },
+  {
+    id: 'ch_07_autumn_fair',
+    chapterNumber: 7,
+    title: 'The Autumn Fair',
+    blurb: 'Games, treats, and a special harvest contest.',
+    unlockRequirement: { kind: 'prev_chapter' },
+    releaseTarget: '2026-10-04',
+    status: 'coming_soon',
+  },
+  {
+    id: 'ch_08_the_mountain',
+    chapterNumber: 8,
+    title: 'The Mountain Summit',
+    blurb: 'Climb to the top and face the mountain guardian.',
+    unlockRequirement: { kind: 'prev_chapter' },
+    releaseTarget: '2026-11-01',
+    status: 'coming_soon',
+  },
+  {
+    id: 'ch_09_winter_festival',
+    chapterNumber: 9,
+    title: 'Winter Festival',
+    blurb: 'Snow falls, and so do exclusive festival rewards.',
+    unlockRequirement: { kind: 'prev_chapter' },
+    releaseTarget: '2026-11-29',
+    status: 'coming_soon',
+  },
+  {
+    id: 'ch_10_ancient_ruins',
+    chapterNumber: 10,
+    title: 'The Ancient Ruins',
+    blurb: 'An old map leads to ruins full of rare treasures.',
+    unlockRequirement: { kind: 'prev_chapter' },
+    releaseTarget: '2026-12-27',
+    status: 'coming_soon',
+  },
+  {
+    id: 'ch_11_champions_cup',
+    chapterNumber: 11,
+    title: "Champion's Cup",
+    blurb: 'The Academy champions invite you to the yearly invitational.',
+    unlockRequirement: { kind: 'prev_chapter' },
+    releaseTarget: '2027-01-24',
+    status: 'coming_soon',
+  },
+  {
+    id: 'ch_12_graduation',
+    chapterNumber: 12,
+    title: 'Graduation Day',
+    blurb: 'Your pet has come a long way. One final evolution awaits.',
+    unlockRequirement: { kind: 'prev_chapter' },
+    releaseTarget: '2027-02-21',
+    status: 'coming_soon',
+  },
+];

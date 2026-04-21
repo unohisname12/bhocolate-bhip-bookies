@@ -34,8 +34,14 @@ function rand(min: number, max: number): number {
  *
  * @param walkBounds - Min/max X in native 400px coords
  * @param paused - If true, pet holds its current position (sleeping, dead, etc.)
+ * @param resumeFromRef - Optional ref whose current value is the x to
+ *        snap to when resuming (prevents teleport after a scripted move).
  */
-export function useIdleWander(walkBounds: WalkBounds, paused: boolean): WanderState {
+export function useIdleWander(
+  walkBounds: WalkBounds,
+  paused: boolean,
+  resumeFromRef?: React.MutableRefObject<number | null>,
+): WanderState {
   const center = (walkBounds.minX + walkBounds.maxX) / 2;
   const [state, setState] = useState<WanderState>({ x: center, facingLeft: false });
 
@@ -73,6 +79,16 @@ export function useIdleWander(walkBounds: WalkBounds, paused: boolean): WanderSt
 
   useEffect(() => {
     if (paused) return;
+
+    // Sync internal position with the caller-supplied resume point so
+    // wander continues from wherever a scripted move left the pet.
+    const resumePos = resumeFromRef?.current;
+    if (typeof resumePos === 'number') {
+      currentXRef.current = resumePos;
+      startXRef.current = resumePos;
+      durationRef.current = 0;
+      setState((prev) => ({ ...prev, x: resumePos }));
+    }
 
     let running = true;
 
@@ -121,7 +137,7 @@ export function useIdleWander(walkBounds: WalkBounds, paused: boolean): WanderSt
       running = false;
       cancelAnimationFrame(animRef.current);
     };
-  }, [paused, pickNewTarget]);
+  }, [paused, pickNewTarget, resumeFromRef]);
 
   return state;
 }

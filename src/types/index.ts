@@ -29,12 +29,23 @@ export interface GameState {
   session: SessionState;
 }
 
+export type FoodRarity = 'common' | 'rare' | 'medicine';
+export type FoodMathTier = 'none' | 'bronze' | 'silver' | 'gold';
+
 export interface FoodItem {
   id: string;
   icon: string;
   label: string;
   cost: number;
   nutrition: number;
+  /** UI tab grouping. Defaults to 'common' when omitted. */
+  rarity?: FoodRarity;
+  /** Math-tier gate (bronze/silver/gold). `none` or omitted = always available. */
+  requiredMathTier?: FoodMathTier;
+  /** Extra bond awarded when consumed (on top of care-action bond). */
+  bondBonus?: number;
+  /** Extra happiness restored when consumed. */
+  happinessBonus?: number;
 }
 
 export interface CareActionConfig {

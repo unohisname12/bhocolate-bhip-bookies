@@ -46,6 +46,11 @@ export type Pet = {
   bond: number;
   progression: PetProgression;
   graceTimer?: number; // ms timestamp when grace period started (health hit bottom)
+  // Interaction stats (0–100 each, added by pet interaction system)
+  trust?: number;          // grows with consistent positive interaction
+  discipline?: number;     // grows with training
+  groomingScore?: number;  // decays slowly, affects appearance state
+  stress?: number;         // builds from neglect, reduced by comfort
   timestamps: {
     createdAt: string;
     lastInteraction: string;

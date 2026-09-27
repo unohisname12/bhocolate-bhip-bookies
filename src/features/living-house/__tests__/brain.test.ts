@@ -1,0 +1,19 @@
+import {describe,it,expect} from 'vitest';
+import {createTestEngineState} from '../../../engine/state/createTestEngineState';
+import {createHomeBase} from '../../home-base/model';
+import {createMind} from '../../pet-mind/memory';
+import {createLife,recordEpisode} from '../../pet-mind/life';
+import {buildWorld,validResident} from '../world';
+import {houseChoices} from '../brain';
+import {makeResident,stepResident,together,cancelInvitation,savedResident} from '../resident';
+const now=new Date(2026,8,26,12).getTime();
+function setup(){const s=createTestEngineState();s.mode='normal';s.screen='home';const pet=s.pet!;pet.state='idle';pet.needs={...pet.needs,health:100,hunger:100,cleanliness:100,happiness:100};pet.mind=createMind(pet);pet.mind.life=createLife(now);s.homeBase=createHomeBase(s);const w=buildWorld(s.homeBase),r=makeResident(w,undefined,pet,'den');r.wait=0;return {s,pet,w,r};}
+describe('house personality and shared history',()=>{
+ it('developed personality changes actual furniture scores',()=>{const {pet,w,r}=setup();const before=houseChoices(pet,w,r.position,{}, {},now,()=>0);pet.mind!.life!.drift.comfort=.25;const after=houseChoices(pet,w,r.position,{}, {},now,()=>0);expect(after.some(a=>a.score>(before.find(b=>b.object.key===a.object.key)?.score??Infinity))).toBe(true);});
+ it('remembered favorites draw the pet back but cooldowns allow other activities',()=>{const {pet,w,r}=setup();const initial=houseChoices(pet,w,r.position,{}, {},now,()=>0),key=initial[0].object.key;r.visits[key]=6;const choices=houseChoices(pet,w,r.position,r.visits,{},now,()=>0);expect(choices.find(c=>c.object.key===key)!.score).toBeGreaterThan(initial[0].score);expect(houseChoices(pet,w,r.position,r.visits,{[key]:now+90000},now,()=>0).some(c=>c.object.key===key)).toBe(false);const saved=savedResident(w,r,pet);expect(validResident(saved)).toBe(true);expect(makeResident(w,saved,pet,'kitchen').visits[key]).toBe(6);});
+ it('urgent hunger overrides preferences and never grants food automatically',()=>{const {pet,w,r}=setup();pet.needs.hunger=5;const before=pet.needs.hunger;const choices=houseChoices(pet,w,r.position,{},Object.fromEntries(w.objects.map(o=>[o.key,now+90000])),now,()=>0);expect(choices[0].urgent).toBe(true);expect(choices[0].object.placement.furnitureId).toBe('house_counter');stepResident(r,w,pet,.05,{},now);expect(r.goal?.placement.furnitureId).toBe('house_counter');expect(pet.needs.hunger).toBe(before);});
+ it('recalls a real milestone and queues its anti-repeat receipt',()=>{const {pet,w,r}=setup();pet.mind!.life=recordEpisode(pet.mind!.life!,'evolved',now);stepResident(r,w,pet,.05,{},now);expect(r.activity).toBe('Remembering our time together');expect(r.events[0]).toMatchObject({type:'PET_SAID'});expect(r.socialAfter).toBeGreaterThan(now);});
+ it('fetch travels out and back before recording one memory',()=>{const {pet,w,r}=setup(),start={...r.position};expect(together(r,w,pet,'fetch',now)).toBe(true);expect(r.ball).toBeDefined();expect(r.events).toEqual([]);for(let i=0;i<1500&&r.together;i++)stepResident(r,w,pet,.05,{},now+i*50);expect(r.position).toEqual(start);expect(r.ball).toBeUndefined();expect(r.events).toEqual([{type:'PET_HOME_MEMORY',kind:'fetch'}]);});
+ it('cancelled play never produces a completed-play memory',()=>{const {pet,w,r}=setup();together(r,w,pet,'dance',now);stepResident(r,w,pet,1,{},now);cancelInvitation(r);for(let i=0;i<100;i++)stepResident(r,w,pet,.05,{},now);expect(r.events.some(e=>e.type==='PET_HOME_MEMORY')).toBe(false);});
+ it('illness interrupts travel and sleep stops autonomous play',()=>{const {pet,w,r}=setup();together(r,w,pet,'fetch',now);pet.needs.health=20;stepResident(r,w,pet,.05,{},now);expect(r.path).toEqual([]);expect(r.animation).toBe('sick');expect(r.events).toEqual([]);pet.needs.health=100;pet.state='sleeping';stepResident(r,w,pet,.05,{},now);expect(r.animation).toBe('sleeping');expect(r.ask).toBeUndefined();});
+});

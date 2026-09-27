@@ -12,7 +12,7 @@ describe('Home Base', () => {
     previous.room.items = [{ itemId: 'clash_rug', placed: true, position: { x: 40, y: 80 } }];
     previous.player.unlockedRoomItems.push('clash_rug');
     const state = engineReducer(previous, { type: 'HOME_OPEN' });
-    expect(state.screen).toBe('home_builder'); expect(state.homeBase?.rooms.den?.items).toHaveLength(7);
+    expect(state.screen).toBe('home_builder'); expect(state.homeBase?.rooms.den?.items).toHaveLength(6);
     expect(state.player).toEqual(previous.player); expect(state.room).toEqual(previous.room);
     expect(validHomeBase(state.homeBase)).toBe(true);
     expect(engineReducer(state, { type: 'HOME_OPEN' }).homeBase).toEqual(state.homeBase);

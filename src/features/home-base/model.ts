@@ -13,7 +13,7 @@ export const ownsFurniture = (state: EngineState, id: string) => {
 const starter = (id: string, x: number, y: number): HomePlacement => ({ id: `starter-${id}`, furnitureId: id, x, y, flipped: false, on: true });
 export function createHomeBase(state: EngineState): HomeBase {
   const room = emptyRoom();
-  room.items = [starter('home_window', 3, 0), starter('home_cushion', 0, 1), starter('home_rug', 3, 2), starter('home_table', 3, 2), starter('home_chair', 5, 3), starter('home_plant', 7, 1)];
+  room.items = [starter('home_cushion', 0, 1), starter('home_rug', 3, 2), starter('home_table', 3, 2), starter('home_chair', 5, 3), starter('home_plant', 7, 1)];
   // Preserve the earlier home layout in its original save. Make previously placed
   // prize keepsakes available here without spending or claiming them again.
   state.room.items.filter(i => i.placed && furniture(i.itemId) && ownsFurniture(state, i.itemId)).slice(0, 4).forEach((item, i) => {
@@ -26,9 +26,9 @@ export function upgradeHouse(base: HomeBase): HomeBase {
   if (base.houseVersion === 1 && ['hall','landing','kitchen','bathroom'].every(id => base.rooms[id as HomeRoomId])) return base;
   const furnished = (wall: string, floor: string, items: HomePlacement[]): HomeRoom => ({ ...emptyRoom(), wall, floor, items });
   return { ...base, houseVersion: 1, rooms: {
-    hall: furnished('cream','oak',[starter('home_window',3,0),starter('home_rug',2,2),starter('home_plant',0,1),starter('home_chair',6,2)]),
-    landing: furnished('sage','birch',[starter('home_window',3,0),starter('home_cushion',0,1),starter('home_plant',6,1)]),
-    kitchen: furnished('cream','oak',[starter('house_counter',0,1),starter('home_table',2,3),starter('home_chair',4,3),starter('home_window',4,0)]),
+    hall: furnished('cream','oak',[starter('home_rug',2,2),starter('home_plant',0,1),starter('home_chair',6,2)]),
+    landing: furnished('sage','birch',[starter('home_cushion',0,1),starter('home_plant',6,1)]),
+    kitchen: furnished('cream','oak',[starter('house_counter',0,1),starter('home_table',2,3),starter('home_chair',4,3)]),
     bathroom: furnished('blue','birch',[starter('house_tub',0,1),starter('house_mirror',3,0),starter('home_plant',6,1)]),
     ...base.rooms,
   } };

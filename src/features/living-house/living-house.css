@@ -13,3 +13,14 @@
 
 .lh-needs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}.lh-needs span{display:flex;justify-content:space-between;gap:5px;font-size:10px;color:#d4dfbd}.lh-needs b{font-weight:400}.lh-needs meter{width:100%;height:10px;accent-color:#c6dc91}.lh-needs meter::-webkit-meter-bar{background:#0e2822;border:none}.lh-needs meter::-webkit-meter-optimum-value{background:#b2ce83;transition:width .7s}
 @media(max-width:850px){.lh-camera-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}.lh-camera-controls label{grid-column:1/3;justify-content:center}.lh-camera-controls>button:last-child{grid-column:3}.lh-room-caption{top:110px}.lh-camera-controls input{width:90px}.lh-camera-controls button{padding:5px;font-size:11px}}
+
+/* House art v2: sprites keep their native pixels; shadows are flat pixel ellipses, never blurred. */
+.lh-viewport{background:#16100d}
+.lh-object{overflow:visible}
+.lh-object img{position:absolute;left:50%;bottom:0;width:auto;height:auto;max-width:none;object-fit:none;transform:translateX(-50%) scaleX(var(--flip,1));filter:none;pointer-events:auto;image-rendering:pixelated}
+.lh-object.is-rug img{bottom:50%;transform:translate(-50%,50%) scaleX(var(--flip,1))}
+.lh-object:not(.is-rug):not(.is-wall)::before{content:'';position:absolute;left:6%;right:6%;bottom:-3px;height:8px;border-radius:50%;background:#2a151040;pointer-events:none}
+.lh-object:hover img,.lh-object[aria-pressed=true] img{filter:brightness(1.12)}
+.lh-pet-sprite{left:-32px}
+.lh-pet-shadow{filter:none}
+.lh-viewport[data-view=close] .lh-room-sign{display:none}

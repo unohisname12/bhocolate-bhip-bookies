@@ -1,0 +1,14 @@
+import {describe,it,expect} from 'vitest';
+import {DEFAULTS,environmentAt,preferences,seasonAt,weatherInterest} from './model';
+import {createTestEngineState} from '../../engine/state/createTestEngineState';
+import {createHomeBase,upgradeHouse} from '../home-base/model';
+import {buildWorld} from '../living-house/world';
+import {makeResident,stepResident} from '../living-house/resident';
+describe('living environment',()=>{
+ it('uses calendar seasons in both hemispheres',()=>{for(const [month,season] of [[0,'winter'],[2,'spring'],[5,'summer'],[8,'autumn'],[11,'winter']] as const)expect(seasonAt(new Date(2026,month,15),'north')).toBe(season);expect(seasonAt(new Date(2026,0,15),'south')).toBe('summer');});
+ it('matches each forecast and survives reload without a timer history',()=>{const at=new Date(2026,8,27,13,7).getTime(),e=environmentAt(at);expect(environmentAt(at)).toEqual(e);for(const f of e.forecast)expect(environmentAt(f.at).weather).toBe(f.weather);expect(new Set(Array.from({length:100},(_,i)=>environmentAt(at+i*1200000).weather)).size).toBeGreaterThan(3);});
+ it('follows the clock and supports an accelerated story day',()=>{expect(environmentAt(new Date(2026,8,27,23).getTime()).night).toBe(true);expect(environmentAt(new Date(2026,8,27,6).getTime()).phase).toBe('dawn');expect(environmentAt(12*60000,{...DEFAULTS,clock:'story'}).phase).toBe('day');});
+ it('expires preview and rejects corrupted preferences',()=>{const at=1800000000000;const p={...DEFAULTS,preview:'snow' as const,until:at+900000};expect(environmentAt(at,p).weather).toBe('snow');expect(environmentAt(at+900001,p).preview).toBe(false);expect(preferences({clock:'invalid',volume:NaN,preview:'lava'})).toEqual(DEFAULTS);expect(preferences({volume:30}).volume).toBe(.6);});
+ it('changes activity preferences without changing care or currency',()=>{const e=environmentAt(Date.now(),{...DEFAULTS,preview:'rain',until:Date.now()+10000});expect(weatherInterest('read',e)).toBeGreaterThan(weatherInterest('play',e));const s=createTestEngineState();s.pet!.state='idle';s.pet!.needs.hunger=80;s.pet!.needs.health=100;const snapshot=JSON.stringify(s),w=buildWorld(upgradeHouse(createHomeBase(s))),r=makeResident(w,undefined,s.pet!,'den');r.wait=0;r.socialAfter=Infinity;stepResident(r,w,s.pet!,.1,s,Date.now(),e);expect(r.activity).toBe('Listening to the rain');expect(JSON.stringify(s)).toBe(snapshot);expect(r.events).toEqual([]);});
+ it('does not interrupt invitations, sleep or urgent needs',()=>{const s=createTestEngineState();s.pet!.state='idle';s.pet!.needs.health=100;const w=buildWorld(upgradeHouse(createHomeBase(s))),r=makeResident(w,undefined,s.pet!,'den'),e=environmentAt(Date.now());r.wait=10;r.invited=true;r.activity='Coming to join you';stepResident(r,w,s.pet!,.1,s,Date.now(),e);expect(r.activity).toBe('Coming to join you');s.pet!.state='sleeping';r.invited=false;stepResident(r,w,s.pet!,.1,s,Date.now(),e);expect(r.animation).toBe('sleeping');});
+});

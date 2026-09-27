@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'./e2e',testMatch:'weather.spec.ts',outputDir:'test-results-weather',workers:1,timeout:60000,use:{baseURL:'http://127.0.0.1:5237',channel:'chrome',headless:true,screenshot:'only-on-failure'},webServer:{command:'npx vite --host 127.0.0.1 --port 5237 --strictPort',url:'http://127.0.0.1:5237',reuseExistingServer:true}});

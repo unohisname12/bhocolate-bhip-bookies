@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } 
 import type { EngineState } from '../../types/engine';
 import type { GameEngineAction } from '../../engine/core/ActionTypes';
 import { PetSprite } from '../../components/pet/PetSprite';
-import { FURNITURE, HOME_ROOMS, WALLS, FLOORS, FINISHES, furniture, roomSize, finishFilter, type HomeFurniture, type HomeRoomId } from './catalog';
+import { FURNITURE, HOME_ROOMS, WALLS, FLOORS, FINISHES, furniture, onDisplay, roomSize, finishFilter, type HomeFurniture, type HomeRoomId } from './catalog';
 import { createHomeBase, upgradeHouse, ownsFurniture, canPlace, homeComfort, type HomeRoom, type HomePlacement } from './model';
 import { HomeRoomView, FurnitureArt } from './HomeRoomView';
 import { useRoomLife } from './useRoomLife';
@@ -84,9 +84,9 @@ function RoomCanvas({ room, state, dispatch, editing, pending, selected, select,
       <FurnitureArt placement={p}/>{life.work?.id===p.id && delivering && <span className="hb-delivery-target">Delivery here</span>}{editing && selected === p.id && <span className="hb-item-label">{item.name}</span>}
     </button>;
   };
-  return <><HomeRoomView room={room} editing={editing} floorRef={floor}>
+  return <><HomeRoomView room={room} roomId={state.homeBase?.activeRoom ?? 'den'} editing={editing} floorRef={floor}>
       <div className="hb-tile-grid">{Array.from({ length: rows * cols }, (_, i) => <button type="button" key={i} className="hb-tile" aria-label={`Floor tile ${i % cols + 1}, ${Math.floor(i / cols) + 1}`} onClick={() => placeAt(i % cols, Math.floor(i / cols))}/>)}</div>
-      {room.items.map(renderItem)}
+      {room.items.filter(p => onDisplay(p.furnitureId)).map(renderItem)}
       {delivering && workDefinition && <div className="hb-furniture-delivery" data-delivery-id={workItem.id} data-delivery-x={pet.x} data-delivery-y={pet.y} aria-label={`Pet carrying ${workDefinition.name}`} style={{left:`${(pet.x+.65)/cols*100}%`,top:`${(pet.y+.3)/rows*100}%`,transitionDuration:`${life.motion.duration}ms`,width:`${65/cols}%`,height:`${90/rows}%`,zIndex:residentDepth(pet.y)+1}}><img src={workDefinition.art} alt="" style={{filter:finishFilter(workItem.finish),transform:workItem.flipped?'scaleX(-1)':undefined}}/><span aria-hidden="true">▰</span></div>}
       {!editing && pet.book && shelf && <div className="hb-room-book" style={{left:`${(bookSpot.x+.5)/cols*100}%`,top:`${(bookSpot.y+.5)/rows*100}%`,zIndex:residentDepth(pet.y)+1}}><BookProp phase={pet.book.phase}/></div>}
       {!editing && pet.ball && <span className="hb-fetch-ball" aria-label="Fetch ball" style={{ left: `${(pet.ball.x + .5) / cols * 100}%`, top: `${(pet.ball.y + .5) / rows * 100}%` }}>●</span>}
@@ -125,7 +125,7 @@ export function DecoratingHomeScreen({ state, dispatch }: { state: EngineState; 
   const [collection, setCollection] = useState('all'), [limit, setLimit] = useState(36);
   const collections = [...new Set(FURNITURE.map(f => f.set))];
   const chosen = room.items.find(i => i.id === selected), definition = chosen && furniture(chosen.furnitureId), size = roomSize(room.tier), comfort = homeComfort(room);
-  const visible = FURNITURE.filter(f => (category === 'all' || category === f.category) && (collection === 'all' || collection === f.set) && `${f.name} ${f.set}`.toLowerCase().includes(query.toLowerCase()) && (!ownedOnly || ownsFurniture(state, f.id)));
+  const visible = FURNITURE.filter(f => !f.retired && (category === 'all' || category === f.category) && (collection === 'all' || collection === f.set) && `${f.name} ${f.set}`.toLowerCase().includes(query.toLowerCase()) && (!ownedOnly || ownsFurniture(state, f.id)));
   const select = (id: string | null) => { setSelected(id); setPending(null); };
   const pick = (f: HomeFurniture) => { if (!editing) setEditing(true); setPending(f.id); setSelected(null); setMessage(`Place ${f.name.toLowerCase()}: ${f.layer === 'wall' ? 'choose the back row along the wall' : 'tap a floor tile'}.`); };
   const visit=(id:HomeRoomId)=>{

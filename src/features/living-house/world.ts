@@ -1,4 +1,5 @@
 import {furniture,roomSize,type HomeRoomId} from '../home-base/catalog';
+import meta from './houseArtMeta';
 import type {HomeBase,HomePlacement} from '../home-base/model';
 export type Point={x:number;y:number;floor:number};
 export type HouseResident={petId:string;roomId:HomeRoomId;x:number;y:number;activity:string;objectId?:string;visits?:{objectId:string;count:number}[];destination?:{roomId:HomeRoomId;x:number;y:number;objectId?:string}};
@@ -6,25 +7,28 @@ export type WorldRoom={id:HomeRoomId;x:number;y:number;w:number;h:number;floor:n
 export type WorldObject={key:string;roomId:HomeRoomId;placement:HomePlacement;x:number;y:number;w:number;h:number;floor:number};
 export type World={rooms:WorldRoom[];objects:WorldObject[];open:Map<string,Point>;stairs:[Point,Point];width:number;height:number;doors:(Point&{to:HomeRoomId})[]};
 export const TILE=32;
+// Rooms need headroom for their painted back wall (see houseArt.ts); rows of rooms are spaced to fit it.
+export const WALL_TILES=Math.ceil((meta.wallHeight+meta.frame.top)/TILE);
 export const key=(p:Point)=>`${p.floor}:${Math.round(p.x)},${Math.round(p.y)}`;
 export const distance=(a:Point,b:Point)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y)+Math.abs(a.floor-b.floor)*30;
 export function buildWorld(home:Pick<HomeBase,'rooms'>):World{
  const sizes=(id:HomeRoomId)=>{const s=roomSize(home.rooms[id]?.tier??0);return {w:s.cols+2,h:s.rows+2};};
  const col=Math.max(...Object.keys(home.rooms).map(id=>sizes(id as HomeRoomId).w))+2;
- const row=Math.max(...Object.keys(home.rooms).map(id=>sizes(id as HomeRoomId).h))+3;
+ const row=Math.max(...Object.keys(home.rooms).map(id=>sizes(id as HomeRoomId).h))+WALL_TILES+2;
  const layout:[HomeRoomId,number,number,number][]=[['den',0,0,0],['hall',1,0,0],['kitchen',2,0,0],['garden',1,1,0],['bedroom',0,0,1],['landing',1,0,1],['bathroom',2,0,1],['studio',1,1,1]];
- const rooms=layout.map(([id,x,y,floor])=>({id,x:2+x*col,y:3+y*row,...sizes(id),floor,owned:!!home.rooms[id]}));
+ const rooms=layout.map(([id,x,y,floor])=>({id,x:2+x*col,y:WALL_TILES+1+y*row,...sizes(id),floor,owned:!!home.rooms[id]}));
  const open=new Map<string,Point>(),doors:(Point&{to:HomeRoomId})[]=[];const add=(x:number,y:number,floor:number)=>{const p={x,y,floor};open.set(key(p),p);};
  for(const r of rooms.filter(r=>r.owned))for(let y=r.y;y<r.y+r.h;y++)for(let x=r.x;x<r.x+r.w;x++)add(x,y,r.floor);
  const connect=(aId:HomeRoomId,bId:HomeRoomId,vertical=false)=>{const a=rooms.find(r=>r.id===aId)!,b=rooms.find(r=>r.id===bId)!;if(!a.owned||!b.owned)return;
-  if(vertical){const x=a.x+Math.floor(a.w/2);for(let y=a.y+a.h-1;y<=b.y;y++){add(x,y,a.floor);add(x+1,y,a.floor);}doors.push({x,y:a.y+a.h,floor:a.floor,to:b.id},{x,y:b.y-1,floor:b.floor,to:a.id});}
+  // The hallway down runs near the right wall so it never cuts through the centred windows and pictures.
+  if(vertical){const x=a.x+Math.min(a.w,b.w)-3;for(let y=a.y+a.h-1;y<=b.y;y++){add(x,y,a.floor);add(x+1,y,a.floor);}doors.push({x,y:a.y+a.h,floor:a.floor,to:b.id},{x,y:b.y-1,floor:b.floor,to:a.id});}
   else{const y=a.y+Math.floor(Math.min(a.h,b.h)/2);for(let x=a.x+a.w-1;x<=b.x;x++){add(x,y,a.floor);add(x,y+1,a.floor);}doors.push({x:a.x+a.w,y,floor:a.floor,to:b.id},{x:b.x-1,y,floor:b.floor,to:a.id});}
  };
  connect('den','hall');connect('hall','kitchen');connect('hall','garden',true);connect('bedroom','landing');connect('landing','bathroom');connect('landing','studio',true);
  const objects:WorldObject[]=[];
- for(const r of rooms.filter(r=>r.owned))for(const p of home.rooms[r.id]!.items){const f=furniture(p.furnitureId);if(!f)continue;const o={key:`${r.id}:${p.id}`,roomId:r.id,placement:p,x:r.x+1+p.x,y:r.y+1+p.y,w:f.width,h:f.height,floor:r.floor};objects.push(o);if(f.layer==='furniture')for(let y=o.y;y<o.y+o.h;y++)for(let x=o.x;x<o.x+o.w;x++)open.delete(key({x,y,floor:r.floor}));}
+ for(const r of rooms.filter(r=>r.owned))for(const p of home.rooms[r.id]!.items){const f=furniture(p.furnitureId);if(!f||f.retired)continue;const o={key:`${r.id}:${p.id}`,roomId:r.id,placement:p,x:r.x+1+p.x,y:r.y+1+p.y,w:f.width,h:f.height,floor:r.floor};objects.push(o);if(f.layer==='furniture')for(let y=o.y;y<o.y+o.h;y++)for(let x=o.x;x<o.x+o.w;x++)open.delete(key({x,y,floor:r.floor}));}
  const stair=(id:HomeRoomId)=>{const r=rooms.find(r=>r.id===id)!;return {x:r.x+r.w-1,y:r.y+1,floor:r.floor};};
- return {rooms,objects,open,doors,stairs:[stair('hall'),stair('landing')],width:col*3+4,height:row*2+4};
+ return {rooms,objects,open,doors,stairs:[stair('hall'),stair('landing')],width:col*3+4,height:row*2+WALL_TILES+2};
 }
 export function roomAt(w:World,p:Point):WorldRoom{
  return w.rooms.filter(r=>r.floor===p.floor&&r.owned).sort((a,b)=>distance(p,{x:a.x+a.w/2,y:a.y+a.h/2,floor:a.floor})-distance(p,{x:b.x+b.w/2,y:b.y+b.h/2,floor:b.floor}))[0];

@@ -5,11 +5,11 @@ import {recordLearning} from '../../services/game/learningEvidence';
 import {TRACKS,track,type Track,WIDTH,HEIGHT} from './catalog';
 import {drop,startRun,question,type Run,type Drop,type Cell} from './game';
 export type StackProgress={version:1;sequence:number;run:Run|null;best:Partial<Record<Track,number>>;wins:Partial<Record<Track,number>>;rewardDay:string;rewardCount:number;notice:string;lastRequest?:{id:string;command:string}};
-export type StackCommand={kind:'start';track:Track;mode:'learn'|'arcade'}|({kind:'drop';revision:number}&Drop)|{kind:'undo'|'hint'|'retry'|'explain';revision:number};
+export type StackCommand={kind:'start';track:Track;mode:'learn'|'arcade'|'flow'}|({kind:'drop';revision:number}&Drop)|{kind:'undo'|'hint'|'retry'|'explain';revision:number};
 export const freshStack=():StackProgress=>({version:1,sequence:0,run:null,best:{},wins:{},rewardDay:'',rewardCount:0,notice:''});
 export function parseStack(value:unknown):StackCommand{
  if(!value||typeof value!=='object')throw new Error('Choose a Math Stack action.');const c=value as Record<string,unknown>;
- if(c.kind==='start'&&TRACKS.some(t=>t.id===c.track)&&['learn','arcade'].includes(String(c.mode)))return{kind:'start',track:c.track as Track,mode:c.mode as 'learn'|'arcade'};
+ if(c.kind==='start'&&TRACKS.some(t=>t.id===c.track)&&['learn','arcade','flow'].includes(String(c.mode)))return{kind:'start',track:c.track as Track,mode:c.mode as 'learn'|'arcade'|'flow'};
  if(!Number.isSafeInteger(c.revision)||Number(c.revision)<0)throw new Error('Reload the latest board.');
  if(c.kind==='drop'){for(const[k,max]of[['tray',2],['rotation',3],['value',5],['x',WIDTH-1]] as const)if(!Number.isInteger(c[k])||Number(c[k])<0||Number(c[k])>max)throw new Error('Invalid block placement.');return{kind:'drop',revision:Number(c.revision),tray:Number(c.tray),rotation:Number(c.rotation),value:Number(c.value),x:Number(c.x)};}
  if(['undo','hint','retry','explain'].includes(String(c.kind)))return{kind:c.kind as 'undo'|'hint'|'retry'|'explain',revision:Number(c.revision)};throw new Error('Unknown Math Stack action.');
@@ -46,6 +46,6 @@ export function validStack(p:StackProgress|undefined):boolean{
   if(p.lastRequest&&(typeof p.lastRequest.id!=='string'||p.lastRequest.id.length>100||typeof p.lastRequest.command!=='string'||p.lastRequest.command.length>1000))return false;
   const r=p.run;if(!r)return true;
   const board=(b:(Cell|null)[][])=>Array.isArray(b)&&b.length===HEIGHT&&b.every(row=>Array.isArray(row)&&row.length===WIDTH&&row.every(c=>c===null||typeof c==='object'&&Number.isInteger(c.n)&&Math.abs(c.n)<=100&&Number.isInteger(c.x)&&Math.abs(c.x)<=100&&[0,1,2].includes(c.color)));
-  return typeof r.id==='string'&&r.id.length<160&&TRACKS.some(t=>t.id===r.track)&&['learn','arcade'].includes(r.mode)&&['playing','won','blocked'].includes(r.status)&&nat(r.seed)&&nat(r.level,20)&&nat(r.round,5)&&nat(r.score)&&nat(r.combo)&&nat(r.cleared)&&nat(r.drops)&&nat(r.mistakes)&&nat(r.revision)&&typeof r.helped==='boolean'&&typeof r.message==='string'&&r.message.length<2000&&typeof r.lastClear==='string'&&board(r.board)&&(r.previous===null||board(r.previous));
+  return typeof r.id==='string'&&r.id.length<160&&TRACKS.some(t=>t.id===r.track)&&['learn','arcade','flow'].includes(r.mode)&&['playing','won','blocked'].includes(r.status)&&nat(r.seed)&&nat(r.level,20)&&nat(r.round,r.mode==='flow'?12:5)&&nat(r.score)&&nat(r.combo)&&nat(r.cleared)&&nat(r.drops)&&nat(r.mistakes)&&nat(r.revision)&&typeof r.helped==='boolean'&&typeof r.message==='string'&&r.message.length<2000&&typeof r.lastClear==='string'&&board(r.board)&&(r.previous===null||board(r.previous));
  }catch{return false;}
 }

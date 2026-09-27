@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {TRACKS} from './catalog';
-import {startRun,question,piece,correct,drop,landing,emptyBoard} from './game';
+import {startRun,question,piece,correct,drop,landing,emptyBoard,answerChoices} from './game';
 import {stackCommand,parseStack,validStack} from './model';
 import {createInitialEngineState} from '../../engine/state/createInitialEngineState';
 function solution(r:ReturnType<typeof startRun>){const q=question(r);for(let a=0;a<q.palette.length;a++)for(let b=0;b<q.palette.length;b++){if(correct([...piece(r,0,0,a).map(p=>p.v),...piece(r,0,0,b).map(p=>p.v)],q))return[a,b];}throw new Error('Unsolvable '+r.track);}
@@ -12,4 +12,28 @@ describe('Math Stack',()=>{
  it('undoes only an unsolved move and records examples as supported practice',()=>{let s=createInitialEngineState();s=stackCommand(s,{kind:'start',track:'factor',mode:'learn'});s=stackCommand(s,{kind:'explain',revision:0});expect(s.learningEvidence?.at(-1)?.answerRevealed).toBe(true);s=stackCommand(s,{kind:'drop',revision:1,tray:0,rotation:0,value:0,x:0});s=stackCommand(s,{kind:'undo',revision:2});expect(s.mathStack!.run!.board).toEqual(emptyBoard());expect(()=>stackCommand(s,{kind:'undo',revision:3})).toThrow();});
  it('validates corrupt saves and untrusted commands',()=>{expect(validStack(undefined)).toBe(true);expect(validStack({version:1} as never)).toBe(false);for(const value of [null,{kind:'drop',revision:0,tray:0,rotation:800,value:0,x:0},{kind:'start',track:'fake',mode:'learn'}])expect(()=>parseStack(value)).toThrow();});
  it('caps daily rewards while continuing practice and scores',()=>{let s=createInitialEngineState();s=stackCommand(s,{kind:'start',track:'bonds',mode:'learn'});s.mathStack!.rewardDay=new Date().toISOString().slice(0,10);s.mathStack!.rewardCount=20;const [a,b]=solution(s.mathStack!.run!),mp=s.player.currencies.mp;s=stackCommand(s,{kind:'drop',revision:0,tray:0,rotation:0,value:a,x:0});s=stackCommand(s,{kind:'drop',revision:1,tray:0,rotation:0,value:b,x:4});expect(s.player.currencies.mp).toBe(mp);expect(s.mathStack!.run!.round).toBe(1);expect(s.learningEvidence?.at(-1)?.correct).toBe(true);});
+});
+
+describe('Stack & solve',()=>{
+ it('validates answer choices for every trail, preserves a stack, and finishes twelve questions',()=>{
+  for(const t of TRACKS){let r=startRun('flow',t.id,'flow',1,123);for(let n=0;n<12;n++){
+   const choices=answerChoices(r);expect(new Set(choices.map(a=>a.text)).size).toBe(3);expect(choices.filter(a=>a.correct)).toHaveLength(1);
+   const value=choices.findIndex(a=>a.correct);let best={x:0,rotation:0,y:-1};for(let rot=0;rot<4;rot++)for(let x=0;x<8;x++){const y=landing(r,0,rot,value,x);if(y>best.y)best={x,rotation:rot,y};}
+   const result=drop(r,{tray:0,value,x:best.x,rotation:best.rotation});expect(result.solved,t.id).toBe(true);r=result.run;
+  }expect(r.status).toBe('won');expect(r.drops).toBe(12);}
+ });
+ it('wrong answers leave the stack and question intact; correct rows compact like a falling-block game',()=>{
+  let r=startRun('f','add','flow',1,4);r.drops=1;
+  for(let y=10;y<12;y++)for(let x=0;x<6;x++)r.board[y][x]={n:1,x:0,color:0};
+  const a=answerChoices(r),wrong=drop(r,{tray:0,rotation:0,x:6,value:a.findIndex(c=>!c.correct)});
+  expect(wrong.wrong).toBe(true);expect(wrong.run.board).toEqual(r.board);expect(wrong.run.round).toBe(0);
+  r=drop(wrong.run,{tray:0,rotation:0,x:6,value:a.findIndex(c=>c.correct)}).run;
+  expect(r.cleared).toBe(2);expect(r.board.flat().filter(Boolean)).toHaveLength(0);expect(r.round).toBe(1);expect(r.score).toBe(410);
+ });
+ it('new mode saves and rewards only correct answers, with retry preserving progress',()=>{
+  let s=createInitialEngineState();s=stackCommand(s,{kind:'start',track:'add',mode:'flow'});const a=answerChoices(s.mathStack!.run!),mp=s.player.currencies.mp;
+  s=stackCommand(s,{kind:'drop',revision:0,tray:0,rotation:0,x:0,value:a.findIndex(v=>!v.correct)});expect(s.player.currencies.mp).toBe(mp);
+  s=stackCommand(s,{kind:'drop',revision:1,tray:0,rotation:0,x:0,value:a.findIndex(v=>v.correct)});expect(s.player.currencies.mp).toBe(mp+2);expect(validStack(s.mathStack)).toBe(true);
+  s=stackCommand(s,{kind:'retry',revision:2});expect(s.mathStack!.run!.round).toBe(1);expect(s.mathStack!.run!.score).toBe(110);
+ });
 });

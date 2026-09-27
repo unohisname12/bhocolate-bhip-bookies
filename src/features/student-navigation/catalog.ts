@@ -3,7 +3,7 @@ export interface ActivityCard extends Intent {id:string;description:string;icon:
 export const activities:ActivityCard[]=[
  {id:'math',label:'Math Practice',description:'Five questions. No timer. Help when you need it.',icon:'✦',group:'Quick',action:{type:'SET_SCREEN',screen:'math'}},
  {id:'catch',label:'Catch Math',description:'Choose an answer, throw, and make a catch.',icon:'◎',group:'Quick',action:{type:'SET_SCREEN',screen:'catch_math'}},
- {id:'stack',label:'Math Stack',description:'Move falling blocks to solve real math, from counting to Algebra I.',icon:'▥',group:'Puzzles',action:{type:'SET_SCREEN',screen:'math_stack'}},
+ {id:'stack',label:'Math Stack',description:'Solve a question, choose your answer piece, and clear rows. Kindergarten through Grade 9.',icon:'▥',group:'Puzzles',action:{type:'SET_SCREEN',screen:'math_stack'}},
  {id:'merge',label:'Number Merge',description:'Join nearby numbers. Easy mode has no timer.',icon:'▦',group:'Puzzles',action:{type:'SET_SCREEN',screen:'number_merge'}},
  {id:'dash',label:'Egg Dash',description:'Pick a lane, dodge obstacles, and collect stars.',icon:'➜',group:'Action',action:{type:'SET_SCREEN',screen:'arcade'},hash:'arcade-dash'},
  {id:'guard',label:'Shellguard',description:'Build defenses and plan how to spend your energy.',icon:'♜',group:'Action',action:{type:'SET_SCREEN',screen:'arcade'},hash:'arcade-guard'},

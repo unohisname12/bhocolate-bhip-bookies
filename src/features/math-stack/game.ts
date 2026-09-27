@@ -1,14 +1,14 @@
 import {SHAPES,WIDTH,HEIGHT,track,type Track,type Kind} from './catalog';
 export type Cell={n:number;x:number;color:number};
 export type Question={prompt:string;hint:string;explanation:string;target:number;constant:number;denominator:number;kind:Kind;palette:Cell[]};
-export type Run={id:string;track:Track;mode:'learn'|'arcade';seed:number;level:number;round:number;score:number;combo:number;cleared:number;drops:number;mistakes:number;helped:boolean;status:'playing'|'won'|'blocked';board:(Cell|null)[][];previous:(Cell|null)[][]|null;message:string;lastClear:string;revision:number};
+export type Run={id:string;track:Track;mode:'learn'|'arcade'|'flow';seed:number;level:number;round:number;score:number;combo:number;cleared:number;drops:number;mistakes:number;helped:boolean;status:'playing'|'won'|'blocked';board:(Cell|null)[][];previous:(Cell|null)[][]|null;message:string;lastClear:string;revision:number};
 export function hash(n:number){let x=n|0;x=Math.imul(x^(x>>>16),0x45d9f3b);return(x^(x>>>16))>>>0;}
 const cell=(n:number,x=0,color=0):Cell=>({n,x,color});
-export function question(r:Pick<Run,'track'|'seed'|'round'|'level'>):Question{
+export function question(r:Pick<Run,'track'|'seed'|'round'|'level'> & {mode?:Run['mode']}):Question{
  const k=hash(r.seed+r.round*73+r.level*19),a=1+k%3,b=1+(k>>>3)%(r.track==='add'?2:3),total=4*(a+b),t=track(r.track);
  let prompt='',hint='',explanation='',target=total,constant=0,denominator=1,palette=[cell(0),cell(a),cell(b),cell(a+1),cell(b+2)];
  switch(r.track){
- case 'bonds':target=8;palette=[cell(0),cell(1),cell(2)];prompt='Make 8. Fill a row with blocks that add up to 8.';hint='Eight blocks worth 1 each make 8.';break;
+ case 'bonds':target=r.mode==='flow'?3+k%8:8;palette=[cell(0),cell(1),cell(2)];prompt=r.mode==='flow'?'Count the blocks.': 'Make 8. Fill a row with blocks that add up to 8.';hint=r.mode==='flow'?'Count each block once, from left to right.':'Eight blocks worth 1 each make 8.';break;
  case 'add':prompt=`${4*a} + ${4*b} = ?`;hint=`Count four ${a} blocks and four ${b} blocks. Add the two groups.`;break;
  case 'subtract':prompt=`${total+4*a} − ${4*a} = ?`;hint='Find the difference before choosing your block values.';break;
  case 'multiply':prompt=`4 × ${a+b} = ?`;hint=`Think of four groups of ${a+b}. Each shape has four blocks.`;break;
@@ -32,11 +32,11 @@ export function question(r:Pick<Run,'track'|'seed'|'round'|'level'>):Question{
  return {prompt,hint,explanation,target,constant,denominator,kind:t.kind,palette};
 }
 export const emptyBoard=()=>(Array.from({length:HEIGHT},()=>Array<Cell|null>(WIDTH).fill(null)));
-export function startRun(id:string,skill:Track,mode:Run['mode'],level:number,seed:number):Run{return{id,track:skill,mode,level,seed,round:0,score:0,combo:0,cleared:0,drops:0,mistakes:0,helped:false,status:'playing',board:emptyBoard(),previous:null,message:'Choose a shape and its block value. Build a correct full row.',lastClear:'',revision:0};}
-export function shape(r:Run,tray:number){const seed=hash(r.seed+r.round*11+r.drops*7);return r.mode==='arcade'?(seed+tray)%7:tray===0?0:1+(seed+tray-1)%6;}
+export function startRun(id:string,skill:Track,mode:Run['mode'],level:number,seed:number):Run{return{id,track:skill,mode,level,seed,round:0,score:0,combo:0,cleared:0,drops:0,mistakes:0,helped:false,status:'playing',board:emptyBoard(),previous:null,message:mode==='flow'?'Choose an answer piece, aim the outline, then press Drop.':'Choose a shape and its block value. Build a correct full row.',lastClear:'',revision:0};}
+export function shape(r:Run,tray:number){if(r.mode==='flow')return [0,1,2,0,3,4,1,5,6,0,2,1][r.drops%12];const seed=hash(r.seed+r.round*11+r.drops*7);return r.mode==='arcade'?(seed+tray)%7:tray===0?0:1+(seed+tray-1)%6;}
 export function piece(r:Run,tray:number,rotation:number,value:number){
- const q=question(r),v=q.palette[value];if(!v)throw new Error('Choose a block value.');
- let points:{x:number;y:number;v:Cell}[]=SHAPES[shape(r,tray)].map(([x,y],i)=>({x,y,v:q.kind==='ratio'?cell(0,0,i<v.n?1:2):{...v}}));
+ const q=question(r),v=r.mode==='flow'?cell(1):q.palette[value];if(!v)throw new Error('Choose a block value.');
+ let points:{x:number;y:number;v:Cell}[]=SHAPES[shape(r,tray)].map(([x,y],i)=>({x,y,v:r.mode==='flow'?cell(1):q.kind==='ratio'?cell(0,0,i<v.n?1:2):{...v}}));
  for(let n=0;n<rotation;n++){points=points.map(p=>({...p,x:-p.y,y:p.x}));const minX=Math.min(...points.map(p=>p.x)),minY=Math.min(...points.map(p=>p.y));points=points.map(p=>({...p,x:p.x-minX,y:p.y-minY}));}return points;
 }
 export function fits(r:Run,points:ReturnType<typeof piece>,x:number,y:number){return points.every(p=>x+p.x>=0&&x+p.x<WIDTH&&y+p.y<HEIGHT&&(y+p.y<0||!r.board[y+p.y][x+p.x]));}
@@ -56,7 +56,18 @@ export function drop(run:Run,move:Drop):{run:Run;solved:boolean;wrong:boolean}{
  const r=structuredClone(run);if(r.status!=='playing')throw new Error('Start or resume a board first.');
  const q=question(r),ps=piece(r,move.tray,move.rotation,move.value),y=landing(r,move.tray,move.rotation,move.value,move.x);r.revision++;
  if(y<0){r.status='blocked';r.message='No room for that piece. Undo your last placement or start a fresh board.';return{run:r,solved:false,wrong:false};}
- const before=structuredClone(r.board);for(const p of ps)r.board[y+p.y][move.x+p.x]=p.v;
+ const before=structuredClone(r.board);
+ if(r.mode==='flow'){
+  if(move.value!==answerChoices(r).findIndex(a=>a.correct)){r.mistakes++;r.combo=0;r.message='Not quite. Your piece is safe—try the question again, or ask for a hint.';return{run:r,solved:false,wrong:true};}
+  for(const p of ps)r.board[y+p.y][move.x+p.x]=p.v;
+  const lines=r.board.filter(row=>row.every(Boolean)).length;
+  r.board=r.board.filter(row=>row.some(c=>!c));while(r.board.length<HEIGHT)r.board.unshift(Array<Cell|null>(WIDTH).fill(null));
+  r.drops++;r.round++;r.cleared+=lines;r.combo++;r.score+=100+lines*150+Math.min(r.combo,5)*10;r.previous=null;r.lastClear=q.explanation;r.helped=false;
+  r.message=lines?`${lines===1?'Row clear!':`${lines} rows cleared!`} +${100+lines*150+Math.min(r.combo,5)*10} points. Keep building!`:'Correct! +'+(100+Math.min(r.combo,5)*10)+' points. Next question!';
+  if(r.round>=12){r.status='won';r.message='Adventure complete! Twelve answers, one brilliant builder.';}
+  return{run:r,solved:true,wrong:false};
+ }
+ for(const p of ps)r.board[y+p.y][move.x+p.x]=p.v;
  const full=r.board.filter(row=>row.every(Boolean)),solved=full.filter(row=>correct(row,q));
  if(full.length>solved.length){r.board=before;r.mistakes++;r.combo=0;r.message=`That row makes ${describe(full.find(row=>!correct(row,q))!,q)}. Check the goal and try another value or position. Your piece was returned.`;return{run:r,solved:false,wrong:true};}
  r.drops++;r.previous=before;
@@ -64,3 +75,20 @@ export function drop(run:Run,move:Drop):{run:Run;solved:boolean;wrong:boolean}{
  else r.message='Placed! Fill a full row that satisfies the goal.';
  return{run:r,solved:solved.length>0,wrong:false};
 }
+
+/** Answers belong to the whole piece, not each square. Choice order changes per question. */
+export function answerChoices(r:Run):{text:string;correct:boolean}[]{
+ const q=question(r);let answers:string[];
+ if(q.kind==='factor'){
+  const a=(q.target-Math.sqrt(q.target*q.target-4*q.constant))/2,b=q.target-a;
+  const f=(x:number,y:number)=>`(x + ${x})(x + ${y})`;
+  answers=[f(a,b),f(a+1,b),f(a,b+1)];
+ }else if(q.kind==='ratio')answers=[`${q.target}:${q.constant}`,`${q.target+1}:${Math.max(0,q.constant-1)}`,`${Math.max(0,q.target-1)}:${q.constant+1}`];
+ else if(q.kind==='terms')answers=[`${q.target}x + ${q.constant}`,`${q.target+2}x + ${q.constant}`,`${q.target}x + ${q.constant+2}`];
+ else if(q.kind==='slope')answers=[`${q.target}/8`,`${q.target+4}/8`,`${q.target-4}/8`];
+ else {const format=(n:number)=>q.denominator===8?`${n}/8`:q.denominator===10?(n/10).toFixed(1):String(n);answers=[format(q.target),format(q.target+(r.track==='bonds'?1:2)),format(q.target-(r.track==='bonds'?1:2))];}
+ const shift=hash(r.seed+r.round*29)%3;
+ return [0,1,2].map(i=>{const n=(i+shift)%3;return{text:answers[n],correct:n===0};});
+}
+export const adventureSize=(r:Run)=>r.mode==='flow'?12:5;
+export function flowPrompt(r:Run){const q=question(r);if(r.track==='bonds')return 'How many blocks?';if(q.kind==='ratio')return `Choose the ratio: ${q.target} red blocks to ${q.constant} blue blocks.`;if(q.kind==='slope')return `Which rise / run equals slope ${q.target/4}/2?`;return q.prompt.replace(/ Build x\.| Build the greatest integer x\./,r.track==='inequality'?' What is the greatest integer x?':' What is x?').replace(/Build f\((.*?)\)\./,'What is f($1)?');}

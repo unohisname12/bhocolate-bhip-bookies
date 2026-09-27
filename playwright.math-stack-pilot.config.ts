@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'./e2e',testMatch:'math-stack-pilot.spec.ts',globalSetup:'./e2e/pilot-setup.ts',outputDir:'test-results-math-stack-pilot',workers:1,timeout:90000,use:{baseURL:'http://127.0.0.1:8797',channel:'chrome',headless:true,screenshot:'only-on-failure'},webServer:{command:'npx wrangler dev --ip 127.0.0.1 --port 8797 --persist-to .wrangler/pilot-test-state',url:'http://127.0.0.1:8797',reuseExistingServer:false,timeout:60000}});

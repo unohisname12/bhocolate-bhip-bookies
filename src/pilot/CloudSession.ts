@@ -1,3 +1,4 @@
+import type {StackCommand} from '../features/math-stack/model';
 import type {ArenaCommand} from '../features/pet-arena/model';
 import { upgradeDiscoveryActivities } from '../services/game/discoveryActivity';
 import { startPolling } from './polling';
@@ -156,6 +157,22 @@ export class CloudSession {
       try{localStorage.removeItem(this.key);}catch{/* The server receipt is authoritative. */}
       this.update('saved','Saved online',result.updatedAt);
     }catch(error){if(!(error instanceof PilotError)||error.status===409&&error.code==='conflict')this.update('conflict','The battle service may have saved newer progress. Load the server copy before continuing.');throw error;}
+    finally{this.claiming=false;this.engine.resume();}
+  };
+  stackCommand = async(command:StackCommand):Promise<void> => {
+    if(!this.engine||this.claiming)throw new Error('Wait for the current save to finish.');
+    this.claiming=true;this.engine.pause();
+    if(!await this.flush()){this.claiming=false;this.engine.resume();throw new Error('Wait for Saved online before changing your Math Stack.');}
+    const body={revision:this.revision,requestId:crypto.randomUUID(),command};
+    try {
+      // Retry the same receipt: a lost response cannot apply an item or turn twice.
+      let result:CloudSave;
+      try{result=await pilotAPI<CloudSave>('math-stack-command','POST',body);}catch(error){if(error instanceof PilotError)throw error;result=await pilotAPI<CloudSave>('math-stack-command','POST',body);}
+      this.revision=result.revision;this.latest=null;this.flight=null;
+      this.engine.dispatchDirect({type:'LOAD_LEARNER_PROFILE',state:{...result.state,screen:this.engine.getState().screen}});
+      try{localStorage.removeItem(this.key);}catch{/* The server receipt is authoritative. */}
+      this.update('saved','Saved online',result.updatedAt);
+    }catch(error){if(!(error instanceof PilotError)||error.status===409&&error.code==='conflict')this.update('conflict','The Math Stack service may have saved newer progress. Load the server copy before continuing.');throw error;}
     finally{this.claiming=false;this.engine.resume();}
   };
   recordPartyActivity = (game: 'dash' | 'guard' | 'cafe') => { this.engine?.dispatch({ type: 'COMPLETE_CLASSROOM_ACTIVITY', game }); };

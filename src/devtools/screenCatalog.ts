@@ -14,6 +14,7 @@ import { prizeProgress } from '../features/clash/rewards';
 
 /** Record enforces that every ScreenName has a developer entry. */
 export const SCREEN_CATALOG = {
+  math_stack: ['Math Stack', 'Games'],
   pet_arena: ['Pet Battle RPG', 'games'],
   arcade: ['Woodland Arcade', 'Games'],
   first_adventure: ['First Adventure goals', 'Adventure'],

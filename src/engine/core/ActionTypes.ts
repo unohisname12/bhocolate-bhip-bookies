@@ -31,6 +31,7 @@ export type GameEngineAction =
   | { type: 'PET_VISIT' }
   | { type: 'PET_PREFERENCE'; choice: 'plants' | 'books' | 'toys' }
   | { type: 'PET_NOTICE_OBJECT'; roomId: import('../../features/home-base/catalog').HomeRoomId; id: string }
+  | { type: 'MATH_STACK_COMMAND'; command: import('../../features/math-stack/model').StackCommand }
   | { type: 'HOME_OPEN' }
   | { type: 'HOME_RESIDENT'; resident: import('../../features/living-house/world').HouseResident }
   | { type: 'HOME_TRAVEL'; from: import('../../features/home-base/catalog').HomeRoomId; roomId: import('../../features/home-base/catalog').HomeRoomId }

@@ -4,7 +4,7 @@ import { discoveryDays } from '../../services/game/eggDiscovery';
 /** Games and systems a student sees. A new student starts with a small, clear set; the rest arrives
  * the first time it becomes meaningful, so nobody meets seven currencies and twelve games on day one. */
 export type Feature =
-  | 'dash' | 'catch' | 'merge' | 'math' | 'shop'
+  | 'stack' | 'dash' | 'catch' | 'merge' | 'math' | 'shop'
   | 'cafe' | 'guard' | 'bridge'
   | 'momentum' | 'delivery'
   | 'care' | 'home' | 'battle' | 'first' | 'wardrobe' | 'quests' | 'petGames'
@@ -20,7 +20,7 @@ export const INTROS: Unlock[] = [
 ];
 
 const HATCHED: Feature[] = ['care', 'home', 'battle', 'first', 'wardrobe', 'quests', 'petGames'];
-const STARTER: Feature[] = ['dash', 'catch', 'merge', 'math', 'shop'];
+const STARTER: Feature[] = ['stack', 'dash', 'catch', 'merge', 'math', 'shop'];
 
 export function unlockedFeatures(state: EngineState): Set<Feature> {
   const all = new Set<Feature>([...STARTER, 'cafe', 'guard', 'bridge', 'momentum', 'delivery', ...HATCHED, 'dungeon', 'forge', 'season', 'prizeStudio']);

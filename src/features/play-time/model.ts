@@ -23,7 +23,7 @@ export const DEFAULT_POLICY: PlayPolicy = {
 export const emptyWallet = (): Wallet => ({ classMs: 0, homeMs: 0, day: '', progress: 0, counted: [], lastEarnAt: 0, lastSpendAt: 0, mathOnlyUntil: 0 });
 
 // Math screens earn minutes and never spend them; hub screens (home, pet care, shop) are free.
-export const MATH_SCREENS: readonly ScreenName[] = ['math', 'catch_math', 'number_merge', 'discovery', 'growth', 'woodland'];
+export const MATH_SCREENS: readonly ScreenName[] = ['math_stack', 'math', 'catch_math', 'number_merge', 'discovery', 'growth', 'woodland'];
 const GAME_SCREENS: readonly string[] = ['pet_arena', 'arcade', 'momentum', 'battle', 'first_adventure', 'match_result', 'class_roster'];
 export const spendsTime = (screen: ScreenName) => GAME_SCREENS.includes(screen) || screen.startsWith('run_');
 
@@ -134,4 +134,4 @@ export function walletView(wallet: Wallet, policy: PlayPolicy, now: number, revi
 export type PlayView = ReturnType<typeof walletView>;
 export interface TeacherPlayTime { policy: PlayPolicy; mode: Mode; serverNow: number; students: { id: string; alias: string; active: boolean; view: PlayView; mathOnlyUntil: number; stuck: Stuck[] }[] }
 /** Game ids from the navigation gate (see checkActivity); math games and teacher-run class events stay free. */
-export const gameSpendsTime = (game: string | undefined) => !!game && !['math', 'catch_math', 'number_merge', 'woodland', 'classroom'].includes(game);
+export const gameSpendsTime = (game: string | undefined) => !!game && !['math_stack', 'math', 'catch_math', 'number_merge', 'woodland', 'classroom'].includes(game);

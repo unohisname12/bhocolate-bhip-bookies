@@ -1,3 +1,4 @@
+import {stackCommand,parseStack} from '../src/features/math-stack/model';
 import {arenaRoomsAPI} from './arena-rooms';
 import {command as arenaCommand,parseCommand} from '../src/features/pet-arena/model';
 import { petHuntAPI } from './pet-hunt';
@@ -162,6 +163,20 @@ async function api(request: Request, env: Env): Promise<Response> {
     const previous=parseStored(row.state_json);
     let state:EngineState;
     try{state=arenaCommand(previous,c);if(state.petArena)state.petArena.lastRequest={id,command:JSON.stringify(c)};}catch(e){throw new ApiError(409,e instanceof Error?e.message:'Battle action unavailable.');}
+    return json(await commit(db,row,privateGame(state,row.id,row.alias,names),expected,id,row.assignment,true,names));
+  }
+  if (path === '/api/pilot/math-stack-command' && request.method === 'POST') {
+    if(session.role!=='student')throw new ApiError(403,'Student access required.');
+    const row=await student(db,session.actor_id),body=await readBody(request),expected=revision(body.revision),id=requestID(body.requestId);
+    const names=await approvedPetNames(db,row.id);
+    let c:ReturnType<typeof parseStack>;
+    try{c=parseStack(body.command);}catch(e){throw new ApiError(400,e instanceof Error?e.message:'Invalid Math Stack command.');}
+    const stored=parseStored(row.state_json);
+    if(stored.mathStack?.lastRequest?.id===id){if(stored.mathStack.lastRequest.command!==JSON.stringify(c))throw new ApiError(409,'This action receipt was already used.');return json(snapshot(row,names));}
+    if(row.revision!==expected)throw new ApiError(409,'A newer save exists. Reload before your next Math Stack action.','conflict');
+    const previous=parseStored(row.state_json);
+    let state:EngineState;
+    try{state=stackCommand(previous,c);if(state.mathStack)state.mathStack.lastRequest={id,command:JSON.stringify(c)};}catch(e){throw new ApiError(409,e instanceof Error?e.message:'Math Stack action unavailable.');}
     return json(await commit(db,row,privateGame(state,row.id,row.alias,names),expected,id,row.assignment,true,names));
   }
   if (path === '/api/pilot/save') {

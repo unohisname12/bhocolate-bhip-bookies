@@ -17,7 +17,7 @@ function egg(days: number): EngineState {
 describe('features open as the student plays', () => {
   it('day one shows four games, the shop and nothing else', () => {
     const open = unlockedFeatures(egg(0));
-    expect([...open].sort()).toEqual(['catch', 'dash', 'math', 'merge', 'shop']);
+    expect([...open].sort()).toEqual(['catch', 'dash', 'math', 'merge', 'shop', 'stack']);
     expect(nextUnlock(open)).toContain('second day');
   });
   it('Café, Shellguard and the bridge open on day two; Momentum and Delivery on day three', () => {

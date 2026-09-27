@@ -50,7 +50,7 @@ export function awardDailyGoal(state: EngineState): EngineState {
 export function rewardMath(state: EngineState, problem: MathProblem, correct: boolean, source: string): EngineState {
   if (!problem.id || problem.id.length > 200) return state;
   const economy = state.economy ?? freshEconomy();
-  const receipt = Object.hasOwn(economy.receipts, problem.id) ? economy.receipts[problem.id] : 0;
+  const receipt = Object.prototype.hasOwnProperty.call(economy.receipts, problem.id) ? economy.receipts[problem.id] : 0;
   if (receipt === 2 || state.learningEvidence?.some(r => r.questionId === problem.id && r.correct)) return state;
   const recorded = recordLearning(state, problem, source, correct);
   const mp = correct ? ECONOMY.mp - receipt : receipt ? 0 : 1;

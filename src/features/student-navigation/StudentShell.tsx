@@ -111,6 +111,7 @@ export function StudentShell({state,engine,children,flush,assignment,tools,onAct
    // Starting care opens the companion scene without leaving the activity.
    if(a.type==='SET_SCREEN'&&a.screen==='home'&&engine.getState().screen==='pet_care'&&engine.getState().interaction.careGameActive)return false;
    if(a.type==='SET_SCREEN'&&a.screen==='play'){requestRef.current({label:'Games',view:'games'});return true;}
+   if(a.type==='SET_SCREEN'&&a.screen==='home'&&engine.getState().screen==='home_builder'){requestRef.current({label:'My companion',action:a,resume:true});return true;}
    if(a.type==='SET_SCREEN'&&a.screen==='home'){requestRef.current({label:'Home',view:'today'});return true;}
    const s=engine.getState(),active=exclusiveActivity(s);
    const insideRun=a.type==='SET_SCREEN'&&s.run.active&&['run_map','run_encounter','run_reward','run_rest','run_event','run_over','battle'].includes(a.screen);

@@ -189,7 +189,7 @@ function App({ initialStateOverride, persistence, studentPilot = false, studentF
     if (state.screen === 'discovery' || (!state.pet && !state.egg && state.eggDiscovery && ['home', 'incubation', 'growth'].includes(state.screen))) return <DiscoveryScreen state={state} dispatch={dispatch} />;
     if (state.screen === 'growth') return <GrowthScreen state={state} dispatch={dispatch} />;
     if (state.screen === 'feeding') return <div className="min-h-dvh bg-slate-950"><FeedingScreen isOpen onClose={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })} currentTokens={state.player.currencies.tokens} mpLifetime={state.player.currencies.mpLifetime} onFeed={foodId => { const food = FOOD_ITEMS.find(item => item.id === foodId); if (food) dispatch({ type: 'FEED_PET', food }); }} /></div>;
-    if (state.screen === 'home_builder' || import.meta.env.MODE === 'offline' && state.screen === 'home' && state.pet) return <HomeBaseScreen state={state} dispatch={dispatch}/>;
+    if (state.screen === 'home_builder') return <HomeBaseScreen state={state} dispatch={dispatch}/>;
     if (state.screen === 'arcade') return <ArcadeScreen state={state} dispatch={dispatch}/>;
     if (state.screen === 'play') return <PlayScreen dispatch={devDispatch} hasPet={!!state.pet} arcade={state.arcade} reviews={state.skillReviews} />;
     if (state.mode === 'test') {

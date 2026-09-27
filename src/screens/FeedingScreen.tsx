@@ -53,16 +53,18 @@ export const FeedingScreen: React.FC<FeedingScreenProps> = ({
   const pet = useContext(ActivePetContext);
   const [meal, setMeal] = useState<FoodItem | null>(null);
   const [complete, setComplete] = useState(false);
+  const [before, setBefore] = useState<{hunger:number;health:number}|null>(null);
   const purchased = useRef(false);
   const layout = useRef<HTMLDivElement>(null);
+  const needsPanel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!isOpen) return;
     const panel = layout.current?.closest<HTMLElement>('[role="dialog"]');
     panel?.querySelector<HTMLButtonElement>('button')?.focus({preventScroll: true});
     if (panel) panel.scrollTop = 0;
   }, [meal, isOpen]);
-  const finish = useCallback(() => setComplete(true), []);
-  const resetMeal = () => { purchased.current = false; setMeal(null); setComplete(false); };
+  const finish = useCallback(() => { setComplete(true); requestAnimationFrame(()=>{if(layout.current&&layout.current.clientWidth<700)needsPanel.current?.scrollIntoView({block:'nearest',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}); }, []);
+  const resetMeal = () => { purchased.current = false; setMeal(null); setComplete(false); setBefore(null); };
   const close = () => { resetMeal(); onClose(); };
 
   const playerTier = getMPTier(mpLifetime);
@@ -80,12 +82,12 @@ export const FeedingScreen: React.FC<FeedingScreenProps> = ({
       panelClassName="feeding-modal"
       footer={
         <GameButton variant="secondary" onClick={close} fullWidth>
-          {meal ? 'Back to my pet' : 'Cancel'}
+          {complete ? 'Done — back to my pet' : meal ? 'Back to my pet — snack kept' : 'Back to my pet'}
         </GameButton>
       }
     >
       {pet ? <div className="feeding-layout" ref={layout}><div><FeedingScene key={meal?.id ?? 'ready'} pet={pet} food={meal} home={home} onDone={finish}/><p className="feeding-meal-note"><strong>Your pet. Your little moment.</strong><br/>Choose a snack and watch {pet.name} come over for a bite.</p></div>
-      <div>{meal ? <div className="feeding-receipt"><GameIcon icon={meal.icon} size="w-16 h-16" className="text-5xl" alt={meal.label}/><h3>{complete ? 'A happy tummy!' : `Enjoy your ${meal.label.toLowerCase()}!`}</h3><p>{pet.name} received {meal.label.toLowerCase()}.</p><p>+{meal.nutrition} {meal.rarity === 'medicine' ? 'health' : 'hunger'} · {meal.cost} tokens spent</p><small>You can close this scene anytime. Your pet keeps the snack benefits.</small><button disabled={!complete} onClick={resetMeal}>{complete ? 'Choose another snack' : 'Snack time…'}</button></div> : <>
+      <div><div ref={needsPanel} className="feeding-needs" aria-label="Your pet’s food meter"><div><strong>Fullness</strong><span>{(meal&&!complete?before?.hunger:pet.needs.hunger)!>=90?'Full and satisfied':(meal&&!complete?before?.hunger:pet.needs.hunger)!>=60?'Comfortably fed':(meal&&!complete?before?.hunger:pet.needs.hunger)!>=30?'Ready for a snack':'Hungry — time for food'}</span></div><div className="feeding-need-track" role="progressbar" aria-label="Pet fullness" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(meal&&!complete?before?.hunger??pet.needs.hunger:pet.needs.hunger)}><i style={{width:`${meal&&!complete?before?.hunger??pet.needs.hunger:pet.needs.hunger}%`}}/></div><p>{Math.round(meal&&!complete?before?.hunger??pet.needs.hunger:pet.needs.hunger)} / 100 · A fuller bar means less hungry.</p>{meal?.rarity==='medicine'&&<><strong>Health · {Math.round(complete?pet.needs.health:before?.health??pet.needs.health)} / 100</strong><div className="feeding-need-track" role="progressbar" aria-label="Pet health" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(complete?pet.needs.health:before?.health??pet.needs.health)}><i style={{width:`${complete?pet.needs.health:before?.health??pet.needs.health}%`}}/></div></>}</div>{meal ? <div className="feeding-receipt"><GameIcon icon={meal.icon} size="w-16 h-16" className="text-5xl" alt={meal.label}/><h3>{complete ? 'Good care! Snack time is complete.' : `Enjoy your ${meal.label.toLowerCase()}!`}</h3><p>{pet.name} received {meal.label.toLowerCase()}.</p><p role="status">{complete&&before?`${meal.rarity==='medicine'?'Health':'Fullness'}: ${Math.round(before[meal.rarity==='medicine'?'health':'hunger'])} → ${Math.round(pet.needs[meal.rarity==='medicine'?'health':'hunger'])} / 100`:'Watch the meter fill when your pet finishes eating.'}</p><p>{meal.cost} tokens spent · {complete?'Care complete':'Snack received'}</p><small>{complete?'All done! Offer another snack or head back to your house.': 'Your pet already has the snack. Leaving keeps its benefits.'}</small><button disabled={!complete} onClick={resetMeal}>{complete ? 'Choose another snack' : 'Snack time…'}</button></div> : <>
       <div className="flex justify-between items-center mb-4">
         <span className="text-slate-300 font-bold tracking-wider text-sm">Available tokens:</span>
         <span className="text-amber-400 font-black text-xl flex items-center gap-1">
@@ -125,6 +127,7 @@ export const FeedingScreen: React.FC<FeedingScreenProps> = ({
               onClick={() => {
                 if (clickable && !purchased.current) {
                   purchased.current = true;
+                  setBefore({hunger:pet.needs.hunger,health:pet.needs.health});
                   setMeal(food);
                   setComplete(false);
                   onFeed(food.id, food.cost, food.nutrition);

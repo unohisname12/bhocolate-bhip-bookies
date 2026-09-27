@@ -66,18 +66,18 @@
 .hunt-guide { width: min(820px, calc(100vw - 24px)); max-height: 90dvh; overflow-y: auto; padding: clamp(18px, 3vw, 30px); border: 1px solid #bca875; border-radius: 18px; background: #162936; color: #edf6eb; box-shadow: 0 24px 100px #0009; font-family: Inter, system-ui, sans-serif; }
 .hunt-guide::backdrop { background: #061522df; }
 .hunt-guide header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.hunt-guide h2 { font-size: 28px; margin: 6px 0; }
+.hunt-guide h2 { font-size:28px; margin: 6px 0; }
 .hunt-guide button { min-height: 44px; border: 1px solid #8b9b93; background: #294550; color: #edf6eb; padding: 10px 16px; border-radius: 9px; font: inherit; cursor: pointer; }
 .hunt-guide button[aria-pressed=true] { background: #e2bd76; color: #192c30; }
 .hunt-guide-tabs { display: flex; gap: 10px; margin: 18px 0; }
 .hunt-guide .hunt-win-rule { color: #f4d799; font-weight: 750; line-height: 1.5; margin: 16px 0; }
 .hunt-guide video { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 10px; background: #081523; }
 .hunt-guide ol { padding-left: 24px; line-height: 1.6; }.hunt-guide li { margin: 12px 0; }.hunt-guide strong { color: #f2daa5; }
-.hunt-guide footer { border-top: 1px solid #b4cab044; padding-top: 18px; line-height: 1.6; }.hunt-guide p { line-height: 1.5; }.hunt-guide .hunt-guide-caption { font-size: 12px; margin: 12px 0; }.hunt-guide a { color: #f4d799; text-decoration: underline; }.hunt-guide-notice { background: #594732; padding: 12px; border-radius: 8px; }
-.hunt-immersive>.hunt-next-objective { position: absolute; z-index: 3; top: 152px; left: 18px; max-width: calc(100% - 36px); padding: 8px 12px; background: #112c39ef; border: 1px solid #d8bf7955; border-radius: 9px; font-size: 13px; color: #ffe4a3; pointer-events: none; }
+.hunt-guide footer { border-top: 1px solid #b4cab044; padding-top: 18px; line-height: 1.6; }.hunt-guide p { line-height: 1.5; }.hunt-guide .hunt-guide-caption { font-size:12px; margin: 12px 0; }.hunt-guide a { color: #f4d799; text-decoration: underline; }.hunt-guide-notice { background: #594732; padding: 12px; border-radius: 8px; }
+.hunt-immersive>.hunt-next-objective { position: absolute; z-index: 3; top: 152px; left: 18px; max-width: calc(100% - 36px); padding: 8px 12px; background: #112c39ef; border: 1px solid #d8bf7955; border-radius: 9px; font-size:13px; color: #ffe4a3; pointer-events: none; }
 .hunt-immersive.hunt-modal-open>.hunt-next-objective { visibility: hidden; }
-@media(max-width:750px){ .hunt-immersive>.hunt-next-objective { top: 122px; left: 10px; max-width: calc(100% - 20px); font-size: 11px; padding: 7px 9px; }.hunt-charge-card>small { display: block; font-size: 9px; }.hunt-immersive>.hunt-top>span { display: none; }.hunt-guide h2 { font-size: 23px; } }
-@media(max-height:500px) and (min-width:600px){ .hunt-immersive>.hunt-next-objective { top: 108px; font-size: 11px; padding: 5px 9px; } }
+@media(max-width:750px){ .hunt-immersive>.hunt-next-objective { top: 122px; left: 10px; max-width: calc(100% - 20px); font-size:11px; padding: 7px 9px; }.hunt-charge-card>small { display: block; font-size:9px; }.hunt-immersive>.hunt-top>span { display: none; }.hunt-guide h2 { font-size:23px; } }
+@media(max-height:500px) and (min-width:600px){ .hunt-immersive>.hunt-next-objective { top: 108px; font-size:11px; padding: 5px 9px; } }
 
 .hunt-guide header { position: sticky; top: 0; z-index: 2; background: #162936; padding-bottom: 10px; }
 /* The escape button takes over the action slot when a runner reaches the open gate. */

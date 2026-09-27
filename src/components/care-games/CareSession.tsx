@@ -29,12 +29,14 @@ export function CareSession({ mode, onComplete, onCancel }: { mode: CareMode; on
   const scoreRef = useRef(0), started = useRef(0), holdingRef = useRef(false);
   const patchesRef = useRef([0, 0, 0, 0]);
   const committed = useRef(false);
+  const completeCallback=useRef(onComplete);
+  useEffect(()=>{completeCallback.current=onComplete;},[onComplete]);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const lastScrub = useRef(0);
   const panel = useRef<HTMLDivElement>(null);
   const primary = useRef<HTMLButtonElement>(null);
   const end = useCallback(() => { phaseRef.current = 'result'; holdingRef.current = false; setHolding(false); setPhase('result'); }, []);
-  const cancel = useCallback(() => { if (committed.current) return; committed.current = true; holdingRef.current = false; onCancel(); }, [onCancel]);
+  const cancel = useCallback(() => { if (committed.current) return; committed.current = true; holdingRef.current = false; if(phaseRef.current==='result'&&scoreRef.current>0)onComplete(Math.min(1,scoreRef.current/config.targetCount));else onCancel(); }, [onCancel,onComplete,config.targetCount]);
 
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null;
@@ -64,6 +66,12 @@ export function CareSession({ mode, onComplete, onCancel }: { mode: CareMode; on
     document.addEventListener('visibilitychange', release);
     return () => { window.clearInterval(timer); window.removeEventListener('blur', release); document.removeEventListener('visibilitychange', release); };
   }, [phase, mode, timed, config.durationMs, config.targetCount, end]);
+
+  useEffect(()=>{
+    if(phase!=='result'||scoreRef.current<=0)return;
+    const timer=setTimeout(()=>{if(committed.current)return;committed.current=true;completeCallback.current(Math.min(1,scoreRef.current/config.targetCount));},900);
+    return()=>clearTimeout(timer);
+  },[phase,config.targetCount]);
 
   const hit = () => {
     if (phaseRef.current !== 'playing') return;
@@ -131,7 +139,7 @@ export function CareSession({ mode, onComplete, onCancel }: { mode: CareMode; on
     <div className="care-session-controls"><GameRules name={theme.title}><p>{theme.instruction}</p><p>{theme.benefit}</p></GameRules>
       {phase === 'ready' ? <><p className="care-benefit">{theme.benefit}</p><div className="care-pace" role="group" aria-label="Activity pace"><button className="care-button" aria-pressed={!timed} onClick={() => setTimed(false)}>No rush <small>Take your time</small></button><button className="care-button" aria-pressed={timed} onClick={() => setTimed(true)}>Quick challenge <small>{config.durationMs / 1000} seconds</small></button></div><button ref={primary} className="care-button primary" onClick={() => { started.current = Date.now(); phaseRef.current = 'playing'; setPhase('playing'); }}>Let’s begin</button><p className="care-fineprint">{timed ? 'The timer starts when you’re ready.' : 'No timer. Explore and enjoy your time together. The same care rewards are available at either pace.'} Close any time without spending tokens.</p></>
         : <><div className="care-progress-heading"><span>{phase === 'result' ? 'Care moment complete' : mode === 'comfort' ? 'A little calmer' : `${Math.floor(score)} / ${config.targetCount} little moments`}</span><span>{phase === 'playing' ? timed ? `${Math.ceil(remaining / 1000)}s` : 'No rush' : `${Math.round(progress * 100)}%`}</span></div><div className="care-progress" role="progressbar" aria-label="Care activity progress" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${progress * 100}%` }} /></div>
-          <p className="care-feedback" role="status">{phase === 'result' ? progress > 0 ? 'Your companion enjoyed your company. Finish to save this care moment.' : 'No care action completed yet. Return and choose No rush to try without a timer.' : feedback || 'Your turn.'}</p>
+          <p className="care-feedback" role="status">{phase === 'result' ? progress > 0 ? 'Good care! Your companion enjoyed that. Applying your care results…' : 'No care action completed yet. Return and choose No rush to try without a timer.' : feedback || 'Your turn.'}</p>
           {phase === 'playing' && mode === 'brush' && <button ref={primary} className="care-button primary" onClick={() => brush(direction)}>Brush {direction} {ARROWS[direction]}</button>}
           {phase === 'playing' && mode === 'comfort' && <button ref={primary} className={`care-button primary ${holding ? 'is-holding' : ''}`} onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); hold(true); }} onPointerUp={() => hold(false)} onPointerCancel={() => hold(false)} onLostPointerCapture={() => hold(false)} onBlur={() => hold(false)} onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); hold(true); } }} onKeyUp={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); hold(false); } }}>Hold to comfort {holding ? '♥' : ''}</button>}
           {phase === 'result' && <>{progress > 0 && <p className="care-benefit">{theme.benefit}</p>}<button ref={primary} className="care-button primary" onClick={() => { if (committed.current) return; committed.current = true; onComplete(progress); }}>{progress > 0 ? 'Finish care' : 'Return to care'}</button></>}

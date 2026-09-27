@@ -1,3 +1,4 @@
+import {DisplaySize} from './components/ui/DisplaySize';
 import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
@@ -10,6 +11,7 @@ const PetHunt = lazy(() => import('./features/pet-hunt/PetHunt').then(m => ({ de
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
+      <DisplaySize/>
       <Suspense fallback={<p role="status">Opening your game…</p>}>
         {new URLSearchParams(window.location.search).has('petHunt') ? <PetHunt /> : import.meta.env.MODE === 'pilot' ? <LazyPilotRoot /> : <App />}
       </Suspense>

@@ -96,7 +96,7 @@ export function StudentShell({state,engine,children,flush,assignment,tools,onAct
    setPending({intent:i,reason:`${active.label} is still open. ${active.consequence}`,end:true});return;
   }
   if(s.arcade?.run&&i.hash?.startsWith('arcade-')&&i.hash!=='arcade-shop'&&i.hash!==`arcade-${s.arcade.run.game}`){setPending({intent:i,reason:'Another arcade round is saved. Finish that round with its current score before starting this game. Your earned stars stay yours.',end:true});return;}
-  if(viewRef.current==='activity'&&['number_merge','catch_math','pet_care','feeding'].includes(s.screen)){
+  if(viewRef.current==='activity'&&(['number_merge','catch_math'].includes(s.screen)||s.interaction.careGameActive)){
    setPending({intent:i,reason:s.screen==='number_merge'?'Leaving restarts this Number Merge board. Rewards already earned stay yours.':s.screen==='catch_math'?'Leaving starts a new Catch Math round next time. Answers and rewards already recorded stay yours.':'Leaving cancels any unfinished care activity. Completed care and rewards stay yours.',end:false});return;
   }
   void perform(i);
@@ -108,6 +108,8 @@ export function StudentShell({state,engine,children,flush,assignment,tools,onAct
   engine.setExternalNavigationHandler((label,purpose)=>new Promise(resolve=>{externalResolve.current?.(false);externalResolve.current=resolve;if(lock.current){resolve(false);externalResolve.current=null;return;}requestRef.current({label,purpose,callback:()=>{externalResolve.current?.(true);externalResolve.current=null;}});}));
   engine.setNavigationHandler(a=>{
    if(accepted.current||(!isNavigation(a)&&a.type!=='ARCADE_START'&&a.type!=='ARCADE_RETRY'))return false;
+   // Starting care opens the companion scene without leaving the activity.
+   if(a.type==='SET_SCREEN'&&a.screen==='home'&&engine.getState().screen==='pet_care'&&engine.getState().interaction.careGameActive)return false;
    if(a.type==='SET_SCREEN'&&a.screen==='play'){requestRef.current({label:'Games',view:'games'});return true;}
    if(a.type==='SET_SCREEN'&&a.screen==='home'){requestRef.current({label:'Home',view:'today'});return true;}
    const s=engine.getState(),active=exclusiveActivity(s);
@@ -119,7 +121,7 @@ export function StudentShell({state,engine,children,flush,assignment,tools,onAct
    if(accepted.current)return;
    if(a.type==='START_ENGINE'&&viewRef.current!=='activity'){engine.pause();return;}
    if(next.screen!==previous.screen&&!['TICK','PAUSE_ENGINE','RESUME_ENGINE','START_ENGINE'].includes(a.type)){
-    changeView(next.screen==='home'?'today':next.screen==='play'?'games':'activity',false);
+    changeView(next.screen==='home'&&!next.interaction.careGameActive?'today':next.screen==='play'?'games':'activity',false);
    }
   });
   const back=(e:PopStateEvent)=>{const v=e.state?.vpetView;requestRef.current({label:'Home',view:['today','pet','games','together','rewards'].includes(v)?v:'today',history:false});};

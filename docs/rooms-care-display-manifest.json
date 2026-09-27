@@ -1,0 +1,77 @@
+{
+  "version": "4e7e62dc-3c5a-4ae4-8da1-f3e53896ddf5",
+  "files": [
+    {
+      "path": "src/features/living-house/LivingHouse.tsx",
+      "sha256": "812aeae87c75944ebda06ee71fbcf5dd42cbcab92c70616dc3b0e62a6325617e"
+    },
+    {
+      "path": "src/features/living-house/RoomPreview.tsx",
+      "sha256": "dbb675e0bb04dff253a24ec5e80dea35c3298a0d1d555d524918d5042bec2065"
+    },
+    {
+      "path": "src/features/living-house/camera.ts",
+      "sha256": "c637630792697bfd6bba25de497f80a8a95fd2f3e554d65021bfab3aaec163ba"
+    },
+    {
+      "path": "src/features/living-house/paint.ts",
+      "sha256": "bbb45137c44853ba3b3dbbf7928cc64f1fe65698f0438e1cb8daf346690b367f"
+    },
+    {
+      "path": "src/features/living-house/living-house.css",
+      "sha256": "bd7193ebc658837c9237b1ce73640e265d0feec4ed1801e5d24d9ffc7e528460"
+    },
+    {
+      "path": "src/screens/FeedingScreen.tsx",
+      "sha256": "fd12893f84a52eaa75cc1d7be65e7df48eeee866209e21fbef821d330fb08152"
+    },
+    {
+      "path": "src/components/care/feeding.css",
+      "sha256": "f65231c6daad9fa8d9c19bd3681857e95f6d3491bb2314b5a4d282369c5c5beb"
+    },
+    {
+      "path": "src/components/care-games/CareGameOverlay.tsx",
+      "sha256": "0f041cd5120ffeed36d01c6f646406fb0ecc500a2ead3a2f06ef79d70a2b95cf"
+    },
+    {
+      "path": "src/components/care-games/CareSession.tsx",
+      "sha256": "ba0b21cdad3aa9c9e0a23259581c4fb39a75b4847efa981264b7ae39b5d471a3"
+    },
+    {
+      "path": "src/components/ui/DisplaySize.tsx",
+      "sha256": "dc62064124c554ac9162b0f1f2986854b7fd20a8c542d17c817a810f9e08be3d"
+    },
+    {
+      "path": "src/components/ui/display-size.css",
+      "sha256": "35a61a80597894fbfbe235ef643d4406edd033c78edf45f04d751251879d1dbc"
+    },
+    {
+      "path": "src/main.tsx",
+      "sha256": "73a2a755a2eb8cd357795e908aecef3476a0d7041980e154bdff60ea802ad022"
+    },
+    {
+      "path": "postcss.config.js",
+      "sha256": "06f16f73f98c022e6dfe265d12041d20452bcc27ba8edfd1022f9306b4eb387d"
+    },
+    {
+      "path": "src/features/pet-hunt/PetHunt.tsx",
+      "sha256": "0bb0c8c189bc14b0f76c801066013b499438746d5ce7ada7c5a0ddf748235a9a"
+    },
+    {
+      "path": "src/features/pet-hunt/HuntMenu.tsx",
+      "sha256": "bea18d09af9e528596f2c7ce020552e04aa11915623e29a48a3adfd580440487"
+    },
+    {
+      "path": "src/features/pet-hunt/pet-hunt.css",
+      "sha256": "7e0fdb4b5525688bac6535806524d6a1f970af5a723eb055e62b1a282ba94700"
+    },
+    {
+      "path": "src/features/pet-hunt/hunt-clean.css",
+      "sha256": "d9b0bd0d60ea65b21aeaf80ecf514f3c99d76489c42f5fa5ec46d9141bdb43b9"
+    },
+    {
+      "path": "src/features/student-navigation/StudentShell.tsx",
+      "sha256": "af501d7437f4e33b91723823fb8f14ec8f3ec8521a11239547b9754a1bb739ad"
+    }
+  ]
+}

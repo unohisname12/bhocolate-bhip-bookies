@@ -20,6 +20,19 @@ export function paintHouse(canvas:HTMLCanvasElement,w:World,home:HomeBase,floor:
   rect(x-7,y,7,hh+5,'#715437');rect(x+ww,y,7,hh+5,'#493a2e');rect(x-7,y+hh,ww+14,6,'#c49c63');rect(x-7,y+hh+6,ww+14,6,'#584432');
   if(r.owned){const wx=x+ww/2-17;rect(wx-3,y-34,40,32,'#5b4231');rect(wx,y-32,34,28,night?'#3c5a6a':'#a2c7b3');rect(wx+2,y-30,13,11,night?'#506b7b':'#d6e6b4');rect(wx+17,y-30,15,11,night?'#455871':'#c7dcaa');rect(wx+16,y-32,2,28,'#765d3e');rect(wx,y-19,34,2,'#765d3e');rect(wx-4,y-4,42,4,'#cdb37b');
    c.fillStyle=night?'#9ab0cb0a':'#fff1b518';c.beginPath();c.moveTo(wx,y+2);c.lineTo(wx+34,y+2);c.lineTo(wx+100,y+130);c.lineTo(wx+30,y+130);c.fill();
+   // Architectural details sit on the wall, leaving saved furniture and walking paths untouched.
+   rect(x+2,y+3,ww-4,5,'#49382722');rect(x+2,y+8,ww-4,4,'#49382711');
+   const fx=x+24,fy=y-29;
+   if(r.id==='den'||r.id==='bedroom'){
+    rect(fx-3,fy-3,30,22,'#63482e');rect(fx-1,fy-1,26,18,'#c6a56b');rect(fx+1,fy+1,22,14,night?'#567478':'#91b7a5');
+    rect(fx+16,fy+3,4,4,'#f4d799');rect(fx+1,fy+10,22,5,'#536e54');rect(fx+7,fy+7,8,8,'#6c8a60');
+    const sx=x+ww-62;rect(sx,y-12,42,4,'#755131');rect(sx,y-12,42,1,'#dcc18d');
+    for(let i=0;i<5;i++){rect(sx+3+i*5,y-24+(i%2)*3,4,12-(i%2)*3,['#637f80','#ad725c','#ddc38d','#7b8762','#916d67'][i]);rect(sx+4+i*5,y-21+(i%2)*3,2,1,'#e9dab1');}
+   }else if(r.id==='kitchen'){
+    rect(fx,fy,36,3,'#765639');for(let i=0;i<3;i++){rect(fx+5+i*11,fy+3,2,5,'#c7b68b');rect(fx+3+i*11,fy+8,6,7,['#8e9c8e','#ae7658','#c2b99c'][i]);}rect(x+ww-40,y-25,18,19,'#d4c99e');rect(x+ww-38,y-23,14,15,'#768864');rect(x+ww-36,y-17,10,1,'#ded5a6');
+   }else if(r.id==='bathroom'){
+    rect(fx,fy+5,38,3,'#8d9b8f');rect(fx+5,fy+6,11,19,'#e6ddc3');rect(fx+6,fy+9,2,13,'#c2ccb9');rect(fx+23,fy+6,9,16,'#91b4ad');rect(fx+24,fy+9,2,10,'#c7d7c3');
+   }else{rect(fx,fy,22,19,'#74583b');rect(fx+2,fy+2,18,15,'#dccba2');rect(fx+9,fy+5,5,8,'#819676');}
   }else{c.fillStyle='#b6b397';c.font='9px monospace';c.textAlign='center';c.fillText('ROOM TO GROW',x+ww/2,y+hh/2);}
  }
  // Door openings are physical walkable tiles between room footprints.

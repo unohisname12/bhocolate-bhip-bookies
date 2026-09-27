@@ -62,6 +62,7 @@ export interface EconomyProgress {
 }
 
 export interface EngineState {
+  petArena?: import('../features/pet-arena/model').ArenaProgress;
   economy?: EconomyProgress;
   activityRoute?: 'delivery' | 'arcade-dash' | 'arcade-guard' | 'arcade-cafe' | 'arcade-shop' | '';
   practiceCheckpoint?: { problem: import('./index').MathProblem; correct: boolean | null; completed: number };

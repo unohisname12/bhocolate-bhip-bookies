@@ -1,3 +1,5 @@
+import type {ArenaCommand} from './features/pet-arena/model';
+const PetArena = lazy(() => import('./features/pet-arena/Arena').then(m=>({default:m.Arena})));
 import { unlockedFeatures } from './features/student-navigation/unlocks';
 import { StudentShell } from './features/student-navigation/StudentShell';
 import { demoLearners, selectDemoLearner, createDemoLearner } from './demo/demoClassroom';
@@ -139,7 +141,7 @@ function loadInitialState(): EngineState {
 }
 
 
-function App({ initialStateOverride, persistence, studentPilot = false, studentFlush, studentAssignment, studentTools }: { initialStateOverride?: EngineState; persistence?: typeof import('./services/persistence/enginePersistence').connectPersistence; studentPilot?: boolean; studentFlush?:()=>Promise<boolean>; studentAssignment?:()=>string; studentTools?:ReactNode } = {}) {
+function App({ initialStateOverride, persistence, studentPilot = false, studentFlush, studentAssignment, studentTools, arenaExecute }: { initialStateOverride?: EngineState; persistence?: typeof import('./services/persistence/enginePersistence').connectPersistence; studentPilot?: boolean; studentFlush?:()=>Promise<boolean>; studentAssignment?:()=>string; studentTools?:ReactNode; arenaExecute?:(command:ArenaCommand)=>Promise<void> } = {}) {
   const [initialState] = useState<EngineState>(() => initialStateOverride ?? (DEMO_MODE ? createDemoState() : loadInitialState()));
   const { state, engine, dispatch } = useGameEngine(initialState, DEMO_MODE ? connectDemoPersistence : persistence);
   const learnerFacts = useMemo(() => ({ skillReviews: state.skillReviews, matchHistory: state.matchHistory }), [state.skillReviews, state.matchHistory]);
@@ -239,6 +241,7 @@ function App({ initialStateOverride, persistence, studentPilot = false, studentF
     if (state.screen === 'run_over') {
       return <RunOverScreen run={state.run} pet={state.pet} dispatch={dispatch} />;
     }
+    if (state.screen === 'pet_arena') return <PetArena state={state} dispatch={dispatch} execute={arenaExecute}/>;
     if (state.screen === 'battle' && state.battle.active) {
       return <BattleScreen prizeWins={state.prizes?.wins ?? 0} key={state.battle.playerPet.speciesId} battle={state.battle} dispatch={dispatch} matchHistory={state.matchHistory} trophyCase={state.trophyCase} />;
     }

@@ -1,3 +1,4 @@
+import {validArena} from '../../features/pet-arena/model';
 import { validEconomy } from '../game/economy';
 import { validReviews } from '../../features/learning/review';
 import { validArcade } from '../../features/arcade/model';
@@ -46,6 +47,7 @@ export const validateSave = (data: unknown): { valid: boolean; errors: string[] 
   else {
     const s = d.state as EngineState;
     if ([s.pet, ...(Array.isArray(s.companionRoster) ? s.companionRoster : [])].some(p => p?.mind !== undefined && !validMind(p.mind))) errors.push('Invalid pet memories');
+    if (!validArena(s.petArena)) errors.push('Invalid pet battle progress');
     if (!validEconomy(s.economy)) errors.push('Invalid economy progress');
     if (s.arcade !== undefined && !validArcade(s.arcade)) errors.push('Invalid arcade progress');
     if (s.firstAdventure !== undefined && !validFirstAdventure(s.firstAdventure)) errors.push('Invalid first adventure');

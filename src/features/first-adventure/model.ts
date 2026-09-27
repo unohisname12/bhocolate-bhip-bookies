@@ -39,8 +39,8 @@ export function observeFirstAdventure(before: EngineState, next: EngineState, ac
     return { ...next, firstAdventure: { ...a, phase: 'bond' } };
   if (a.phase === 'bond' && action.type === 'PET_HOME_MEMORY' && before.pet?.mind !== next.pet?.mind)
     return { ...next, firstAdventure: { ...a, phase: 'battle' } };
-  if (a.phase === 'battle' && before.battle.active && next.battle.active
-    && !['victory', 'defeat'].includes(before.battle.phase) && ['victory', 'defeat'].includes(next.battle.phase)) {
+  if (a.phase === 'battle' && next.firstAdventure?.phase!=='complete' && ((before.battle.active && next.battle.active
+    && !['victory', 'defeat'].includes(before.battle.phase) && ['victory', 'defeat'].includes(next.battle.phase)) || (before.petArena?.fight?.phase==='active' && next.petArena?.fight && ['won','lost','draw'].includes(next.petArena.fight.phase) && next.petArena.fight.mode!=='practice'))) {
     const paid = addTokens(next, 2 * TOKENS_PER_MEDAL);
     return { ...paid, firstAdventure: { ...a, phase: 'complete' },
       notifications: [...next.notifications, { id: 'first-adventure-complete', message: `First Adventure complete! +${2 * TOKENS_PER_MEDAL} tokens for trying a battle. Your Adventure Shelf is yours to keep.`, icon: '/assets/generated/final/reward_trophy_gold.png', timestamp: Date.now() }].slice(-30) };

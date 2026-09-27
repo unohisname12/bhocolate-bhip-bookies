@@ -3,6 +3,7 @@ import type { GameEngineAction } from '../../engine/core/ActionTypes';
 import { addTokens, TOKENS_PER_MEDAL } from '../../services/game/wallet';
 
 export interface PrizeProgress {
+  arenaWinClaims?: string[];
   teacherClaims?: string[];
   earlyHatchPasses?: number;
   wins: number;
@@ -74,10 +75,12 @@ export function awardTransitions(before: EngineState, next: EngineState, action:
     const pet = next.battle.playerPet;
     next = { ...next, prizes: p, battle: { ...next.battle, playerPet: { ...pet, strength: boost === 'attack' ? Math.ceil(pet.strength * 1.2) : pet.strength, defense: boost === 'defense' ? Math.ceil(pet.defense * 1.2) : pet.defense }, log: [...next.battle.log, { turn: 0, actor: 'player', action: 'prize_boost', message: `Prize boost: +20% ${boost} for this fight only.` }] } };
   }
-  const won = before.battle.active && before.battle.phase !== 'victory' && next.battle.active && next.battle.phase === 'victory';
+  const arenaId=before.petArena?.fight?.phase==='active'&&next.petArena?.fight?.phase==='won'&&next.petArena.fight.mode!=='practice'?next.petArena.fight.id:null;
+  const arenaWon=!!arenaId&&!p.arenaWinClaims?.includes(arenaId);
+  const won = arenaWon || before.battle.active && before.battle.phase !== 'victory' && next.battle.active && next.battle.phase === 'victory';
   if (won) {
     const wins = p.wins + 1;
-    next = { ...addTokens(next, 2 * TOKENS_PER_MEDAL), prizes: { ...p, wins, boosts: { ...p.boosts, [wins % 2 ? 'attack' : 'defense']: p.boosts[wins % 2 ? 'attack' : 'defense'] + 1 } } };
+    next = { ...addTokens(next, 2 * TOKENS_PER_MEDAL), prizes: { ...p, ...(arenaWon?{arenaWinClaims:[...(p.arenaWinClaims??[]),arenaId!].slice(-100)}:{}), wins, boosts: { ...p.boosts, [wins % 2 ? 'attack' : 'defense']: p.boosts[wins % 2 ? 'attack' : 'defense'] + 1 } } };
     const milestone = BATTLE_MILESTONES.find(m => m.wins === wins);
     if (milestone) next = grantCollectible(next, milestone.decor, milestone.cosmetic);
     if (wins % 5 === 0) next = addTokens(next, 5 * TOKENS_PER_MEDAL);

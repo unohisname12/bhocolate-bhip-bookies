@@ -24,7 +24,7 @@ export const emptyWallet = (): Wallet => ({ classMs: 0, homeMs: 0, day: '', prog
 
 // Math screens earn minutes and never spend them; hub screens (home, pet care, shop) are free.
 export const MATH_SCREENS: readonly ScreenName[] = ['math', 'catch_math', 'number_merge', 'discovery', 'growth', 'woodland'];
-const GAME_SCREENS: readonly string[] = ['arcade', 'momentum', 'battle', 'first_adventure', 'match_result', 'class_roster'];
+const GAME_SCREENS: readonly string[] = ['pet_arena', 'arcade', 'momentum', 'battle', 'first_adventure', 'match_result', 'class_roster'];
 export const spendsTime = (screen: ScreenName) => GAME_SCREENS.includes(screen) || screen.startsWith('run_');
 
 const clampInt = (v: unknown, lo: number, hi: number, fallback: number) => Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi ? v as number : fallback;

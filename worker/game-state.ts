@@ -1,3 +1,4 @@
+import {validArena} from '../src/features/pet-arena/model';
 import { consolidateWallet } from '../src/services/game/wallet';
 import { validEconomy } from '../src/services/game/economy';
 import { validEvidenceRows } from '../src/features/teacher-insights/model';
@@ -18,6 +19,7 @@ import { CURRENT_SAVE_VERSION, migrate } from '../src/services/persistence/saveM
 const blockedScreens = new Set(['test', 'test_mode', 'asset_review', 'animation_review', 'coming_soon', 'class_roster', 'classmate_detail', 'challenger_preview']);
 export function validateGame(value: unknown): EngineState {
   if (!validateEngine(value)) throw new ApiError(422, 'The save did not pass validation. Your last good server save is unchanged.', 'invalid_save');
+  if (!validArena(value.petArena)) throw new ApiError(422, 'Battle progress did not pass validation.');
   if (!validEconomy(value.economy)) throw new ApiError(422, 'Reward progress did not pass validation.');
   if ([value.pet, ...(value.companionRoster ?? [])].some(p => p?.mind !== undefined && !validMind(p.mind))) throw new ApiError(422, 'Pet memories did not pass validation.');
   if (value.arcade !== undefined && !validArcade(value.arcade)) throw new ApiError(422, 'Arcade progress did not pass validation. Your last good save is safe.');
@@ -49,6 +51,7 @@ export function privateGame(state: EngineState, id: string, alias: string, appro
 /** Saves are validated checkpoints, not an anti-cheat/assessment engine. */
 export function studentCheckpoint(value: unknown, previous: EngineState, id: string, alias: string, names: Record<string, string> = {}): EngineState {
   const next = validateGame(value);
+  if(JSON.stringify(next.petArena??null)!==JSON.stringify(previous.petArena??null)||JSON.stringify(next.prizes?.arenaWinClaims??[])!==JSON.stringify(previous.prizes?.arenaWinClaims??[]))throw new ApiError(409,'Battle progress must be saved through the battle service. Reload your pet.','conflict');
   if (previous.economy && next.economy?.version !== previous.economy.version) throw new ApiError(409, 'Reward rules changed. Reload your saved pet.', 'conflict');
   if (previous.economy && Object.entries(previous.economy.receipts).some(([id, paid]) => (next.economy?.receipts[id] ?? 0) < paid)) throw new ApiError(409, 'Keep your saved reward history. Reload your pet.', 'conflict');
   checkDiscoveryCheckpoint(previous, next);

@@ -1,0 +1,10 @@
+
+ RUN  v4.1.2 /home/dre/Code/auralith-battle-rpg-20260926
+
+Arena balance sample {"guardian":{"wins":75,"turns":580,"fights":75},"striker":{"wins":58,"turns":453,"fights":75},"tactician":{"wins":75,"turns":575,"fights":75},"strike-only":{"wins":17,"turns":501,"fights":75}}
+Fair duel sample {"guardian/guardian":{"wins":0,"losses":0,"draws":8},"guardian/striker":{"wins":0,"losses":8,"draws":0},"guardian/tactician":{"wins":2,"losses":2,"draws":4},"striker/guardian":{"wins":8,"losses":0,"draws":0},"striker/striker":{"wins":4,"losses":4,"draws":0},"striker/tactician":{"wins":2,"losses":6,"draws":0},"tactician/guardian":{"wins":2,"losses":2,"draws":4},"tactician/striker":{"wins":6,"losses":2,"draws":0},"tactician/tactician":{"wins":4,"losses":4,"draws":0}}
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  22:45:06
+   Duration  400ms (transform 86ms, setup 0ms, import 98ms, tests 175ms, environment 0ms)

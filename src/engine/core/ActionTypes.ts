@@ -8,6 +8,7 @@ import type { HandMode } from '../../types/interaction';
 import type { CosmeticSlot } from '../../types/cosmetic';
 
 export type GameEngineAction =
+  | {type:'ARENA_COMMAND';command:import('../../features/pet-arena/model').ArenaCommand}
   | { type: 'SET_ACTIVITY_ROUTE'; route: NonNullable<import('../../types/engine').EngineState['activityRoute']> }
   | { type: 'SAVE_PRACTICE_CHECKPOINT'; checkpoint: NonNullable<import('../../types/engine').EngineState['practiceCheckpoint']> }
 

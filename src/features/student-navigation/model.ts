@@ -5,7 +5,7 @@ import { discoveryDays } from '../../services/game/eggDiscovery';
 import { careDate } from '../../services/game/petGrowth';
 export type Destination = 'today'|'pet'|'games'|'together'|'rewards'|'activity';
 export interface Intent { label:string; action?:GameEngineAction; hash?:string; view?:Destination; resume?:boolean; callback?:()=>void; purpose?:'play'|'learning'; history?:boolean }
-export const activityNames:Partial<Record<ScreenName,string>>={math:'Math Practice',catch_math:'Catch Math',discovery:'Egg questions',incubation:'Egg nursery',momentum:'Momentum',battle:'Pet battle',number_merge:'Number Merge',pet_care:'Pet care',feeding:'Feeding',home_builder:'Home Base',growth:'Companion growth',woodland:'Woodland Bridge',first_adventure:'First Adventure',arcade:'Arcade',home:'My companion',shop:'Shop',quest_log:'Quests',season_pass:'Season rewards',gacha:'Cosmetics',power_forge:'Power Forge',class_roster:'Practice rivals',match_result:'Battle results',run_start:'Dungeon adventure'};
+export const activityNames:Partial<Record<ScreenName,string>>={pet_arena:'Pet battle',math:'Math Practice',catch_math:'Catch Math',discovery:'Egg questions',incubation:'Egg nursery',momentum:'Momentum',battle:'Pet battle',number_merge:'Number Merge',pet_care:'Pet care',feeding:'Feeding',home_builder:'Home Base',growth:'Companion growth',woodland:'Woodland Bridge',first_adventure:'First Adventure',arcade:'Arcade',home:'My companion',shop:'Shop',quest_log:'Quests',season_pass:'Season rewards',gacha:'Cosmetics',power_forge:'Power Forge',class_roster:'Practice rivals',match_result:'Battle results',run_start:'Dungeon adventure'};
 export function runScreen(state:EngineState):ScreenName {
  if(!state.run.active)return 'run_start';
  return ({map_select:'run_map',encounter_preview:'run_encounter',in_battle:'battle',reward_pick:'run_reward',rest_node:'run_rest',event_choice:'run_event',run_victory:'run_over',run_defeat:'run_over',not_started:'run_start'} as const)[state.run.phase];
@@ -57,5 +57,6 @@ export function checkActivity(i: Intent, state: EngineState): string | undefined
  }
  if(a.screen.startsWith('run_'))return 'dungeon';
  if(a.screen==='battle'&&state.run.active)return 'dungeon';
+ if(a.screen==='pet_arena')return 'battle';
  if(['math','catch_math','number_merge','momentum','battle','woodland','first_adventure'].includes(a.screen))return a.screen;
 }

@@ -1,3 +1,5 @@
+import {arenaRoomsAPI} from './arena-rooms';
+import {command as arenaCommand,parseCommand} from '../src/features/pet-arena/model';
 import { petHuntAPI } from './pet-hunt';
 export { PetHuntRoom } from './pet-hunt';
 import {petDuelsAPI} from './pet-duels';
@@ -121,6 +123,7 @@ async function api(request: Request, env: Env): Promise<Response> {
     return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie(request, '', 0) });
   }
   if (path === '/api/pilot/pet-hunt' || path.startsWith('/api/pilot/pet-hunt/')) return petHuntAPI(request,env,session);
+  if(path==='/api/pilot/arena-rooms')return arenaRoomsAPI(request,db,session);
   if (path === '/api/pilot/pet-duels' || path.startsWith('/api/pilot/pet-duels/')) return petDuelsAPI(request,db,session);
   if (path === '/api/pilot/rivals' || path.startsWith('/api/pilot/rivals/')) return rivalsAPI(request, db, session);
   if (path === '/api/pilot/skill-challenges' || path.startsWith('/api/pilot/skill-challenges/')) return skillChallengesAPI(request, db, session);
@@ -146,6 +149,20 @@ async function api(request: Request, env: Env): Promise<Response> {
   if (path === '/api/pilot/nickname' && request.method === 'POST') {
     if (session.role !== 'student') throw new ApiError(403, 'Student access required.');
     return json(await requestNickname(db, session.actor_id, await readBody(request)));
+  }
+  if (path === '/api/pilot/arena-command' && request.method === 'POST') {
+    if(session.role!=='student')throw new ApiError(403,'Student access required.');
+    const row=await student(db,session.actor_id),body=await readBody(request),expected=revision(body.revision),id=requestID(body.requestId);
+    const names=await approvedPetNames(db,row.id);
+    let c:ReturnType<typeof parseCommand>;
+    try{c=parseCommand(body.command);}catch(e){throw new ApiError(400,e instanceof Error?e.message:'Invalid battle command.');}
+    const stored=parseStored(row.state_json);
+    if(stored.petArena?.lastRequest?.id===id){if(stored.petArena.lastRequest.command!==JSON.stringify(c))throw new ApiError(409,'This action receipt was already used.');return json(snapshot(row,names));}
+    if(row.revision!==expected)throw new ApiError(409,'A newer save exists. Reload before your next battle action.','conflict');
+    const previous=parseStored(row.state_json);
+    let state:EngineState;
+    try{state=arenaCommand(previous,c);if(state.petArena)state.petArena.lastRequest={id,command:JSON.stringify(c)};}catch(e){throw new ApiError(409,e instanceof Error?e.message:'Battle action unavailable.');}
+    return json(await commit(db,row,privateGame(state,row.id,row.alias,names),expected,id,row.assignment,true,names));
   }
   if (path === '/api/pilot/save') {
     if (session.role !== 'student') throw new ApiError(403, 'Student access required.');

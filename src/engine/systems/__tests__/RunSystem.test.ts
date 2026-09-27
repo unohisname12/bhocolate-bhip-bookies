@@ -143,7 +143,7 @@ describe('selectMapNode', () => {
 
 describe('startRunBattle', () => {
   it('creates a battle with run-modified pets', () => {
-    let state = startRunAndSelectCombat(stateWithPet());
+    const state = startRunAndSelectCombat(stateWithPet());
     const result = startRunBattle(state);
     expect(result.battle.active).toBe(true);
     expect(result.screen).toBe('battle');
@@ -445,12 +445,12 @@ describe('rest nodes', () => {
 
   it('instability flow: combat +1, rest -1', () => {
     let state = stateWithPet();
-    state = startRun(state);
+    state = startRunAndSelectCombat(state);
     if (!state.run.active) return;
     const baseInst = state.run.instability;
 
-    // Win a fight → instability +1
-    state = startRunAndSelectCombat(state);
+    // Win this run's fight → instability +1. Starting another run here can
+    // randomly change the fracture modifier and its initial instability.
     state = startRunBattle(state);
     state = winCurrentBattle(state);
     if (!state.run.active) return;

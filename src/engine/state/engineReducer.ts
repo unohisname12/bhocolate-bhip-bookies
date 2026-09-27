@@ -1,3 +1,4 @@
+import {command as arenaCommand} from '../../features/pet-arena/model';
 import { TOKENS_PER_COIN } from '../../services/game/wallet';
 import { ECONOMY, freshEconomy, rewardMath, claimPendingGrowth, awardDailyGoal } from '../../services/game/economy';
 import { updateReviews } from '../../features/learning/review';
@@ -569,6 +570,9 @@ const reduceEngine = (state: EngineState, action: GameEngineAction): EngineState
       return { ...state, notifications: state.notifications.filter((n) => n.id !== action.id) };
     case 'CANCEL_BATTLE_WARMUP':
       return { ...state, pendingBattleWarmup: null };
+    case 'ARENA_COMMAND': {
+      try { return arenaCommand(state, action.command); } catch { return state; }
+    }
     case 'START_BATTLE': {
       if (!state.pet || state.pet.state === 'sick' || state.pet.state === 'dead') return state;
       // Math-gate #2: queue a warmup question before the wild battle begins.

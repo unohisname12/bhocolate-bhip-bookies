@@ -8,7 +8,7 @@ export const activities:ActivityCard[]=[
  {id:'guard',label:'Shellguard',description:'Build defenses and plan how to spend your energy.',icon:'♜',group:'Action',action:{type:'SET_SCREEN',screen:'arcade'},hash:'arcade-guard'},
  {id:'cafe',label:'Nest Café',description:'Serve recipes and manage your supplies. No rush.',icon:'☕',group:'Puzzles',action:{type:'SET_SCREEN',screen:'arcade'},hash:'arcade-cafe'},
  {id:'momentum',label:'Momentum',description:'Move, recharge, and capture on a strategy board.',icon:'◇',group:'Puzzles',action:{type:'START_MOMENTUM'}},
- {id:'battle',label:'Pet battle',description:'Use your companion’s moves, math, and tracing.',icon:'⚔',group:'Action',needsPet:true,action:{type:'START_BATTLE'}},
+ {id:'battle',label:'Pet battle',description:'Build your pet’s talents, earn gear through math, and conquer adventures.',icon:'⚔',group:'Action',needsPet:true,action:{type:'SET_SCREEN',screen:'pet_arena'}},
  {id:'dungeon',label:'Dungeon adventure',description:'Choose paths, battles, and rest stops.',icon:'⌘',group:'Adventures',needsPet:true,action:{type:'SET_SCREEN',screen:'run_start'}},
  {id:'delivery',label:'Delivery Districts',description:'Plan a route, run a crew, and make deals.',icon:'▱',group:'Adventures',action:{type:'SET_SCREEN',screen:'arcade'},hash:'delivery'},
  {id:'bridge',label:'Woodland Bridge',description:'Questions, supplies, and a bridge you help repair.',icon:'⌒',group:'Adventures',action:{type:'OPEN_WOODLAND'}},

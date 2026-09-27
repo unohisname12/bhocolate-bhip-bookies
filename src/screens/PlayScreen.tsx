@@ -20,7 +20,7 @@ export function PlayScreen({ dispatch, hasPet, arcade, reviews }: { dispatch: (a
     { title: 'Momentum', description: 'Classic 5×5 or Advanced 7×7: capture, guard, share energy and control stations. Includes a practice example.', image: 'momentum', action: { type: 'START_MOMENTUM' } },
     { title: 'Number Merge', description: 'Start with Easy: add neighboring numbers with no timer or lost hearts. Master chains in harder modes.', image: 'merge', action: { type: 'SET_SCREEN', screen: 'number_merge' } },
     { title: 'Pet Care', description: 'Pet, wash, brush, comfort, train, and play together.', image: 'care', needsPet: true, action: { type: 'SET_SCREEN', screen: 'pet_care' } },
-    { title: 'Battle & Tracing', description: 'Battle with your own pet. Solve a question, then trace to boost your move.', image: 'battle', needsPet: true, action: { type: 'START_BATTLE' } },
+    { title: 'Pet Battle', description: 'Level up your earned pet. Equip gear, learn talents and choose your battle strategy.', image: 'battle', needsPet: true, action: { type: 'SET_SCREEN', screen:'pet_arena' } },
   ];
   return <main className="woodland-play min-h-dvh text-white p-5 sm:p-10"><div className="max-w-4xl mx-auto">
     <button className="min-h-12 rounded-xl border border-slate-600 px-4" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}>← Home</button>

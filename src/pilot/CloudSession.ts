@@ -1,3 +1,4 @@
+import type {ArenaCommand} from '../features/pet-arena/model';
 import { upgradeDiscoveryActivities } from '../services/game/discoveryActivity';
 import { startPolling } from './polling';
 import type { ClassroomMetadata } from './metadata';
@@ -141,6 +142,22 @@ export class CloudSession {
       this.claiming = false; this.engine?.resume(); throw error;
     }
   };
+  arenaCommand = async(command:ArenaCommand):Promise<void> => {
+    if(!this.engine||this.claiming)throw new Error('Wait for the current save to finish.');
+    this.claiming=true;this.engine.pause();
+    if(!await this.flush()){this.claiming=false;this.engine.resume();throw new Error('Wait for Saved online before changing your battle.');}
+    const body={revision:this.revision,requestId:crypto.randomUUID(),command};
+    try {
+      // Retry the same receipt: a lost response cannot apply an item or turn twice.
+      let result:CloudSave;
+      try{result=await pilotAPI<CloudSave>('arena-command','POST',body);}catch(error){if(error instanceof PilotError)throw error;result=await pilotAPI<CloudSave>('arena-command','POST',body);}
+      this.revision=result.revision;this.latest=null;this.flight=null;
+      this.engine.dispatchDirect({type:'LOAD_LEARNER_PROFILE',state:{...result.state,screen:this.engine.getState().screen}});
+      try{localStorage.removeItem(this.key);}catch{/* The server receipt is authoritative. */}
+      this.update('saved','Saved online',result.updatedAt);
+    }catch(error){if(!(error instanceof PilotError)||error.status===409&&error.code==='conflict')this.update('conflict','The battle service may have saved newer progress. Load the server copy before continuing.');throw error;}
+    finally{this.claiming=false;this.engine.resume();}
+  };
   recordPartyActivity = (game: 'dash' | 'guard' | 'cafe') => { this.engine?.dispatch({ type: 'COMPLETE_CLASSROOM_ACTIVITY', game }); };
 
   prepareLearningTarget = async (): Promise<string | null> => {
@@ -195,7 +212,7 @@ export class CloudSession {
     const beforeUnload = (event: Event) => { if (this.latest || this.sending) { event.preventDefault(); (event as BeforeUnloadEvent).returnValue = ''; } };
     const retry = setInterval(() => { if (this.status.phase === 'offline' || this.status.phase === 'saving') void this.flush(); }, 5000);
     const poll = startPolling(async () => {
-      if (this.latest || this.sending || this.status.phase !== 'saved') return;
+      if (this.claiming || this.latest || this.sending || this.status.phase !== 'saved') return;
       try {
         const remote = await pilotAPI<CloudSave>('save');
         if (remote.revision !== this.revision && !this.latest && !this.sending) this.update('conflict', 'Your teacher or another device updated your game. Load the latest saved pet to continue.');

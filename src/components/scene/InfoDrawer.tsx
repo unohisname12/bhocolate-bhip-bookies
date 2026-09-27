@@ -1,29 +1,31 @@
 import React, { useState } from 'react';
+import { Modal } from '../ui/Modal';
 import { PetNeedsPanel } from '../pet/PetNeedsPanel';
 import { getPetReadiness } from '../../engine/systems/BattleSystem';
 import { getXPForLevel, checkEvolution } from '../../services/game/evolutionEngine';
 import type { Pet } from '../../types';
 import type { DailyGoals } from '../../types/engine';
 
-const DAILY_MATH_GOAL = 3;
+const DAILY_MATH_GOAL = 5;
 const DAILY_BATTLE_GOAL = 1;
 
 interface InfoDrawerProps {
   pet: Pet;
   dailyGoals: DailyGoals;
+  lifetimeMathCorrect?: number;
 }
 
 /**
  * Minimal stat display — small icon+bar pairs in the top-left corner.
  * Tap to expand into a full detail panel. Doesn't block the game view.
  */
-export const InfoDrawer: React.FC<InfoDrawerProps> = ({ pet, dailyGoals }) => {
+export const InfoDrawer: React.FC<InfoDrawerProps> = ({ pet, dailyGoals, lifetimeMathCorrect = 0 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const readiness = getPetReadiness(pet);
   const xpNeeded = getXPForLevel(pet.progression.level);
   const xpPercent = Math.min(100, Math.round((pet.progression.xp / xpNeeded) * 100));
-  const { canEvolve, nextStage } = checkEvolution(pet);
+  const { canEvolve, nextStage } = checkEvolution(pet, lifetimeMathCorrect);
   const stageLabel = pet.stage.charAt(0).toUpperCase() + pet.stage.slice(1);
 
   const mathDone = Math.min(dailyGoals.mathSolved, DAILY_MATH_GOAL);
@@ -40,13 +42,16 @@ export const InfoDrawer: React.FC<InfoDrawerProps> = ({ pet, dailyGoals }) => {
   return (
     <>
       {/* Compact stat bars — top-left, below pet name */}
-      <div className="fixed top-[52px] left-0 z-30 pointer-events-auto">
+      <div className="pet-room-details fixed top-3 left-3 lg:top-[70px] z-30 pointer-events-auto">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex flex-col gap-0.5 px-3 py-1"
+          className="flex flex-col gap-0.5 px-3 py-1 min-h-11 text-white text-sm"
+          aria-label="Pet details"
+          aria-expanded={isOpen}
         >
+          <span className="lg:hidden">Pet details</span>
           {stats.map((s, i) => (
-            <div key={i} className="flex items-center gap-1">
+            <div key={i} className="hidden lg:flex items-center gap-1">
               <img
                 src={s.icon}
                 alt=""
@@ -65,7 +70,7 @@ export const InfoDrawer: React.FC<InfoDrawerProps> = ({ pet, dailyGoals }) => {
             </div>
           ))}
           {/* XP bar */}
-          <div className="flex items-center gap-1">
+          <div className="hidden lg:flex items-center gap-1">
             <span className="text-[9px] font-black text-purple-300 w-3.5 text-center drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">XP</span>
             <div className="w-14 h-1.5 rounded-full bg-black/40 overflow-hidden">
               <div
@@ -80,20 +85,16 @@ export const InfoDrawer: React.FC<InfoDrawerProps> = ({ pet, dailyGoals }) => {
         </button>
       </div>
 
-      {/* Expanded detail panel — overlays from left side */}
-      {isOpen && (
-        <div className="fixed inset-0 z-[35] pointer-events-auto" onClick={() => setIsOpen(false)}>
-          <div
-            className="absolute top-[52px] left-2 w-64 bg-slate-900/95 backdrop-blur-md rounded-xl border border-slate-700/60 p-3 space-y-3 max-h-[60vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Pet details">
+        <div className="space-y-3">
+          <p className="text-slate-300">{pet.name} · {stageLabel} companion</p>
             {/* Progression */}
             <div className="px-2 py-2 rounded-lg border border-slate-600 bg-slate-800/60">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-black text-slate-200 uppercase tracking-wide">
+                <span className="text-sm font-black text-slate-200 uppercase tracking-wide">
                   Lv.{pet.progression.level} {stageLabel}
                 </span>
-                <span className="text-[10px] font-bold text-purple-400">Bond: {pet.bond}</span>
+                <span className="text-sm font-bold text-purple-400">Bond: {pet.bond}</span>
               </div>
               <div className="w-full bg-slate-700 rounded-full h-2 mb-1">
                 <div
@@ -101,7 +102,7 @@ export const InfoDrawer: React.FC<InfoDrawerProps> = ({ pet, dailyGoals }) => {
                   style={{ width: `${xpPercent}%` }}
                 />
               </div>
-              <div className="flex items-center justify-between text-[10px] text-slate-400">
+              <div className="flex items-center justify-between text-sm text-slate-400">
                 <span>{pet.progression.xp}/{xpNeeded} XP</span>
                 {canEvolve && nextStage ? (
                   <span className="text-yellow-400 font-bold animate-pulse">Ready to evolve!</span>
@@ -112,7 +113,7 @@ export const InfoDrawer: React.FC<InfoDrawerProps> = ({ pet, dailyGoals }) => {
             </div>
 
             {/* Battle Readiness */}
-            <div className={`px-2 py-1.5 rounded-lg border flex items-center justify-between text-xs ${readiness >= 40 ? 'border-green-600 bg-green-900/30' : 'border-red-600 bg-red-900/30'}`}>
+            <div className={`px-2 py-1.5 rounded-lg border flex items-center justify-between text-sm ${readiness >= 40 ? 'border-green-600 bg-green-900/30' : 'border-red-600 bg-red-900/30'}`}>
               <span className="font-bold text-slate-200">Battle Ready</span>
               <span className={`font-black ${readiness >= 70 ? 'text-green-400' : readiness >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
                 {readiness}%
@@ -120,7 +121,7 @@ export const InfoDrawer: React.FC<InfoDrawerProps> = ({ pet, dailyGoals }) => {
             </div>
 
             {/* Daily Goals */}
-            <div className={`px-2 py-1.5 rounded-lg border text-xs ${allGoalsDone ? 'border-yellow-500 bg-yellow-900/20' : 'border-slate-600 bg-slate-800/60'}`}>
+            <div className={`px-2 py-1.5 rounded-lg border text-sm ${allGoalsDone ? 'border-yellow-500 bg-yellow-900/20' : 'border-slate-600 bg-slate-800/60'}`}>
               <div className="font-black text-slate-200 uppercase tracking-wide mb-1">Daily Goals</div>
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center justify-between">
@@ -130,7 +131,7 @@ export const InfoDrawer: React.FC<InfoDrawerProps> = ({ pet, dailyGoals }) => {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-300">Win {DAILY_BATTLE_GOAL} battle</span>
+                  <span className="text-slate-300">Or 3 math + {DAILY_BATTLE_GOAL} battle win</span>
                   <span className={`font-black ${battleDone >= DAILY_BATTLE_GOAL ? 'text-green-400' : 'text-slate-400'}`}>
                     {battleDone}/{DAILY_BATTLE_GOAL}
                   </span>
@@ -145,9 +146,8 @@ export const InfoDrawer: React.FC<InfoDrawerProps> = ({ pet, dailyGoals }) => {
               happiness={pet.needs.happiness}
               cleanliness={pet.needs.cleanliness}
             />
-          </div>
         </div>
-      )}
+      </Modal>
     </>
   );
 };

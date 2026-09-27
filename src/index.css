@@ -4,6 +4,7 @@
 @import '@fontsource/jetbrains-mono/400.css';
 @import '@fontsource/jetbrains-mono/700.css';
 @import './animations.css';
+@import './polish.css';
 
 @tailwind base;
 @tailwind components;

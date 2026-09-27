@@ -1,0 +1,99 @@
+import { withAnswerFormat, type Challenge } from '../../services/game/curriculum';
+import type { LearningProblem, Visual } from '../skill-challenge/lessons';
+import { middleSkill } from './catalog';
+
+/** Authored numeric tasks. No free-form AI scoring. All given data stay in the text. */
+export function middleProblem(id: string, level: Challenge, stage: string, index: number, random: () => number): LearningProblem {
+  const skill = middleSkill(id);
+  if (!skill) throw new Error('Unknown middle-school objective');
+  const int = (lo: number, hi: number) => lo + Math.floor(random() * (hi - lo + 1));
+  const max = level === 'support' ? 5 : level === 'stretch' ? 12 : 9;
+  const a = int(2, max), b = int(2, max), c = int(2, max), d = int(2, max);
+  const variant = skill.variant - 6;
+  const radius = int(2, max*3)/2;
+  const exponent = int(2, 4), insideRoot = a*a + int(1, 2*a);
+  const later = ['transfer', 'follow', 'retention'].includes(stage);
+  const contextual = later || stage === 'practice' || index % 2 === 1;
+  const guided = stage === 'practice' && index % 3 === 0;
+  const data = [a, a+b, a+c, a+d, a+b+c+d], sum = data.reduce((x,y)=>x+y,0);
+  const shuffled = [a+b+c,a,a+c,a+b,a+d], ordered = [...shuffled].sort((x,y)=>x-y);
+  const round = (n: number) => Math.round(n * 100) / 100;
+  const q = (text: string, answer: number, hint: string, work: string, reason: string, rows: [string, string][] = [], points?: [number, number][]): LearningProblem => ({
+    text: withAnswerFormat(guided ? `${text} Strategy: ${hint}` : text, answer), answer, hint, explanation: work,
+    templateId: `${id}:middle-v1:${contextual ? 'context' : 'symbolic'}:${later ? 'later' : 'initial'}`,
+    representation: later ? 'fresh-quantity' : guided ? 'guided-step' : points ? 'coordinate-model' : contextual ? 'quantity-model' : 'symbolic',
+    visual: rows.length ? { kind: points ? 'coordinate' : 'table', caption: 'Given quantities', rows, ...(points ? { points } : {}) } : undefined,
+    reasonPrompt: reason, hints: [reason, hint, `Worked solution: ${work}`],
+    outcome: `Check the relationship: ${work}`, guided,
+  });
+  if (skill.grade === 6) switch (variant) {
+    case 0: return q(contextual ? `A ribbon is ${a} m long. Each badge needs 1/${b} m. How many badges can be made?` : `${a} ÷ (1/${b}) = ?`, a * b, 'Count how many fractional units fit in the whole amount.', `${a} ÷ (1/${b}) = ${a} × ${b} = ${a*b}.`, 'Why does dividing by less than one increase this positive result?');
+    case 1: return q(contextual ? `A container holds ${a}/${b} L. One portion is ${c}/${d} L. How many portions, including a possible fractional portion, is that? Enter a fraction or decimal.` : `(${a}/${b}) ÷ (${c}/${d}) = ? Enter a fraction or decimal.`, a*d/(b*c), 'Multiply by the reciprocal of the divisor.', `(${a}/${b}) × (${d}/${c}) = ${a*d}/${b*c}.`, 'How can multiplication by the portion size check your quotient?');
+    case 2: return q(`You have ${a}/${b} L of juice. One serving is 1/${b} L. How many whole servings can you pour?`, a, 'Compare the numerator counts because the units have equal size.', `(${a}/${b}) ÷ (1/${b}) = ${a}.`, 'What does one fractional unit represent here?');
+    case 3: return q(contextual ? `Two supply orders cost ${(a/10).toFixed(2)} and ${(b/100).toFixed(2)} coins. What is their total?` : `${(a/10).toFixed(2)} + ${(b/100).toFixed(2)} = ?`, (10*a+b)/100, 'Align hundredths; one tenth is ten hundredths.', `${10*a} hundredths + ${b} hundredths = ${10*a+b} hundredths = ${(10*a+b)/100}.`, 'Why must decimal points line up?');
+    case 4: return q(contextual ? `Fabric costs ${(a/10).toFixed(1)} coins per metre. What is the cost of ${(b/10).toFixed(1)} m?` : `${(a/10).toFixed(1)} × ${(b/10).toFixed(1)} = ?`, a*b/100, 'Multiply the whole-number counts, then account for two decimal places.', `${a} × ${b} = ${a*b}; the product in hundredths is ${a*b/100}.`, 'Should multiplying by a number below one make the cost smaller?');
+    case 5: return q(contextual ? `${(a*b/10).toFixed(1)} L fills containers holding ${(b/10).toFixed(1)} L each. How many containers?` : `${(a*b/10).toFixed(1)} ÷ ${(b/10).toFixed(1)} = ?`, a, 'Multiply both quantities by ten before dividing.', `${a*b} ÷ ${b} = ${a}.`, 'Why does scaling both dividend and divisor preserve the quotient?');
+    case 6: return q(contextual ? `A club pays ${b} coins per kit plus a ${c}-coin fee. What is the cost of ${a} kits?` : `Evaluate ${b}x + ${c} when x = ${a}.`, a*b+c, 'Substitute the value for x; multiply before adding.', `${b} × ${a} + ${c} = ${a*b+c}.`, 'Which amount changes with the number of kits?');
+    case 7: return q(`Complete the equivalent expression: ${a}(x + ${b}) = ${a}x + ?.`, a*b, 'Distribute the outside factor to both terms inside the parentheses.', `${a}(x + ${b}) = ${a}x + ${a*b}.`, 'Why is multiplying just the x term insufficient?');
+    case 8: return q(contextual ? `${b} equal boxes contain ${a*b} items. How many are in each box?` : `Solve ${b}x = ${a*b}.`, a, 'Divide both sides by the same nonzero number.', `${b}x ÷ ${b} = ${a*b} ÷ ${b}; x = ${a}.`, 'Check by substituting your value into the original equation.');
+    case 9: return q(`Points A(−${a}, ${c}) and B(${b}, ${c}) are on a coordinate map. What is their horizontal distance in units?`, a+b, 'Subtract x-coordinates and take the absolute value.', `|${b} − (−${a})| = ${a+b}.`, 'Why is a distance nonnegative?', [['A', `(-${a}, ${c})`], ['B', `(${b}, ${c})`]], [[-a,c],[b,c]]);
+    case 10: return q(`Points A(${c}, −${a}) and B(${c}, ${b}) are on a coordinate map. What is their vertical distance in units?`, a+b, 'Subtract y-coordinates and take the absolute value.', `|${b} − (−${a})| = ${a+b}.`, 'Why do the x-coordinates not affect this vertical distance?', [['A', `(${c}, -${a})`], ['B', `(${c}, ${b})`]], [[c,-a],[c,b]]);
+    case 11: return q(`A diver is at elevation −${a*b+c} m. How far is the diver from sea level, in metres?`, a*b+c, 'Absolute value measures distance from zero.', `|−${a*b+c}| = ${a*b+c}.`, 'How does a signed position differ from a distance?');
+    case 12: return q(`A triangle has base ${a} cm and perpendicular height ${b} cm. What is its area in square centimetres?`, a*b/2, 'Multiply base by perpendicular height and divide by two.', `A = (${a} × ${b})/2 = ${a*b/2} cm².`, 'Why must the height be perpendicular to the base?', [['Base', `${a} cm`], ['Perpendicular height', `${b} cm`]]);
+    case 13: return q(`A rectangular container measures ${a} cm by ${b} cm by ${c} cm. What is its volume in cubic centimetres?`, a*b*c, 'Multiply the three perpendicular dimensions.', `${a} × ${b} × ${c} = ${a*b*c} cm³.`, 'Why is the unit cubed rather than squared?');
+    case 14: return q(`A closed rectangular box measures ${a} cm by ${b} cm by ${c} cm. Find its total surface area in square centimetres.`, 2*(a*b+a*c+b*c), 'Add the areas of all six faces: two of each matching pair.', `2(${a*b} + ${a*c} + ${b*c}) = ${2*(a*b+a*c+b*c)} cm².`, 'How does a box net show the three pairs of faces?');
+    case 15: return q(`Five daily counts are ${data.join(', ')}. Find their mean.`, sum/5, 'Add all five counts, then divide by five.', `Sum = ${sum}; mean = ${sum}/5 = ${sum/5}.`, 'How would the mean change if every count increased by one?');
+    case 16: return q(`Delivery times are ${shuffled.join(', ')} minutes. Find the median.`, ordered[2], 'Order the data before selecting the middle value.', `Ordered: ${ordered.join(', ')}. The third value is ${ordered[2]}.`, 'Why must you sort before finding the median?');
+    case 17: return q(`Measured lengths are ${a+b}, ${a+b+c+d}, ${a}, ${a+c} cm. What is the range?`, b+c+d, 'Subtract the smallest observation from the largest.', `${a+b+c+d} − ${a} = ${b+c+d} cm.`, 'What does the range tell you that the mean does not?');
+  }
+  if (skill.grade === 7) switch (variant) {
+    case 0: return q(`Calculate (−${a}/${b}) + (${c}/${d}). Enter a fraction or decimal.`, (-a*d+c*b)/(b*d), 'Use a common denominator and add signed numerators.', `Numerator: −${a*d} + ${c*b} = ${-a*d+c*b}. Result: ${-a*d+c*b}/${b*d}.`, 'How do the signs affect the sum?');
+    case 1: return q(`Calculate (−${a}/${b}) × (${c}/${d}). Enter a fraction or decimal.`, -a*c/(b*d), 'Multiply numerators and denominators; exactly one negative factor gives a negative product.', `(−${a} × ${c}) / (${b} × ${d}) = −${a*c}/${b*d}.`, 'What changes if both factors are negative?');
+    case 2: return q(`Calculate (−${a*b}/${c}) ÷ (−${b}/${c}).`, a, 'Multiply by the reciprocal; two negative signs give a positive quotient.', `(−${a*b}/${c}) × (−${c}/${b}) = ${a}.`, 'How does multiplying the answer by the divisor check it?');
+    case 3: return q(`A proportional relationship includes (x, y) = (${a}, ${a*b}) and (${a+1}, ${(a+1)*b}). Find k in y = kx.`, b, 'Divide output by nonzero input and check the ratio stays constant.', `${a*b}/${a} = ${(a+1)*b}/${a+1} = ${b}.`, 'Why must a proportional graph also pass through the origin?', [['x', `${a}, ${a+1}`], ['y', `${a*b}, ${(a+1)*b}`]], [[a,a*b],[a+1,(a+1)*b]]);
+    case 4: return q(`A proportional cost is C = ${b}n coins. What is C when n = ${a}?`, a*b, 'Multiply the unit rate by the number of units.', `${b} × ${a} = ${a*b} coins.`, 'How would doubling n change the cost?');
+    case 5: return q(`Pack A contains ${a} items for ${a*b} coins. Pack B contains ${c} items for ${c*(b+c)} coins. How many coins cheaper per item is Pack A?`, c, 'Calculate each price per item before comparing.', `A: ${a*b}/${a} = ${b}. B: ${c*(b+c)}/${c} = ${b+c}. Difference = ${c} coins per item.`, 'Why can comparing only the total prices mislead you?');
+    case 6: return q(contextual ? `A game budget of ${a*b+c} coins pays a ${c}-coin entry fee and ${b} coins per turn. How many turns can it buy exactly?` : `Solve ${b}x + ${c} = ${a*b+c}.`, a, 'Subtract the fixed amount, then divide by the coefficient.', `${b}x = ${a*b}; x = ${a}.`, 'Why must subtraction happen before division here?');
+    case 7: return q(`Solve ${b}(x − ${c}) = ${a*b}.`, a+c, `Divide both sides by ${b}, then add ${c}.`, `x − ${c} = ${a}; x = ${a+c}.`, 'Check by substituting into the parentheses.');
+    case 8: return q(`What is the greatest integer x satisfying ${b}x + ${c} ≤ ${a*b+c}?`, a, 'Subtract the constant and divide by the positive coefficient.', `${b}x ≤ ${a*b}; x ≤ ${a}. The greatest allowed integer is ${a}.`, 'When would dividing an inequality require reversing its direction?');
+    case 9: return q(`A map uses 1 cm for ${b} km. A route measures ${a} cm on the map. What real distance does it represent in km?`, a*b, 'Multiply the drawing length by the distance per drawing unit.', `${a} × ${b} = ${a*b} km.`, 'Which units cancel in the scale calculation?');
+    case 10: return q(`A circular garden has radius ${radius} m. Use π = 3.14. Find its area in square metres, rounded to two decimal places.`, round(3.14*radius*radius), 'Use area = πr²; the radius is not the diameter.', `3.14 × ${radius}² = ${round(3.14*radius*radius)} m².`, 'Why does doubling the radius quadruple the area?');
+    case 11: return q(`Two angles in a triangle measure ${a*5}° and ${b*5}°. What is the third angle in degrees?`, 180-5*(a+b), 'Interior angles of a triangle add to 180 degrees.', `180 − ${a*5} − ${b*5} = ${180-5*(a+b)}°.`, 'Why would an exterior angle need a different relationship?');
+    case 12: return q(`A bag contains ${a} blue and ${b} red equal-sized tokens. One is chosen at random. What is P(blue)? Enter a fraction or decimal.`, a/(a+b), 'Divide the favorable count by the total count.', `${a}/(${a} + ${b}) = ${a}/${a+b}.`, 'What assumptions make the tokens equally likely?');
+    case 13: return q(`Two independent fair spinners have ${a} and ${b} equal sectors. Each has exactly one gold sector. What is the probability both land on gold? Enter a fraction or decimal.`, 1/(a*b), 'Multiply the probabilities of independent events.', `(1/${a}) × (1/${b}) = 1/${a*b}.`, 'Why is independence needed for this multiplication?');
+    case 14: return q(`A trial succeeds ${a} times in ${a+b} attempts. Estimate its experimental probability of success as a fraction or decimal.`, a/(a+b), 'Divide observed successes by all trials.', `${a} / ${a+b}. This is an estimate, not a guarantee about the next trial.`, 'Why might more trials produce a different estimate?');
+    case 15: return q(`In a random sample of ${a+b} students, ${a} prefer cycling. Use the sample proportion to estimate how many of ${(a+b)*c} students prefer cycling.`, a*c, 'Multiply the population size by the sample proportion.', `${(a+b)*c} × ${a}/${a+b} = ${a*c}. This prediction is an estimate.`, 'Why would surveying only the cycling club bias the estimate?');
+    case 16: return q(`Group A has scores ${a}, ${a+b}, ${a+2*b}. Group B has scores ${a+c}, ${a+b+c}, ${a+2*b+c}. How much greater is the mean of B than the mean of A?`, c, 'Calculate each mean, then subtract in the requested order.', `Mean A = ${a+b}; mean B = ${a+b+c}; difference = ${c}.`, 'Do these means alone describe how spread out the scores are?');
+    case 17: return q(`For the data ${a}, ${a+2*b}, ${a+4*b}, find the mean absolute deviation. Enter a fraction or decimal.`, 4*b/3, 'Find the mean, take each absolute distance from it, then average those distances.', `Mean = ${a+2*b}; distances = ${2*b}, 0, ${2*b}; MAD = ${4*b}/3.`, 'Why use absolute distances rather than signed differences?');
+  }
+  if (skill.grade === 8) switch (variant) {
+    case 0: return q(`Write ${c}^${a} × ${c}^${b} as ${c}^n. What is n?`, a+b, 'For powers with the same base, add exponents when multiplying.', `${c}^${a} × ${c}^${b} = ${c}^${a+b}; n = ${a+b}.`, 'Why does this rule require the same base?');
+    case 1: return q(`Evaluate ${a}^(−${exponent}). Enter a fraction or decimal.`, 1/(a**exponent), 'A negative exponent takes the reciprocal; it does not make the value negative.', `${a}^(−${exponent}) = 1/${a}^${exponent} = 1/${a**exponent}.`, 'How can multiplying by the matching positive power check your answer?');
+    case 2: return q(`The square root of ${insideRoot} lies between two consecutive integers. Enter the smaller integer.`, a, 'Compare the number with neighboring perfect squares.', `${a}² = ${a*a} < ${insideRoot} < ${(a+1)**2} = ${a+1}². The lower integer is ${a}.`, 'Why can you compare the squares to bound their positive roots?');
+    case 3: return q(`A line passes through (${c}, ${d}) and (${c+a}, ${d-a*b}). Find its slope.`, -b, 'Divide change in y by change in x using the same point order.', `(${d-a*b} − ${d}) / (${c+a} − ${c}) = ${-a*b}/${a} = ${-b}.`, 'What does the negative slope say about y as x increases?', [['Point A', `(${c}, ${d})`], ['Point B', `(${c+a}, ${d-a*b})`]], [[c,d],[c+a,d-a*b]]);
+    case 4: return q(contextual ? `A delivery model gives cost C = ${b}n + ${c}. What cost does it predict for ${a} deliveries?` : `For f(x) = ${b}x + ${c}, find f(${a}).`, a*b+c, 'Substitute the input, multiply, then add the intercept.', `${b} × ${a} + ${c} = ${a*b+c}.`, 'Which term is the cost even when there are zero deliveries?');
+    case 5: return q(`A line has slope ${b} and passes through (${a}, ${a*b+c}). Find its y-intercept.`, c, 'Substitute into y = mx + intercept, then subtract mx.', `${a*b+c} − ${b} × ${a} = ${c}.`, 'What would the output be at x = 0?');
+    case 6: return q(`Solve for x: x + y = ${a+b}; 2x + y = ${2*a+b}.`, a, 'Subtract the first equation from the second to eliminate y.', `(2x + y) − (x + y) = ${2*a+b} − ${a+b}; x = ${a}.`, 'How would you check the resulting pair in both equations?');
+    case 7: return q(`Solve for x: y = x + ${b}; x + y = ${2*a+b}.`, a, 'Replace y in the second equation by its expression in x.', `x + x + ${b} = ${2*a+b}; 2x = ${2*a}; x = ${a}.`, 'Why must both equations be true at the solution?');
+    case 8: return q(`At what x do the lines y = ${b+c}x and y = ${b}x + ${a*c} intersect?`, a, 'At the intersection, both expressions give the same y.', `${b+c}x = ${b}x + ${a*c}; ${c}x = ${a*c}; x = ${a}.`, 'What does an intersection represent in two cost plans?');
+    case 9: return q(`Translate point (−${a}, ${b}) right ${c} units and down ${d} units. Enter only the new x-coordinate.`, c-a, 'Horizontal translation changes x; vertical translation changes y.', `New point: (${c-a}, ${b-d}). Its x-coordinate is ${c-a}.`, 'Why does moving down leave the x-coordinate unchanged?', [['Original point', `(-${a}, ${b})`], ['Translation', `right ${c}, down ${d}`]], [[-a,b]]);
+    case 10: return q(`Reflect point (−${a}, ${b}) across the y-axis. Enter only the new x-coordinate.`, a, 'A y-axis reflection reverses x and preserves y.', `(-${a}, ${b}) → (${a}, ${b}).`, 'How do the distances from the y-axis compare?', [['Original point', `(-${a}, ${b})`], ['Mirror', 'y-axis']], [[-a,b]]);
+    case 11: return q(`Dilate point (${a}, −${b}) from the origin by scale factor ${c}. Enter only the new y-coordinate.`, -b*c, 'Multiply both coordinates by the scale factor.', `(${a}, -${b}) → (${a*c}, ${-b*c}).`, 'Which transformations preserve lengths, and does this dilation do so?');
+    case 12: return q(`A cylinder has radius ${a} cm and height ${b} cm. Use π = 3.14. Find its volume in cm³ rounded to two decimal places.`, round(3.14*a*a*b), 'Multiply the area of the circular base by the perpendicular height.', `V = 3.14 × ${a}² × ${b} = ${round(3.14*a*a*b)} cm³.`, 'How would doubling the height compare with doubling the radius?');
+    case 13: return q(`A cone has radius ${a} cm and height ${3*b} cm. Use π = 3.14. Find its volume in cm³ rounded to two decimal places.`, round(3.14*a*a*b), 'A cone has one third the volume of the cylinder with the same base and height.', `V = (3.14 × ${a}² × ${3*b})/3 = ${round(3.14*a*a*b)} cm³.`, 'Why must the height be perpendicular rather than the slant height?');
+    case 14: return q(`A sphere has radius ${radius} cm. Use π = 3.14. Find its volume in cm³ rounded to two decimal places.`, round(4*3.14*radius*radius*radius/3), 'Use V = (4/3)πr³ and round only at the end.', `(4/3) × 3.14 × ${radius}³ ≈ ${round(4*3.14*radius*radius*radius/3)} cm³.`, 'Why would using the diameter instead of the radius cause a large error?');
+    case 15: return q(`A fitted model predicts y = ${b}x + ${c}. Predict y for x = ${a}.`, a*b+c, 'Use the given model, remembering that a prediction is not an observed value.', `${b} × ${a} + ${c} = ${a*b+c}.`, 'Why might an actual observation differ from the predicted value?');
+    case 16: return q(`A model predicts y = ${b}x + ${c}. At x = ${a}, the observed y is ${a*b+c-d}. Find the residual, defined as observed minus predicted.`, -d, 'Calculate the prediction before subtracting it from the observation.', `Predicted = ${a*b+c}; residual = ${a*b+c-d} − ${a*b+c} = ${-d}.`, 'What does a negative residual tell you about this observation?');
+    case 17: return q(`In Club A, ${a} students choose soup and ${b} choose salad. In Club B, ${c} choose soup and ${d} choose salad. What fraction of Club A chooses soup?`, a/(a+b), 'Use only the specified group as the denominator.', `${a} soup choices / ${a+b} Club A members = ${a}/${a+b}.`, 'Why are Club B members excluded from this denominator?');
+  }
+  throw new Error('Missing authored middle-school task');
+}
+
+export function middleLesson(id: string, level: Challenge) {
+  let seed = 103 + Number(id.replace(/\D/g, ''));
+  const r = () => { seed = seed * 16807 % 2147483647; return seed / 2147483647; };
+  const p = middleProblem(id, level, 'example', 1, r), skill = middleSkill(id)!;
+  return { title: skill.name, mission: skill.topic, concept: p.hint,
+    visual: p.visual ?? { kind: 'table', caption: 'Our objective', rows: [['Skill', skill.name]] } as Visual,
+    question: p.text, steps: [p.hint, p.explanation, `Check your thinking: ${p.reasonPrompt}`], oralPrompt: p.reasonPrompt };
+}

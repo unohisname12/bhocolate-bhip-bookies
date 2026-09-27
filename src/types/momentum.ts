@@ -1,5 +1,7 @@
 export type Team = 'player' | 'enemy';
 export type PieceRank = 1 | 2 | 3 | 4;
+export type MomentumMode = 'classic' | 'advanced' | 'powers';
+export type MathPower = 'add' | 'subtract' | 'multiply' | 'divide';
 export type MomentumDifficulty = 'easy' | 'medium' | 'hard';
 
 export interface BoardPosition {
@@ -13,6 +15,8 @@ export interface MomentumPiece {
   rank: PieceRank;
   energy: number;
   position: BoardPosition;
+  guarded?: boolean;
+  mathPower?: MathPower;
   isTemporaryRank4: boolean;
   rank4TurnsRemaining: number;
   previousRank: PieceRank | null;
@@ -86,6 +90,7 @@ export type MomentumGameEvent =
 
 export interface ActiveMomentumState {
   active: true;
+  mode?: MomentumMode; // Missing on older saves means Classic.
   difficulty: MomentumDifficulty;
   phase: MomentumPhase;
   turnCount: number;

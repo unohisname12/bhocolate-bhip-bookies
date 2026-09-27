@@ -9,6 +9,7 @@ import type {
 } from './types';
 import { BASE_POINTS } from './config';
 import { buildChoices, buildStepChoices } from './choiceGenerator';
+import { generateLearningProblem } from '../../services/game/curriculum';
 
 /** Crypto-free random helpers scoped to the feature. Injectable for tests. */
 export interface Rng {
@@ -268,7 +269,19 @@ export function generateRound(
   cfg: CatchConfig,
   session?: EquationStepSession,
   rng: Rng = defaultRng,
+  plannedProblem?: import('../../types').MathProblem,
 ): { round: CatchRound; session: EquationStepSession | null } {
+  if (cfg.learning) {
+    const problem = plannedProblem ?? generateLearningProblem(cfg.learning, () => rng.int(0, 999999) / 1000000);
+    const correct: CatchChoice = { kind: 'number', id: newId('correct'), label: String(problem.answer), value: problem.answer };
+    const step = Number.isInteger(problem.answer) ? 1 : 0.1;
+    const offsets = cfg.difficulty === 'hard' ? [-2, -1, 1, 2] : cfg.difficulty === 'medium' ? [-1, 1, 2] : [1, 2];
+    const choices: CatchChoice[] = [correct, ...offsets.map(offset => {
+      const value = Number((problem.answer + offset * step).toFixed(6));
+      return { kind: 'number' as const, id: newId('choice'), label: String(value), value };
+    })];
+    return { round: { id: problem.id, learningProblem: problem, mode: 'missing_number', difficulty: cfg.difficulty, prompt: problem.question, correct, choices: rng.shuffle(choices), basePoints: problem.reward }, session: null };
+  }
   switch (cfg.mode) {
     case 'missing_number':
       return { round: generateMissingNumber(cfg, rng), session: null };

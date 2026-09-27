@@ -1,0 +1,11 @@
+.play-time-chip{font-size:.85rem;padding:.25rem .6rem;border-radius:999px;background:#edf5ed;color:#203c31;border:1px solid #9bb7a5;white-space:nowrap}
+.play-time-card{margin:1rem 0;padding:1rem;border:1px solid #9bb7a5;border-radius:16px;background:#f3f8ee;color:#203c31}.play-time-card p{margin:.4rem 0}
+.play-time-overlay{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:#122b24cc}
+.play-time-panel h2{font-size:1.5rem;font-weight:800;margin:0 0 .4rem}
+.play-time-panel{max-width:520px;width:100%;padding:clamp(16px,3vw,28px);border-radius:20px;background:#fafcf6;color:#203c31;font:16px/1.6 Inter,system-ui,sans-serif}
+.play-time-panel button{min-height:44px;margin:.4rem .4rem 0 0;padding:.6rem 1rem;border-radius:10px;border:1px solid #517e65;background:#fff;color:#203c31;cursor:pointer;font:inherit}
+.play-time-panel .student-primary{background:#245d46;color:#fff}
+@media (max-width:520px){.play-time-chip{white-space:normal}}
+.play-time-teacher label{display:grid;gap:.3rem;font-weight:600}.play-time-teacher fieldset label{display:inline-flex;gap:.3rem;margin-right:.8rem;font-weight:400}.play-time-teacher details label:has(>input[type=checkbox]){display:flex;align-items:center}
+.play-time-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.8rem;margin:.8rem 0}.play-time-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:.6rem 0}
+.play-time-teacher input[type=number],.play-time-teacher input[type=time]{min-height:40px;padding:.3rem .5rem;border-radius:8px;border:1px solid #9bb7a5;max-width:100%}

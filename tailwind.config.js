@@ -26,7 +26,7 @@ export default {
         },
         brass:    '#d4a94d',
         copper:   '#c2410c',
-        teal:     '#0ea5a5',
+        teal:     { DEFAULT: '#0ea5a5' },
         plum:     '#9d174d',
         sage:     '#65a30d',
         ok:       '#84cc16',

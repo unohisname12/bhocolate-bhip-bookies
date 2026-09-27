@@ -1,0 +1,21 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:08.000
+Runners get an 8-second head start.
+Patrol the beacons. You win by stopping the third escape.
+
+00:00:08.000 --> 00:00:17.000
+Tag a runner twice to put them in a rescue bubble.
+Wait for the 1.8-second glow to fade before your next shot.
+
+00:00:17.000 --> 00:00:25.000
+Three charges. Every shot restarts the 3.2-second recharge.
+Firing or an empty blaster slows you. Save shots and keep patrolling.
+
+00:00:25.000 --> 00:00:34.000
+This example starts with three pets already captured.
+Capture the last runner before anyone is rescued to win.
+
+00:00:34.000 --> 00:00:41.000
+Another win: fewer than 3 escapes when time reaches zero.
+Do not camp bubbles: staying close makes them open sooner.

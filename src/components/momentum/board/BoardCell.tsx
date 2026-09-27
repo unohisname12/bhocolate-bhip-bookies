@@ -2,6 +2,8 @@ import type React from 'react';
 import type { TileTheme } from '../theme/MomentumTheme';
 
 interface BoardCellProps {
+  label: string;
+  position?: string;
   tileTheme: TileTheme;
   isValidMove: boolean;
   isAttackTarget: boolean;
@@ -13,6 +15,8 @@ interface BoardCellProps {
 }
 
 export const BoardCell: React.FC<BoardCellProps> = ({
+  label,
+  position,
   tileTheme,
   isValidMove,
   isAttackTarget,
@@ -52,9 +56,14 @@ export const BoardCell: React.FC<BoardCellProps> = ({
     : tileTheme.shadowInset;
 
   return (
-    <div
+    <button
+      type="button"
+      data-position={position}
+      aria-label={label}
+      aria-pressed={isSelected}
+      disabled={!onClick}
       className={`
-        relative flex items-center justify-center
+        momentum-cell relative flex items-center justify-center
         transition-all duration-150 cursor-pointer
         ${highlightClass}
         ${onClick ? 'hover:brightness-115' : ''}
@@ -68,6 +77,6 @@ export const BoardCell: React.FC<BoardCellProps> = ({
       onClick={onClick}
     >
       {children}
-    </div>
+    </button>
   );
 };

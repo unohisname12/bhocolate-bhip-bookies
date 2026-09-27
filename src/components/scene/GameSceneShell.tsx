@@ -1,3 +1,11 @@
+import '../../features/home-base/house.css';
+import { useRoomLife } from '../../features/home-base/useRoomLife';
+import { PetInvite } from '../../features/pet-mind/PetInvite';
+import { roomSize } from '../../features/home-base/catalog';
+import { MindInspector } from '../../features/pet-mind/MindInspector';
+import { BookProp } from '../../features/home-base/BookProp';
+import { SavedHomeScene, SavedHomeForeground } from '../../features/home-base/HomeRoomView';
+import { HOME_ROOMS } from '../../features/home-base/catalog';
 import React, { useState, useCallback, useMemo } from 'react';
 import { SceneLayerRenderer, SceneForegroundAccents } from './SceneLayerRenderer';
 import { SceneProps } from './SceneProps';
@@ -5,7 +13,6 @@ import { SceneStage } from './SceneStage';
 import { SceneOverlay } from './SceneOverlay';
 import { TopHUD } from './TopHUD';
 import { InfoDrawer } from './InfoDrawer';
-import { RightSidePanel } from './RightSidePanel';
 import { RoomNavigator } from './RoomNavigator';
 import { InteractiveObjects } from './InteractiveObjects';
 import { EnvironmentalLife } from './EnvironmentalLife';
@@ -23,6 +30,7 @@ import { DailyRitualCard } from './DailyRitualCard';
 import { PowerPathStrip } from './PowerPathStrip';
 import { getRoomConfig } from '../../config/roomConfig';
 import { getSceneConfig } from '../../config/sceneConfig';
+import './pet-room-layout.css';
 import { useSceneScale } from '../../hooks/useSceneScale';
 import { useIdleWander } from '../../hooks/useIdleWander';
 import { useHandInteraction } from '../../hooks/useHandInteraction';
@@ -40,15 +48,24 @@ import type { GameEngineAction } from '../../engine/core/ActionTypes';
 import type { CosmeticSlot } from '../../types/cosmetic';
 import type { MathBuffs } from '../../types/player';
 import type { QuestProgress } from '../../types/quest';
+import { isDevModeEnabled } from '../../utils/featureFlags';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { WorldAtmosphere } from './WorldAtmosphere';
 
 interface GameSceneShellProps {
   pet: Pet;
+  /** What the pet can remember about the learner beyond its own save slice. */
+  learner?: import('../../features/pet-mind/life').LearnerFacts;
   currentRoom: RoomId;
+  homeBase: import('../../features/home-base/model').HomeBase;
   playerTokens: number;
   mp: number;
   mpLifetime: number;
   mathBuffs?: MathBuffs;
+  showPower?: boolean;
+  nextGoal?: React.ReactNode;
   dailyGoals: DailyGoals;
+  lifetimeMathCorrect?: number;
   ticketCount: number;
   mailbox: MailboxState;
   interaction?: InteractionState;
@@ -89,13 +106,17 @@ const getMailReward = (mailbox: MailboxState) => {
  */
 export const GameSceneShell: React.FC<GameSceneShellProps> = ({
   pet,
+  learner,
   currentRoom,
+  homeBase,
   playerTokens,
   mp,
   mpLifetime,
   mathBuffs,
+  showPower,
+  nextGoal,
   dailyGoals,
-  ticketCount,
+  lifetimeMathCorrect,
   mailbox,
   interaction: interactionProp,
   dispatch,
@@ -108,7 +129,23 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
 }) => {
   const room = getRoomConfig(currentRoom);
   const scene = getSceneConfig(currentRoom);
-  const scale = useSceneScale();
+  const sceneViewport = React.useRef<HTMLDivElement>(null);
+  const shell = React.useRef<HTMLDivElement>(null);
+  const scale = useSceneScale(sceneViewport);
+  React.useLayoutEffect(() => {
+    const bars = Array.from(document.querySelectorAll('.pilot-savebar, .student-nav, .student-activity-bar'));
+    const update = () => {
+      const top = Math.max(0, ...bars.map(bar => bar.getBoundingClientRect().bottom));
+      shell.current?.style.setProperty('--pet-room-top', `${top}px`);
+    };
+    const observer = new ResizeObserver(update);
+    bars.forEach(bar => observer.observe(bar));
+    window.addEventListener('resize', update);
+    update();
+    return () => { observer.disconnect(); window.removeEventListener('resize', update); };
+  }, []);
+  const reducedMotion = useReducedMotion();
+  const [greeting, setGreeting] = useState(0);
   const [showMailbox, setShowMailbox] = useState(false);
   const [debugHideUI, setDebugHideUI] = useState(false);
   const [debugSprite, setDebugSprite] = useState(false);
@@ -144,13 +181,16 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
   // or scripted movement. When scripted move releases, wander resumes
   // from the scripted final x (no teleport).
   const careActive = interaction.activeMode !== 'idle';
-  const wanderPaused = intent === 'sleep' || intent === 'dead' || careActive
+  const wanderPaused = reducedMotion || intent === 'sleep' || intent === 'dead' || careActive
     || oneShot.animName !== null || scripted.x !== null;
   const lastScriptedXRef = React.useRef<number | null>(null);
   if (scripted.x !== null) lastScriptedXRef.current = scripted.x;
-  const wander = useIdleWander(scene.walkBounds, wanderPaused, lastScriptedXRef);
-  const petX = scripted.x ?? wander.x;
-  const facingLeft = scripted.x !== null ? scripted.facingLeft : wander.facingLeft;
+  const mindLife = useRoomLife(homeBase.rooms[homeBase.activeRoom]!, currentRoom !== 'inside' || careActive || oneShot.animName !== null || reducedMotion, pet, dispatch, homeBase.activeRoom, undefined, learner);
+  const size = roomSize(homeBase.rooms[homeBase.activeRoom]!.tier);
+  const petGroundY = currentRoom === 'inside' ? 224 * (1 - (.34 + (mindLife.anchor.y + .5) / size.rows * .56)) : scene.groundY;
+  const wander = useIdleWander(scene.walkBounds, wanderPaused || currentRoom === 'inside', lastScriptedXRef);
+  const petX = currentRoom === 'inside' ? 28 + (mindLife.anchor.x + .5) / size.cols * 344 : scripted.x ?? wander.x;
+  const facingLeft = currentRoom === 'inside' ? false : scripted.x !== null ? scripted.facingLeft : wander.facingLeft;
   const petXRef = React.useRef(petX);
   petXRef.current = petX;
 
@@ -174,38 +214,40 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
   );
 
   React.useEffect(() => {
-    if (pet.timestamps.lastFedAt !== lastFedAtRef.current) {
+    if (currentRoom !== 'inside' && pet.timestamps.lastFedAt !== lastFedAtRef.current) {
       lastFedAtRef.current = pet.timestamps.lastFedAt;
       void runActivity(activitySpots.feed, 'eating', 3500);
     }
-  }, [pet.timestamps.lastFedAt, runActivity, activitySpots.feed]);
+  }, [currentRoom, pet.timestamps.lastFedAt, runActivity, activitySpots.feed]);
   React.useEffect(() => {
-    if (pet.timestamps.lastPlayedAt && pet.timestamps.lastPlayedAt !== lastPlayedAtRef.current) {
+    if (currentRoom !== 'inside' && pet.timestamps.lastPlayedAt && pet.timestamps.lastPlayedAt !== lastPlayedAtRef.current) {
       lastPlayedAtRef.current = pet.timestamps.lastPlayedAt;
       void runActivity(activitySpots.play, 'happy', 2500);
     }
-  }, [pet.timestamps.lastPlayedAt, runActivity, activitySpots.play]);
+  }, [currentRoom, pet.timestamps.lastPlayedAt, runActivity, activitySpots.play]);
   React.useEffect(() => {
-    if (pet.timestamps.lastCleanedAt !== lastCleanedAtRef.current) {
+    if (currentRoom !== 'inside' && pet.timestamps.lastCleanedAt !== lastCleanedAtRef.current) {
       lastCleanedAtRef.current = pet.timestamps.lastCleanedAt;
       void runActivity(activitySpots.clean, 'being_washed', 2800);
     }
-  }, [pet.timestamps.lastCleanedAt, runActivity, activitySpots.clean]);
+  }, [currentRoom, pet.timestamps.lastCleanedAt, runActivity, activitySpots.clean]);
 
   // Hand interaction system
   const hand = useHandInteraction({
     scale,
     petX,
-    groundY: scene.groundY,
+    groundY: petGroundY,
     petScale: scene.petScale ?? ANIMATION_DEFAULTS.scale,
   });
 
   // Keep hand mode in sync with engine state
+  const { handMode, setHandMode } = hand;
   React.useEffect(() => {
-    if (hand.handMode !== interaction.activeMode) {
-      hand.setHandMode(interaction.activeMode);
+    const mode = interaction.careGameActive ? 'idle' : interaction.activeMode;
+    if (handMode !== mode) {
+      setHandMode(mode);
     }
-  }, [interaction.activeMode, hand.handMode, hand.setHandMode]);
+  }, [interaction.activeMode, interaction.careGameActive, handMode, setHandMode]);
 
   // Pet reaction state machine
   const reaction = usePetReaction(interaction, pet, hand.isOverPet);
@@ -218,13 +260,13 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
   //   5. Default intent animation
   const displayAnimName = oneShot.animName
     ? oneShot.animName
-    : scripted.walking
+    : scripted.walking || (currentRoom === 'inside' && !careActive && (mindLife.pet.path.length > 0 || mindLife.motion.moving)) || (!wanderPaused && wander.walking)
       ? 'walking'
       : reaction.reactionAnim
         ? resolveIntentAnimation(reaction.reactionAnim as PetIntent)
         : careActive
           ? 'idle'
-          : animationName;
+          : currentRoom === 'inside' ? mindLife.pet.animation : animationName;
 
   // Interaction callbacks
   const handleInteract = useCallback((mode: typeof interaction.activeMode) => {
@@ -250,6 +292,7 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
   // Debug mode: press H to toggle UI visibility, D to toggle sprite debug overlay, I for interaction debug
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (!isDevModeEnabled()) return;
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === 'h' || e.key === 'H') {
         setDebugHideUI(prev => !prev);
@@ -276,47 +319,58 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
   const handleMailboxClose = useCallback(() => setShowMailbox(false), []);
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-slate-900">
+    <div ref={shell} className="home-shell pet-room-layout">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#28423c_0%,_#0f172a_75%)]" />
+      <div className="home-heading"><span className="eyebrow">Auralith • A little world, all yours</span><h1>{currentRoom === 'inside' ? HOME_ROOMS.find(r => r.id === homeBase.activeRoom)!.name : 'A breath of adventure.'}</h1><p>{currentRoom === 'inside' ? 'Your furniture. Your colors. Your companion.' : 'Follow the breeze. See what you and your companion can discover.'}</p></div>
+      <div ref={sceneViewport} className="pet-room-viewport"><div id="vpet-scene" className="home-world relative overflow-hidden" style={{ width: 400 * scale, height: 224 * scale }}>
+      <div key={currentRoom} className="room-reveal absolute inset-0">
       {/* z-0→4: Layered scene (sky, strips, props, accents) */}
-      <SceneLayerRenderer scene={scene} scale={scale} />
+      {currentRoom === 'inside' ? <SavedHomeScene home={homeBase} dispatch={dispatch}/> : <SceneLayerRenderer scene={scene} scale={scale} />}
 
       {/* z-4: Ambient environmental life effects */}
-      <EnvironmentalLife currentRoom={currentRoom} scale={scale} />
+      {currentRoom !== 'inside' && <EnvironmentalLife currentRoom={currentRoom} scale={scale} />}
+      <WorldAtmosphere room={currentRoom} />
+      {!careActive && <button className="house-entry-button" onClick={()=>dispatch({type:'HOME_OPEN'})}>{currentRoom==='inside'?'Explore my house →':'Enter my house →'}</button>}
 
       {/* z-10: Room decoration props */}
-      <SceneProps props={room.props} />
+      {currentRoom !== 'inside' && <SceneProps props={room.props} />}
 
       {/* z-15: Interactive scene objects (hotspots) */}
-      <InteractiveObjects
+      {currentRoom !== 'inside' && <InteractiveObjects
         currentRoom={currentRoom}
         hasMailboxReward={mailboxHasReward}
         scale={scale}
         dispatch={dispatch}
         onMailboxClick={handleMailboxClick}
-      />
+      />}
 
       {/* z-20: Pet grounded on scene floor, idle-wandering */}
-      <SceneStage groundY={scene.groundY} scale={scale} petX={petX} facingLeft={facingLeft}
+      <SceneStage movementMs={currentRoom==='inside'&&!reducedMotion?mindLife.motion.duration:undefined} groundY={petGroundY} scale={scale} petX={petX} facingLeft={facingLeft}
         shadow={scene.shadowConfig} ambientTint={scene.ambientTint} footEmbed={scene.footEmbed}>
-        <PetSprite speciesId={displaySpeciesId} animationName={displayAnimName} intent={intent} needs={pet.needs}
-          scale={scene.petScale ?? ANIMATION_DEFAULTS.scale} debug={debugSprite}
+        <PetSprite className={currentRoom === 'inside' && !careActive ? `hb-pose-${mindLife.anchor.pose} ${mindLife.motion.facingLeft?'hb-facing-left':''}` : undefined} speciesId={displaySpeciesId} animationName={currentRoom === 'inside' && !careActive && mindLife.anchor.pose === 'sitting' ? 'idle' : displayAnimName} intent={intent} needs={pet.needs}
+          scale={(scene.petScale ?? ANIMATION_DEFAULTS.scale) * scale} debug={debugSprite}
           petX={petX} reactionPhase={reaction.phase}
           heldItemIcon={oneShot.animName === 'eating' ? lastFoodIcon ?? null : null}
           equippedCosmetics={equippedCosmetics} />
+        {currentRoom === 'inside' && !careActive && mindLife.pet.book && <div className="hb-dashboard-book"><BookProp phase={mindLife.pet.book.phase}/></div>}
+        {currentRoom === 'inside' && !careActive && <div className="dashboard-pet-thought" aria-live="polite" data-pet-intention={mindLife.decision?.id ?? 'settling'}>{mindLife.pet.bubble}</div>}
+        {greeting > 0 && <div key={greeting} className="pet-greeting" aria-hidden="true"><span>♥</span><span>✦</span><span>♥</span></div>}
       </SceneStage>
 
+      {currentRoom === 'inside' && <SavedHomeForeground home={homeBase} petY={mindLife.pet.y} restingId={mindLife.anchor.pose!=='standing'?mindLife.pet.objectId:undefined}/>}
+
       {/* z-21: Foreground accents (overlap pet feet for depth) */}
-      <SceneForegroundAccents scene={scene} scale={scale} />
+      {currentRoom !== 'inside' && <SceneForegroundAccents scene={scene} scale={scale} />}
 
       {/* z-23: Pet touch zone (gesture → interaction dispatcher). Pointer
            tracking is now handled globally by the useHandInteraction hook, so
            this component no longer attaches its own pointer handlers. */}
       <PetTouchZone
         petX={petX}
-        groundY={scene.groundY}
+        groundY={petGroundY}
         scale={scale}
         petScale={scene.petScale ?? ANIMATION_DEFAULTS.scale}
-        handMode={interaction.activeMode}
+        handMode={interaction.careGameActive ? 'idle' : interaction.activeMode}
         gesture={hand.gesture}
         isOverPet={hand.isOverPet}
         onInteract={handleInteract}
@@ -325,19 +379,13 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
 
       {/* z-24: Floating hand cursor — position written directly to DOM via
            ref by the hook, so mouse moves don't trigger React re-renders. */}
-      <HandCursor
-        handRef={hand.setHandEl}
-        animState={hand.handAnimState}
-        isOverPet={hand.isOverPet}
-        active={interaction.activeMode !== 'idle'}
-      />
 
       {/* z-25: Interaction VFX */}
       <InteractionVFX
         type={reaction.vfxType}
         mode={interaction.activeMode}
         petX={petX}
-        groundY={scene.groundY}
+        groundY={petGroundY}
         scale={scale}
       />
 
@@ -345,9 +393,44 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
       <InteractionFeedback
         text={reaction.reactionText}
         petX={petX}
-        groundY={scene.groundY}
+        groundY={petGroundY}
         scale={scale}
       />
+      </div>
+      </div>
+      </div>
+      <aside className="pet-room-sidebar" aria-label="Companion controls">
+{!debugHideUI && (          <TopHUD pet={pet} playerTokens={playerTokens} mp={mp} mpLifetime={mpLifetime} mathBuffs={mathBuffs} showPower={showPower} />)}
+      <section className="home-companion-card px-4 py-3 text-white" aria-label="Pet wellbeing">
+        {/* The answer lives in the care panel: the room nav covers the bubble's space and the stage frame hides overlays. */}
+        {currentRoom === 'inside' && !careActive && <PetInvite decision={mindLife.decision} bubble={mindLife.pet.bubble} accept={mindLife.together} later={mindLife.later} prompt/>}
+        <div className="flex justify-between gap-2 text-xs text-slate-300"><span>Food {Math.round(pet.needs.hunger)}%</span><span>Joy {Math.round(pet.needs.happiness)}%</span><span>Clean {Math.round(pet.needs.cleanliness)}%</span></div>
+        <div className="flex items-center justify-between gap-3 mt-2"><div className="min-w-0 flex-1">{nextGoal ?? <p className="text-sm">{dailyGoals.mathSolved < 5 ? `Today: solve ${5 - dailyGoals.mathSolved} more questions together.` : 'Nice practice! Ready for an adventure?'}</p>}</div><button className="min-h-11 px-3 rounded-lg bg-teal-900 text-teal-100 text-sm font-bold" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'math' })} aria-label="Study desk — Math Practice">Practice</button></div>
+        <div className="home-quick-actions"><button onClick={onFeed}><img src="/assets/woodland-v1/icon-feed.png" alt="" />Feed</button><button disabled={intent === 'dead' || intent === 'sleep'} onClick={() => { oneShotTrigger('happy', 1600); setGreeting(n => n + 1); }}><img src="/assets/woodland-v1/icon-heart.png" alt="" />Say hello</button><button onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'pet_care' })}><img src="/assets/woodland-v1/icon-care.png" alt="" />Care</button><button disabled={playerTokens < 50} onClick={() => dispatch({ type: 'BOOST_MOOD' })}>Heal · 50</button></div>
+        {isDevModeEnabled() && <MindInspector pet={pet} decision={mindLife.decision}/>}
+      </section>
+{!debugHideUI && (<>          <InteractionToolbar
+            activeMode={interaction.activeMode}
+            interaction={interaction}
+            pet={pet}
+            playerTokens={playerTokens}
+            onSelectMode={(mode) => {
+              if (mode === 'idle') {
+                dispatch({ type: 'SET_HAND_MODE', mode: 'idle' });
+              } else {
+                dispatch({ type: 'START_PET_INTERACTION', mode });
+              }
+            }}
+          />          <InfoDrawer pet={pet} dailyGoals={dailyGoals} lifetimeMathCorrect={lifetimeMathCorrect} /></>)}
+      {/* Power Path strip — persistent slim progress chip */}
+      {!debugHideUI && dailyQuests.length > 0 && (
+        <div className="pet-room-quests">
+          <PowerPathStrip dailyQuests={dailyQuests} />
+        </div>
+      )}
+      </aside>
+      <HandCursor handRef={hand.setHandEl} animState={hand.handAnimState} isOverPet={hand.isOverPet} active={!interaction.careGameActive && interaction.activeMode !== 'idle'} />
+
 
       {/* z-52: Care mini-game overlay */}
       <CareGameOverlay
@@ -364,51 +447,22 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
       {!debugHideUI && (
         <>
           {/* z-30: Top HUD */}
-          <TopHUD pet={pet} playerTokens={playerTokens} mp={mp} mpLifetime={mpLifetime} mathBuffs={mathBuffs} />
+
 
           {/* z-35: Info drawer (collapsible status panel) */}
-          <InfoDrawer pet={pet} dailyGoals={dailyGoals} />
+
 
           {/* z-35→45: Room navigation arrows + dots */}
           <RoomNavigator currentRoom={currentRoom} dispatch={dispatch} />
 
           {/* z-42: Interaction toolbar (bottom, togglable) */}
-          <InteractionToolbar
-            activeMode={interaction.activeMode}
-            interaction={interaction}
-            pet={pet}
-            playerTokens={playerTokens}
-            onSelectMode={(mode) => {
-              if (mode === 'idle') {
-                dispatch({ type: 'SET_HAND_MODE', mode: 'idle' });
-              } else {
-                dispatch({ type: 'SET_HAND_MODE', mode });
-              }
-            }}
-          />
 
-          {/* z-40: Right side panel (replaces bottom hotbar) */}
-          <RightSidePanel
-            currentRoom={currentRoom}
-            pet={pet}
-            ticketCount={ticketCount}
-            onFeed={onFeed}
-            onHeal={() => dispatch({ type: 'BOOST_MOOD' })}
-            onTrain={() => dispatch({ type: 'SET_SCREEN', screen: 'math' })}
-            onShop={() => dispatch({ type: 'SET_SCREEN', screen: 'shop' })}
-            onBattle={() => dispatch({ type: 'START_BATTLE' })}
-            onArena={() => dispatch({ type: 'SET_SCREEN', screen: 'class_roster' })}
-            onNumberMerge={() => dispatch({ type: 'SET_SCREEN', screen: 'number_merge' })}
-            onMomentum={() => dispatch({ type: 'START_MOMENTUM' })}
-            onCatchMath={() => dispatch({ type: 'SET_SCREEN', screen: 'catch_math' })}
-            onDungeon={() => dispatch({ type: 'SET_SCREEN', screen: 'run_start' })}
-            onCare={() => dispatch({ type: 'SET_SCREEN', screen: 'pet_care' })}
-          />
+
         </>
       )}
 
       {/* z-60: Character picker (dev preview) */}
-      {!debugHideUI && (
+      {!debugHideUI && isDevModeEnabled() && (
         <CharacterPicker
           currentSpeciesId={displaySpeciesId}
           hasOverride={speciesOverride !== null}
@@ -436,12 +490,7 @@ export const GameSceneShell: React.FC<GameSceneShellProps> = ({
         />
       )}
 
-      {/* Power Path strip — persistent slim progress chip */}
-      {!debugHideUI && dailyQuests.length > 0 && (
-        <div className="fixed top-16 right-3 z-30 w-[200px] pointer-events-auto">
-          <PowerPathStrip dailyQuests={dailyQuests} />
-        </div>
-      )}
+
 
       {/* z-60: Daily ritual modal — shown once per new day */}
       {showDailyRitual && (

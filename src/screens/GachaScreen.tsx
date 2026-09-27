@@ -99,7 +99,7 @@ export const GachaScreen: React.FC<GachaScreenProps> = ({ state, dispatch, onClo
           <div className={`text-7xl my-2 ${pulling ? 'animate-bounce' : ''}`}>🥚</div>
           <div className="text-sm font-bold">Mystery Cosmetic Egg</div>
           <div className="text-[11px] text-slate-300 mb-3">
-            A random cosmetic for your pet. Costs tokens + MP (math gates new pets).
+            A random cosmetic for your pet. Costs tokens + Power.
           </div>
           <button
             disabled={!canPull || pulling}
@@ -114,7 +114,7 @@ export const GachaScreen: React.FC<GachaScreenProps> = ({ state, dispatch, onClo
           </button>
           {!canAffordMP && (
             <div className="mt-2 text-[11px] text-cyan-300">
-              Not enough MP — train in the Math Arena to earn more.
+              Not enough Power — solve math questions to earn more.
             </div>
           )}
           <div className="mt-2 text-[10px] text-slate-500">
@@ -132,7 +132,7 @@ export const GachaScreen: React.FC<GachaScreenProps> = ({ state, dispatch, onClo
           }}
         >
           <div className="text-xs text-slate-300 mb-3 text-center">
-            Trade duplicate-pull shards 💎 for a guaranteed-rarity pull. No tokens, no MP — pure shard alchemy.
+            Trade duplicate-pull shards 💎 for a guaranteed-rarity pull. No tokens or Power needed.
           </div>
           <div className="space-y-2">
             {SHARD_CRAFT_OPTIONS.map((opt) => {

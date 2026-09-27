@@ -1,0 +1,19 @@
+.learner-settings { min-width:0; border:1px solid #71948980; border-radius:18px; padding:20px; background:#102d32; color:#edf7ee; }
+.learner-settings legend { padding:0 8px; font-size:23px; font-weight:850; }
+.learner-settings p { color:#c0d8d1; line-height:1.6; margin:0 0 16px; }
+.learner-setting-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.learner-settings label { display:block; font-size:16px; font-weight:750; margin:0 0 8px; }
+.learner-settings select { display:block; width:100%; min-height:50px; margin-top:9px; padding:12px; border:1px solid #90b5a7; border-radius:10px; background:#091f29; color:#f4f8ed; }
+.learner-settings small { display:block; color:#b5d1c7; font-size:12px; line-height:1.6; font-weight:400; }
+.learner-grade-steps { display:flex; gap:8px; margin:8px 0; }
+.learner-settings button { min-height:44px; padding:10px 13px; background:#234b43; color:#edf8ee; border:1px solid #83aa98; border-radius:10px; font-weight:700; }
+.learner-settings button:disabled { opacity:.45; cursor:default; }
+.learner-presets { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:22px 0 12px; }
+.learner-presets button { text-align:left; }
+.learner-settings .learner-note { margin:0; font-size:12px; }
+.learner-settings :focus-visible { outline:3px solid #ffdb96; outline-offset:3px; }
+.learner-facts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:18px 0; }
+.learner-facts>div { padding:14px; border-radius:12px; background:#102d32; overflow-wrap:anywhere; }
+.learner-facts dt { font-size:12px; color:#bbd5ce; }.learner-facts dd { margin-top:6px; font-size:17px; font-weight:750; color:#f4dfb2; }
+.learner-save-actions { position:sticky; bottom:12px; z-index:15; display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding:16px; background:#102b2b; border:1px solid #9abfa0; border-radius:14px; box-shadow:0 6px 22px #0008; margin:20px 0; }.learner-save-actions span { flex:1; min-width:160px; }
+@media(max-width:640px) { .learner-setting-grid { grid-template-columns:1fr; }.learner-settings { padding:14px; }.learner-facts { grid-template-columns:repeat(2,minmax(0,1fr)); }.learner-presets button { flex:1 1 100%; }.learner-save-actions { bottom:6px; padding:12px; } }

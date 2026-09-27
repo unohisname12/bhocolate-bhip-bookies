@@ -1,5 +1,6 @@
 import type { PetType } from './assetManifest';
 import type { PetStage, PetStats } from '../types';
+import { GROWING_PETS } from './companionConfig';
 
 export interface EvolutionRequirements {
   toJuvenile: { level: number; bond: number };
@@ -128,3 +129,10 @@ export const getSpeciesForQuizOutcome = (outcome: 'creative' | 'logical' | 'bala
   const match = Object.values(SPECIES_CONFIG).find((s) => s.quizOutcomeAffinity === outcome);
   return match?.id ?? 'koala_sprite';
 };
+
+for (const [id, companion] of Object.entries(GROWING_PETS)) {
+  const base = SPECIES_CONFIG[id] ?? SPECIES_CONFIG.koala_sprite;
+  SPECIES_CONFIG[id] = { ...base, id, name: companion.title, description: companion.description, assetKey: id, baseStats: { ...companion.stats },
+    stages: { baby: { spriteKey: id, statMultiplier: 1 }, juvenile: { spriteKey: `${id}__juvenile`, statMultiplier: 1.3 }, adult: { spriteKey: `${id}__adult`, statMultiplier: 1.69 } },
+    quizOutcomeAffinity: id === 'koala_sprite' ? 'balanced' : ['slime_baby', 'mech_bot', 'subtrak'].includes(id) ? base.quizOutcomeAffinity : undefined };
+}

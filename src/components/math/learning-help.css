@@ -1,0 +1,10 @@
+.learning-help { margin: 1rem 0; padding: 1rem; border: 1px solid #5eead4; border-radius: 16px; background: #102e36; color: #f0fdfa; font-size: 15px; line-height: 1.55; text-align: left; overflow-wrap: anywhere; }
+.learning-help p { margin: 0 0 .6rem; }
+.learning-help-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.learning-help button { min-height: 44px; padding: .5rem .75rem; border: 1px solid #5eead4; border-radius: 10px; color: #f0fdfa; background: #164e63; font: inherit; cursor: pointer; }
+.learning-help button:hover, .learning-help button[aria-pressed="true"] { background: #115e59; }
+.learning-help button:focus-visible { outline: 3px solid #fde68a; outline-offset: 3px; }
+.learning-help-detail { margin-top: .75rem !important; border-top: 1px solid #45737c; padding-top: .75rem; }
+.learning-help h3 { font-weight: 800; margin-bottom: .5rem; }
+.learning-help ol { list-style: decimal; padding-left: 1.5rem; }
+.learning-help li { margin-bottom: .6rem; }

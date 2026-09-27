@@ -1,0 +1,38 @@
+{
+  "description": "Repacked existing Auralith production artwork. Pet frames retain the main game identities.",
+  "species": [
+    "koala_sprite",
+    "ember_fox",
+    "moss_turtle",
+    "luna_owl",
+    "clover_rabbit",
+    "ripple_otter",
+    "nova_axolotl",
+    "bramble_hedgehog",
+    "zephyr_dragon",
+    "slime_baby",
+    "mech_bot",
+    "subtrak"
+  ],
+  "states": [
+    "idle",
+    "walking",
+    "attack",
+    "hurt",
+    "happy"
+  ],
+  "props": [
+    "bush",
+    "bushBerry",
+    "tree",
+    "flowers",
+    "grass",
+    "mushroom",
+    "rocks",
+    "barrel",
+    "books",
+    "plant",
+    "lantern",
+    "logs"
+  ]
+}

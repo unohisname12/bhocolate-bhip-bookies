@@ -664,11 +664,9 @@
 @keyframes hotbar-breathe {
   0%, 100% {
     box-shadow: 0 0 4px 0 var(--breathe-glow, rgba(255,255,255,0.1));
-    transform: scale(1);
   }
   50% {
     box-shadow: 0 0 12px 2px var(--breathe-glow, rgba(255,255,255,0.15));
-    transform: scale(1.01);
   }
 }
 .anim-hotbar-breathe {
@@ -678,6 +676,10 @@
   animation: none;
   box-shadow: 0 0 16px 4px var(--breathe-glow, rgba(255,255,255,0.25));
   transform: scale(1.04);
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim-hotbar-breathe { animation: none; }
+  .anim-hotbar-breathe:hover { transform: none; }
 }
 
 /* Locked shimmer overlay — slow diagonal scanline */
@@ -967,3 +969,10 @@
   40%      { opacity: 0.35; }
 }
 .anim-math-wrong-flash { animation: math-wrong-flash 0.5s ease-out forwards; }
+
+/* Shared body reactions keep single-pose legacy pets expressive in battle too. */
+@keyframes pet-brace { 50% { transform: scale(1.06, .92) translateY(2px); } }
+@keyframes pet-renew { 50% { transform: translateY(-4px) scale(1.03); } }
+.anim-pet-brace { animation: pet-brace .4s ease-in-out; }
+.anim-pet-renew { animation: pet-renew .5s ease-in-out; }
+@media (prefers-reduced-motion: reduce) { .anim-pet-brace, .anim-pet-renew { animation: none; } }

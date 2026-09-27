@@ -1,5 +1,6 @@
 import type { RoomId } from '../types/room';
 import type { ActionId } from './roomConfig';
+import { WOODLAND_ART } from './woodlandArt';
 
 /* ------------------------------------------------------------------ */
 /*  Scene Layer Types                                                  */
@@ -143,7 +144,7 @@ export const OUTDOOR_SCENE: SceneConfig = {
   ambientFx: 'outdoor',
   shadowConfig: { width: 30, height: 5, opacity: 0.45, offsetY: 1 },
   ambientTint: { color: 'rgba(255,220,160,0.06)', mode: 'overlay' },
-  petScale: 1.6,
+  petScale: 1,
   footEmbed: 3,
 };
 
@@ -190,7 +191,7 @@ export const INDOOR_SCENE: SceneConfig = {
   ambientFx: 'indoor',
   shadowConfig: { width: 30, height: 5, opacity: 0.4, offsetY: 1 },
   ambientTint: { color: 'rgba(255,180,100,0.06)', mode: 'multiply' },
-  petScale: 1.6,
+  petScale: 1,
   footEmbed: 2,
 };
 
@@ -198,9 +199,13 @@ export const INDOOR_SCENE: SceneConfig = {
 /*  Lookup                                                             */
 /* ------------------------------------------------------------------ */
 
-const SCENE_MAP: Record<RoomId, SceneConfig> = {
-  outside: OUTDOOR_SCENE,
-  inside: INDOOR_SCENE,
+export const WOODLAND_SCENES: Record<RoomId, SceneConfig> = {
+  outside: { ...OUTDOOR_SCENE, layers: [{ id: 'woodland-yard', asset: `${WOODLAND_ART}/yard.png`, y: 0, z: 0 }],
+    props: [], accents: [], groundY: 37, footEmbed: 0, petScale: .8,
+    walkBounds: { minX: 125, maxX: 275 } },
+  inside: { ...INDOOR_SCENE, layers: [{ id: 'woodland-home', asset: `${WOODLAND_ART}/home.png`, y: 0, z: 0 }],
+    props: [], accents: [], groundY: 37, footEmbed: 0, petScale: .8,
+    walkBounds: { minX: 135, maxX: 270 } },
 };
 
-export const getSceneConfig = (roomId: RoomId): SceneConfig => SCENE_MAP[roomId];
+export const getSceneConfig = (roomId: RoomId): SceneConfig => WOODLAND_SCENES[roomId];

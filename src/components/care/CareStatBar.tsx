@@ -30,7 +30,7 @@ export const CareStatBar: React.FC<CareStatBarProps> = ({
   const barColor = color ?? getAutoColor(value, max, invertThreshold);
 
   return (
-    <div className="flex items-center gap-2 w-full">
+    <div className="care-stat flex items-center gap-2 w-full">
       {icon && (
         <img
           src={icon}
@@ -39,10 +39,10 @@ export const CareStatBar: React.FC<CareStatBarProps> = ({
           style={{ imageRendering: 'pixelated' }}
         />
       )}
-      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider w-20 flex-shrink-0">
+      <span className="text-xs font-bold text-slate-200 w-24 flex-shrink-0">
         {label}
       </span>
-      <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,25,50,0.8)' }}>
+      <div role="meter" aria-label={label} aria-valuenow={Math.round(value)} aria-valuemin={0} aria-valuemax={max} className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,25,50,0.8)' }}>
         <div
           className="h-full rounded-full"
           style={{

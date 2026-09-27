@@ -9,6 +9,13 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-pilot
+.wrangler/
+.dev.vars*
+.pilot-private/
+test-results-pilot/
+worker/generated/
+worker-configuration.d.ts
 dist-ssr
 *.local
 
@@ -29,3 +36,20 @@ dist-ssr
 *.sw?
 .superpowers/
 .vercel
+
+# Asset Review fix-it pipeline — WIP edits, not committed
+public/assets/_fix_inbox/
+
+# Local verification output (legacy tracked evidence is left intact).
+test-results-recovery/
+test-results-home/
+test-results/recovery-and-teacher-*/
+
+/dist-demo/
+
+test-results-pet-motion/
+
+/test-results-balance/
+
+/test-results-classroom-update/
+/test-results-quick-check/

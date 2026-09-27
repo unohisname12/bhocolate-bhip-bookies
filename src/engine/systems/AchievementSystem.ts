@@ -1,3 +1,4 @@
+import { TOKENS_PER_COIN } from '../../services/game/wallet';
 import type { EngineState } from '../core/EngineTypes';
 import type { Achievement, AchievementProgress } from '../../types/achievement';
 import { ACHIEVEMENTS } from '../../config/achievementConfig';
@@ -58,7 +59,7 @@ export const checkAchievements = (
           ...updatedPlayer,
           currencies: {
             ...updatedPlayer.currencies,
-            coins: updatedPlayer.currencies.coins + (achievement.reward.coins ?? 0),
+            tokens: updatedPlayer.currencies.tokens + (achievement.reward.coins ?? 0) * TOKENS_PER_COIN,
           },
         };
       }

@@ -6,6 +6,7 @@ import type { ScreenName } from '../types/session';
 import type { RoomId } from '../types/room';
 import { ROOM_ORDER } from '../config/roomConfig';
 import { NeedSliders } from './NeedSliders';
+import { SCREEN_CATALOG } from './screenCatalog';
 
 interface StateInspectorProps {
   state: EngineState;
@@ -96,11 +97,12 @@ export const StateInspector: React.FC<StateInspectorProps> = ({ state, dispatch 
           <span className="text-slate-300">Jump Screen</span>
           <select
             className="w-full rounded bg-slate-800 px-2 py-1"
+            aria-label="Jump Screen"
             value={state.screen}
             onChange={(event) => onJumpScreen(event.target.value)}
           >
-            {['incubation', 'home', 'math', 'catch_math', 'feeding', 'battle', 'test'].map((screen) => (
-              <option key={screen} value={screen}>{screen}</option>
+            {Object.entries(SCREEN_CATALOG).map(([screen, [label]]) => (
+              <option key={screen} value={screen}>{label}</option>
             ))}
           </select>
         </label>

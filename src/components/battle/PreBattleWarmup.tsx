@@ -1,7 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { GameCard } from '../ui/GameCard';
+import { useSyncExternalStore } from 'react';
+import { miniLessonActive, subscribeMiniLesson } from '../../features/mini-lesson/pause';
+import React, { useEffect, useRef, useState } from 'react';
+import { Modal } from '../ui/Modal';
 import { GameButton } from '../ui/GameButton';
-import { generateMathProblem } from '../../services/game/mathEngine';
+import { checkAnswer } from '../../services/game/mathEngine';
+import { generateLearningProblem, parseMathAnswer } from '../../services/game/curriculum';
+import { LearningHelp } from '../math/LearningHelp';
+import { useLearningSettings } from '../LearningContext';
 import type { GameEngineAction } from '../../engine/core/ActionTypes';
 
 interface PreBattleWarmupProps {
@@ -12,11 +17,13 @@ interface PreBattleWarmupProps {
 const TIMER_SECONDS = 15;
 
 export const PreBattleWarmup: React.FC<PreBattleWarmupProps> = ({
-  difficulty,
   dispatch,
 }) => {
-  const problem = useMemo(() => generateMathProblem(difficulty, 'arithmetic'), [difficulty]);
+  const learning = useLearningSettings();
+  const lessonOpen = useSyncExternalStore(subscribeMiniLesson, miniLessonActive, () => false);
+  const [problem] = useState(() => generateLearningProblem(learning));
   const [input, setInput] = useState('');
+  const [wrong, setWrong] = useState(false);
   const [seconds, setSeconds] = useState(TIMER_SECONDS);
   const resolved = useRef(false);
 
@@ -27,35 +34,30 @@ export const PreBattleWarmup: React.FC<PreBattleWarmupProps> = ({
   };
 
   useEffect(() => {
-    const id = window.setInterval(() => {
-      setSeconds((s) => {
-        if (s <= 1) {
-          window.clearInterval(id);
-          resolve(false, true);
-          return 0;
-        }
-        return s - 1;
-      });
+    if (!learning.timedWarmup || wrong || lessonOpen || resolved.current) return;
+    const id = window.setTimeout(() => {
+      if (seconds <= 1) { setSeconds(0); resolve(false, true); }
+      else setSeconds(seconds - 1);
     }, 1000);
-    return () => window.clearInterval(id);
+    return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [learning.timedWarmup, wrong, seconds, lessonOpen]);
 
   const submit = () => {
-    const parsed = parseInt(input, 10);
+    const parsed = parseMathAnswer(input);
     if (Number.isNaN(parsed)) return;
-    resolve(parsed === problem.answer);
+    const correct = checkAnswer(problem, parsed);
+    dispatch({ type: 'RECORD_LEARNING_ATTEMPT', problem, source: 'warmup', correct });
+    if (correct) resolve(true);
+    else setWrong(true);
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
-      <GameCard className="w-full max-w-sm border-4 border-indigo-500 bg-slate-900 shadow-2xl anim-pop">
+    <Modal isOpen title="Pre-Battle Warmup" onClose={() => dispatch({ type: 'CANCEL_BATTLE_WARMUP' })} footer={<button className="min-h-11 px-4 text-slate-200" onClick={() => dispatch({ type: 'CANCEL_BATTLE_WARMUP' })}>Cancel battle</button>}>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-black uppercase tracking-wider text-indigo-300">
-            Pre-Battle Warmup
-          </h2>
+
           <span className={`font-mono text-sm ${seconds <= 5 ? 'text-red-400' : 'text-slate-300'}`}>
-            {seconds}s
+            {learning.timedWarmup ? wrong ? `Paused · ${seconds}s` : `${seconds}s` : 'No timer'}
           </span>
         </div>
         <p className="mb-2 text-xs text-slate-400">
@@ -64,10 +66,12 @@ export const PreBattleWarmup: React.FC<PreBattleWarmupProps> = ({
         <div className="mb-4 rounded bg-slate-800 px-4 py-6 text-center">
           <div className="text-3xl font-black text-slate-100">{problem.question}</div>
         </div>
+        {wrong && <><p role="status" className="text-amber-200 mb-2">Not quite yet. Try again. {learning.timedWarmup && 'The timer is paused while you learn.'}</p><LearningHelp key={problem.id} problem={problem} onRetry={() => { setWrong(false); document.querySelector<HTMLInputElement>('[aria-label="Warmup answer"]')?.select(); }} /></>}
         <input
           autoFocus
-          type="number"
-          inputMode="numeric"
+          type="text"
+          inputMode="decimal"
+          aria-label="Warmup answer"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
@@ -84,7 +88,6 @@ export const PreBattleWarmup: React.FC<PreBattleWarmupProps> = ({
             Submit
           </GameButton>
         </div>
-      </GameCard>
-    </div>
+    </Modal>
   );
 };

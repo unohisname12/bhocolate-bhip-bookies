@@ -84,7 +84,7 @@ export const PetTouchZone: React.FC<PetTouchZoneProps> = ({
     }
   }, [gesture, onInteractEnd]);
 
-  const size = HIT_SIZE_NATIVE * (petScale / 2) * scale;
+  const size = HIT_SIZE_NATIVE * petScale * scale;
   const centerX = petX * scale;
   const bottomY = groundY * scale;
 

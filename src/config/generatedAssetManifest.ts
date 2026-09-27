@@ -1,6 +1,6 @@
 /** Generated asset manifest — split into approved (done) and review-pending assets. */
 
-export type AssetCategory = 'icon' | 'item' | 'reward' | 'room' | 'effect' | 'math' | 'pet' | 'scene' | 'egg';
+export type AssetCategory = 'icon' | 'item' | 'reward' | 'room' | 'effect' | 'math' | 'pet' | 'scene' | 'egg' | 'pet_direction';
 export type ReviewStatus = 'unreviewed' | 'keep' | 'reject' | 'fix';
 
 export interface GeneratedAsset {
@@ -11,6 +11,15 @@ export interface GeneratedAsset {
   prompt: string;
   width: number;
   height: number;
+  /** When true, this asset appears in the Asset Review "Curated" view.
+   *  Used for showcase filtering only — gameplay ignores this flag. */
+  isPreviewable?: boolean;
+  /** Optional grouping label for the Curated view (e.g. "Blue Koala v2"). */
+  group?: string;
+  /** Optional facing, set on direction sprites. */
+  direction?: 'south' | 'north' | 'east' | 'west' | 'south-east' | 'south-west' | 'north-east' | 'north-west';
+  /** Optional state tag (idle, walk, etc.) — not used by gameplay. */
+  state?: string;
 }
 
 const BASE = '/assets/generated/raw';
@@ -192,14 +201,29 @@ export const APPROVED_ASSETS: GeneratedAsset[] = [
 // ---------------------------------------------------------------------------
 // REVIEW-PENDING ASSETS — shown in Asset Review screen for approval
 // ---------------------------------------------------------------------------
+import { CURATED_DIRECTION_ASSETS, V2_COMPARISON_ASSETS, FINAL_ANIMATION_ASSETS, WOODLAND_REVIEW_ASSETS } from './assetReviewList';
+import { BATCH_GENERATED_ASSETS } from './generatedBatchAssets';
+
 export const GENERATED_ASSETS: GeneratedAsset[] = [
+  ...WOODLAND_REVIEW_ASSETS,
   // Regenerated animations (anim_slash, anim_lightning, anim_slam) — pending re-review
   { id: 'anim_slash', filename: 'anim_slash.png', category: 'effect', path: `${BASE}/anim_slash.png`, prompt: '6-frame slash claw attack animation sprite sheet (regenerated v2)', width: 768, height: 128 },
   { id: 'anim_lightning', filename: 'anim_lightning.png', category: 'effect', path: `${BASE}/anim_lightning.png`, prompt: '6-frame lightning bolt strike animation sprite sheet (regenerated v2)', width: 768, height: 128 },
   { id: 'anim_slam', filename: 'anim_slam.png', category: 'effect', path: `${BASE}/anim_slam.png`, prompt: '6-frame ground slam impact animation sprite sheet (regenerated v2)', width: 768, height: 128 },
+  // Curated directional character sprites — v3 rotate-based. Shown in the
+  // Asset Review "Curated" view (isPreviewable: true). Not wired into gameplay.
+  ...CURATED_DIRECTION_ASSETS,
+  // Final quality-gated animation sheets — skeleton-driven, 128×128 native.
+  ...FINAL_ANIMATION_ASSETS,
+  // v2 (text-to-image) sprites — available in the "All Assets" view under
+  // the pet_direction category for comparison. Not previewable by default.
+  ...V2_COMPARISON_ASSETS,
+  // Batch-generated assets (Pixflux statics + animate-with-text animations).
+  // Auto-regenerated from public/assets/generated/new/_manifest.json.
+  ...BATCH_GENERATED_ASSETS,
 ];
 
-export const ASSET_CATEGORIES: AssetCategory[] = ['icon', 'item', 'reward', 'room', 'effect', 'math', 'pet', 'scene', 'egg'];
+export const ASSET_CATEGORIES: AssetCategory[] = ['icon', 'item', 'reward', 'room', 'effect', 'math', 'pet', 'scene', 'egg', 'pet_direction'];
 
 export const CATEGORY_LABELS: Record<AssetCategory, string> = {
   icon: 'UI Icons',
@@ -211,4 +235,5 @@ export const CATEGORY_LABELS: Record<AssetCategory, string> = {
   pet: 'Pet Portraits',
   scene: 'Scenes',
   egg: 'Egg/Evolution',
+  pet_direction: 'Directions',
 };

@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { migrate, CURRENT_SAVE_VERSION } from '../saveMigrations';
 
 describe('saveMigrations v12 → v13', () => {
-  it('bumps CURRENT_SAVE_VERSION to 13', () => {
-    expect(CURRENT_SAVE_VERSION).toBe(13);
+  it('includes teacher settings in version 14', () => {
+    expect(CURRENT_SAVE_VERSION).toBe(18);
   });
 
   it('defaults hasOnboarded = true for existing v12 saves (they already played)', () => {

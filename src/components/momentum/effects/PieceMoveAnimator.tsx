@@ -65,6 +65,7 @@ export const PieceMoveAnimator: React.FC<PieceMoveAnimatorProps> = ({
       }}
     >
       <BoardPiece
+        mathPower={piece.mathPower}
         team={piece.team}
         rank={piece.rank}
         energy={piece.energy}

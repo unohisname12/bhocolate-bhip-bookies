@@ -74,6 +74,7 @@ const computeEnabled = (): boolean => {
 
 /** Returns true if dev features should be visible in the UI. */
 export const isDevModeEnabled = (): boolean => {
+  if (import.meta.env.MODE === 'pilot') return false;
   if (cached === null) cached = computeEnabled();
   return cached;
 };

@@ -12,9 +12,10 @@ interface Notification {
 interface AchievementPopupProps {
   notifications: Notification[];
   dispatch: (action: GameEngineAction) => void;
+  muted?: boolean;
 }
 
-export const AchievementPopup: React.FC<AchievementPopupProps> = ({ notifications, dispatch }) => {
+export const AchievementPopup: React.FC<AchievementPopupProps> = ({ notifications, dispatch, muted = false }) => {
   const latest = notifications[notifications.length - 1];
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export const AchievementPopup: React.FC<AchievementPopupProps> = ({ notification
     return () => clearTimeout(timer);
   }, [latest, dispatch]);
 
-  if (!latest) return null;
+  if (!latest || muted) return null;
 
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-slate-800 border border-yellow-500/50 rounded-2xl px-5 py-3 shadow-xl animate-fade-in max-w-xs">

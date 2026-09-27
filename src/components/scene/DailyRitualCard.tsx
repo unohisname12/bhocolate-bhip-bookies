@@ -1,4 +1,5 @@
 import React from 'react';
+import { Modal } from '../ui/Modal';
 import { DAILY_QUESTS } from '../../config/questConfig';
 import { hasAnyMathBuffs } from '../../config/mathBuffConfig';
 import type { QuestProgress, QuestTemplate } from '../../types/quest';
@@ -96,8 +97,8 @@ export const DailyRitualCard: React.FC<DailyRitualCardProps> = ({
   const hasBuffs = hasAnyMathBuffs(mathBuffs);
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-sm rounded-2xl border-2 border-amber-400/60 bg-gradient-to-b from-slate-900 to-slate-950 shadow-[0_0_30px_rgba(251,191,36,0.35)] p-5">
+    <Modal isOpen onClose={onDismiss} title="Welcome back" footer={<button onClick={onDismiss} className="min-h-11 w-full rounded-xl bg-amber-400 text-slate-900 font-bold px-4 py-3">Let's Go!</button>}>
+      <div>
         {/* Header */}
         <div className="flex items-center gap-3 pb-3 border-b border-slate-700/50">
           <img
@@ -201,14 +202,7 @@ export const DailyRitualCard: React.FC<DailyRitualCardProps> = ({
           </div>
         )}
 
-        {/* CTA */}
-        <button
-          onClick={onDismiss}
-          className="mt-4 w-full rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-black uppercase tracking-wider py-3 text-sm shadow-lg active:scale-[0.98] transition"
-        >
-          Let's Go!
-        </button>
       </div>
-    </div>
+    </Modal>
   );
 };

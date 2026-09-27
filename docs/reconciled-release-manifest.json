@@ -1,0 +1,353 @@
+{
+  "baseVersion": "2b648eaa-f8df-40ca-a02c-61f3cdb0ee09",
+  "changes": [
+    {
+      "path": "src/App.tsx",
+      "sha256": "5caa2f3e8285077773627051ebe468ec457d33b0bbf800e2c898a131bfb83993"
+    },
+    {
+      "path": "src/pilot/CloudSession.ts",
+      "sha256": "1012cbaa06814950dc4c33f2bec5b7bc28579745f4154b34d2dd5846105df0eb"
+    },
+    {
+      "path": "src/pilot/StudentNickname.tsx",
+      "sha256": "cf59db430b6b2746cbc0827faba4a690da326d70beed670d2365977650669b3f"
+    },
+    {
+      "path": "src/pilot/polling.test.ts",
+      "sha256": "3a1637894719d6872a735c568671c604f81223c4784a240a354f686212feec20"
+    },
+    {
+      "path": "src/pilot/polling.ts",
+      "sha256": "b0323779954e3961c8c06eed9fb9146c8c5c344f343cf2e2e97ff949421b72f1"
+    },
+    {
+      "path": "src/pilot/NicknameTools.tsx",
+      "sha256": "8e56962042fbc74b43c83b49d9e8d583afc187a22569906fe4b2ba6979092b23"
+    },
+    {
+      "path": "src/features/classroom-party/ClassroomParty.tsx",
+      "sha256": "5657384d5d3b179b8c39fc9254c261c019122d7d67c7d5263d8becccf02be486"
+    },
+    {
+      "path": "src/features/skill-challenge/SkillChallenge.tsx",
+      "sha256": "a1d1292c35133960705df5b9eed845c59c4540d1cc2493fe983e60fc23dccc12"
+    },
+    {
+      "path": "src/features/skill-challenge/StudentChallengeProvider.tsx",
+      "sha256": "b01f3e36809255aa0131ca455f3f6a384680c3dadf8bfb4f271b0f89d89192d7"
+    },
+    {
+      "path": "src/features/delivery/client.ts",
+      "sha256": "4050b0fa1723bf4a0697786e0af26b5fb1d6d861695306dc0f78e33c5184a377"
+    },
+    {
+      "path": "src/features/pet-duel/PetDuels.tsx",
+      "sha256": "46f9ed52eb2fd49dd3db9e4928a5b8b6e34afad0ffa877a4d91dc9949d1256ab"
+    },
+    {
+      "path": "src/features/living-house/world.ts",
+      "sha256": "e205f7ffaeb5be75cc774eb3fa77381e4c2eccfca30536d531f72872b80e0aee"
+    },
+    {
+      "path": "src/features/living-house/paint.ts",
+      "sha256": "5adcb5add616a3ac36641de149d7ea9ca32ab0dba3175826df7fafd0d6e197ac"
+    },
+    {
+      "path": "src/features/living-house/LivingHouse.tsx",
+      "sha256": "253e27526f8d37d66a9e9c66a3033ffc654cedcd298d6e007d024f303784ae63"
+    },
+    {
+      "path": "src/features/living-house/HousePet.tsx",
+      "sha256": "110550d47322b0baab53d001275d925d026181c5d4d316ca285c104504ddbb76"
+    },
+    {
+      "path": "src/features/living-house/living-house.css",
+      "sha256": "5de59644f517fb39de91a904ad35a0abe2f8cbd6e9ad8697503c3f5df59022ff"
+    },
+    {
+      "path": "src/features/living-house/subtrak-directions.json",
+      "sha256": "1b55ce2b2806373ec3b55d5b88a98727f71ed7094b34230928e06d5652e5ece4"
+    },
+    {
+      "path": "src/features/living-house/resident.ts",
+      "sha256": "de79c4521b6ab0a9c326706385b9b9280c5a9286feab6cb51b3beaf30d1112e2"
+    },
+    {
+      "path": "src/features/living-house/__tests__/world.test.ts",
+      "sha256": "6efb5b7fc15b477185310caa01bab11520e5038b573afa67ee08168aa213a41a"
+    },
+    {
+      "path": "src/features/teacher-battle/TeacherBattle.tsx",
+      "sha256": "7d8c2ddbddd8818fb693948b27bd6086835e8bcaf82f650b3481f1d45c09f58e"
+    },
+    {
+      "path": "src/features/pet-hunt/CompanionPortrait.tsx",
+      "sha256": "9a09ebea1fa29aa6237d327c0c1bd56502b4ea5b2ebd0d02115cd7ce194c41b4"
+    },
+    {
+      "path": "src/features/pet-hunt/model.ts",
+      "sha256": "3627158b59415fe3d54a9fa4ea74c3b2e56d706fe8fc1564ccd916cbd77ea68f"
+    },
+    {
+      "path": "src/features/pet-hunt/propAtlas.ts",
+      "sha256": "f2494885216db12a7cd93036f1a1ec9a413b372e123a5bc4d2ad73d7354fce26"
+    },
+    {
+      "path": "src/features/pet-hunt/objective.ts",
+      "sha256": "a7565ceba2da69aa0f41d579f7740cbcee46384398c41863a046c0992173b7a9"
+    },
+    {
+      "path": "src/features/pet-hunt/actions.ts",
+      "sha256": "41316dd878056964fd2dc344d7a885993e1a65fe9026ef3c74267cf2455c2727"
+    },
+    {
+      "path": "src/features/pet-hunt/SparkPanel.tsx",
+      "sha256": "7fce2edad5ee8d2ea10582b265c05e3d1309b7d7eae6a7476e1066a21365097e"
+    },
+    {
+      "path": "src/features/pet-hunt/PetHunt.tsx",
+      "sha256": "0bb0c8c189bc14b0f76c801066013b499438746d5ce7ada7c5a0ddf748235a9a"
+    },
+    {
+      "path": "src/features/pet-hunt/HuntToast.tsx",
+      "sha256": "0f82ac016e9bf242218e1582db58c8d07a7e5d78888b797e485752ba15d97f34"
+    },
+    {
+      "path": "src/features/pet-hunt/pet-hunt.css",
+      "sha256": "8e4ad6cde1b5c44d52ffbc63d006d1797dc4633525333a0d808d6c84938ab09f"
+    },
+    {
+      "path": "src/features/pet-hunt/environment.ts",
+      "sha256": "663c1eb9004f8449545d98836cafaf7837f42c462c559530ecc93037ea044bb9"
+    },
+    {
+      "path": "src/features/pet-hunt/mapgen.ts",
+      "sha256": "3b559f4703ed7536aeff57fe4841c48054b6ad6ceed3dc145ea227fa8007bee2"
+    },
+    {
+      "path": "src/features/pet-hunt/tools.test.ts",
+      "sha256": "8600a58744a8f4f494c6e3de81640db5909d6bd6d65017506d27dad8a09f78bd"
+    },
+    {
+      "path": "src/features/pet-hunt/upgrade.test.ts",
+      "sha256": "5ae8a288bced5eec0911f73f46f7d18e1c96fb3e491e92603942053310ba8725"
+    },
+    {
+      "path": "src/features/pet-hunt/art.ts",
+      "sha256": "9eaf7c9788b09e43219ecbbabca56a15901d59c31f42e07db2fbc83cac4ec51f"
+    },
+    {
+      "path": "src/features/pet-hunt/HuntMenu.tsx",
+      "sha256": "eb2709477aa8fa76f9fae3144f99515fc59f19d3a19dc2d673fbaa387a43b409"
+    },
+    {
+      "path": "src/features/pet-hunt/hunt-clean.css",
+      "sha256": "d9b0bd0d60ea65b21aeaf80ecf514f3c99d76489c42f5fa5ec46d9141bdb43b9"
+    },
+    {
+      "path": "src/features/pet-hunt/render.ts",
+      "sha256": "303957b03b4d5b2e56bde16c110253139fd3626ffeb38aca1dfebc36836a0076"
+    },
+    {
+      "path": "src/features/pet-hunt/spark.ts",
+      "sha256": "cc3294b78e2ff6cd1fab24628fcf01085457d90bdfa50693126d7de847c318cd"
+    },
+    {
+      "path": "src/features/pet-hunt/model.test.ts",
+      "sha256": "de684d6eebe617d9ca9bbcdf684426e787351dd2268256582046c76a72dd3e44"
+    },
+    {
+      "path": "src/features/pet-hunt/spark.test.ts",
+      "sha256": "324d84415b4dbeba1c87457d0dd9ddb4748d580e7cbce37a8241375d375beaf5"
+    },
+    {
+      "path": "src/features/pet-hunt/HuntGuide.tsx",
+      "sha256": "6e5096cd90bd3e44a1c126612b1ea5e11466990fb169bfdcca72736f24ccbb0b"
+    },
+    {
+      "path": "src/features/portal-party/PortalParty.tsx",
+      "sha256": "6ef80d1f75d6e7374be56aec4849a29e498057dc2780696bf40abb939e51ec84"
+    },
+    {
+      "path": "src/features/clash/ClassroomClash.tsx",
+      "sha256": "a62493a16fdeee3a1e4610263b6373569aabc2958d12a9e856fcf7a7266eaf35"
+    },
+    {
+      "path": "src/features/home-base/model.ts",
+      "sha256": "8801182d9bbadec299199e4c823a8191fb5738a420fc142195552d75a1c94348"
+    },
+    {
+      "path": "src/features/home-base/HomeBaseScreen.tsx",
+      "sha256": "9f6295c754cff50a2787e8be7a8c1bdc7f88a50ec90c44a41ac8def62b5d5904"
+    },
+    {
+      "path": "src/engine/core/ActionTypes.ts",
+      "sha256": "bfa100664fe03812cacaee1e8ac180591518d6bc83f604366f9075812919d5b4"
+    },
+    {
+      "path": "worker/living-house.test.ts",
+      "sha256": "abd6836db4d02e47c7a13ae895a36baf3f5968b80760b719af0691406a0fdb04"
+    },
+    {
+      "path": "worker/pet-hunt.ts",
+      "sha256": "e2c6205b48c6fe46cc9d0d7f5a3b3c099c9313fac3c0e8f5df409c5136017b83"
+    },
+    {
+      "path": "worker/generated/validate-engine.js",
+      "sha256": "94262c4c5907e6a0288d52dc714871595028bffd7f2b303ba4aa05c1d6884c01"
+    },
+    {
+      "path": "public/assets/pet-hunt-v4/props.png",
+      "sha256": "cb74069d4013989926275a77346c07c0b3bd3cef743d6606cfd28f6d5d1dc282"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/README.md",
+      "sha256": "b5a364f372765d2bffce3c245cfef62b8fda3463020eb4af839b57b25a191174"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/north/6.png",
+      "sha256": "2f7b349efbabbabf8f85cafb4178c08833d89f912dedef4c7c72c241659644c5"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/north/7.png",
+      "sha256": "de746447831cd760fc759dff0e33977881a3f6e57190a6bdd493b1d5d693dde9"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/north/2.png",
+      "sha256": "539c4ca0d9ab34c2861d7ccdc4c79717accc09de8a34527de96174b2c5ec4b49"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/north/4.png",
+      "sha256": "2a19e7cefd09be33eb7d8a2bf9578c5b50fa680afc908a674c87002036ea3f32"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/north/5.png",
+      "sha256": "86076e97fa89a974be021343da667a8d69d387a00e18cd0535889785e335ab39"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/north/3.png",
+      "sha256": "43dd9408f4182948316cccc7cdb6b3980b0c1f27c79329d9b21e5b04625c6e17"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/north/1.png",
+      "sha256": "a07b65f5a73cb4059a0db2fa8c83e406f6c622cd6ba5debf34fca39e9890d6a2"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/north/0.png",
+      "sha256": "f8b72176de5a667c9e7a50f5c5c1da55754e759a125009cbfee392059fd8ed90"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/east/6.png",
+      "sha256": "4ad77391952057e8661c5c792776d5b293540ea925122a80a6e1de20eef9732a"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/east/7.png",
+      "sha256": "9448b35218e92e80006b9d86518a7d5654c351627296a64ce18af56aaab5ebb0"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/east/2.png",
+      "sha256": "3de71d1d07fbacfbd6fac4060d976954060f12c64eb6ada411cbcaebe13d6f44"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/east/4.png",
+      "sha256": "04b44ccfe5690240e25e01c02f6c8a3a3e09d3a379f8637d4d13277debd8b65a"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/east/5.png",
+      "sha256": "664321d88f3e715951e4427f0000157cf777e5634f142d4e7a029b7653ea2fd9"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/east/3.png",
+      "sha256": "266fd12a1029d30f2f1735705a31dd6cac1560607f1915be91df22bf1fc21884"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/east/1.png",
+      "sha256": "650376d62ed2e5aac7714c3d90cc8f6cb41d0b3511da2e9ce62f725a82f5af0b"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/east/0.png",
+      "sha256": "80679af0bb2960163bc58262a882068c49a9e06adea4653c7eebcbed9a133bea"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/south/6.png",
+      "sha256": "b38e97f3bd0f04ee01b9cbc6a7a9e984b5e9e57244449b7d5a045caedd60e7b2"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/south/7.png",
+      "sha256": "244b9845e0dbdf40912633ae451d851722e696f8dab262418b94c3c3a6c732a8"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/south/2.png",
+      "sha256": "93969d473115498aafd293bc50bd8a478b30984fb05302b2854400768f88769e"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/south/4.png",
+      "sha256": "90368d527ad66bc6aa5e0c0b5d5b1c74480a8374b439dd5fed42dab325e2fd58"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/south/5.png",
+      "sha256": "a2121f24aeb42ba80da4b85df503ceda13df5f0ead46f70da5b57488c531559b"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/south/3.png",
+      "sha256": "a6074db91fd9b74dcca2d05a981b27b19db4d91598601692cd0b27768148e124"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/south/1.png",
+      "sha256": "76bef5cd51988fd25cfeb2bcd3588ec642c3a25709543601760bf38179ff4947"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/south/0.png",
+      "sha256": "0f056e2a1ac149f1ef6e4df11e9f5db29897c42e78795413c1162d61d7ba53fb"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/west/6.png",
+      "sha256": "bdc4c716c74f5611c78087a2fba7870116501d02ff5ca944e0a439441bdc311b"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/west/7.png",
+      "sha256": "7abb09c12cb7a246e472f14fedebfa16d22a47201c989bcef194850b85a3f0f1"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/west/2.png",
+      "sha256": "ce395cb9b4d3a32673e274394ac4bde1fb125afacb688fe53b466b33162e36be"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/west/4.png",
+      "sha256": "69230926b76791ca09a3f64f278a8ed67b7ba7681d15e0edf30d3521d9159bc6"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/west/5.png",
+      "sha256": "1f3081ca626ac4d6f59850eb86fd5497d6ed7fe78aac9ba79404e823f5dc4196"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/west/3.png",
+      "sha256": "bbb014b8cf2c11f30d275d12f49f4c15d01f7e3147d0d49e03cc4129e9a1ef24"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/west/1.png",
+      "sha256": "134941c9bc490976c8d9307d91f11151b311238be588e1a2b58b41e5cba1224d"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-walk/west/0.png",
+      "sha256": "51caab61766e935d30c28e19d072e51c63b2b2cdc5cf2a9454e5bab5a9736733"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-directions/south.png",
+      "sha256": "1e6c0b278a21fc098de606b54d1edbd6431260cd0daebc009a7d94f2bc4681d9"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-directions/east.png",
+      "sha256": "93eab2fd609b037f38917bdb4412fbe6d7b85e32e7d6829c8dc77b4b555ed8b1"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-directions/west.png",
+      "sha256": "984d3466ad1f3f089fc9f271f0e386a9cd9b3ae7c25c1a6e080a41714d56f37b"
+    },
+    {
+      "path": "public/assets/pets/subtrak/house-directions/north.png",
+      "sha256": "5680957ed944e622d6c8948a4fa5a6400c0b57b1722456b08e8183e2e9946c5d"
+    }
+  ]
+}

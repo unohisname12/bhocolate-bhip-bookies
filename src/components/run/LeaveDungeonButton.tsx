@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { Modal } from '../ui/Modal';
 import type { GameEngineAction } from '../../engine/core/ActionTypes';
 
 interface LeaveDungeonButtonProps {
   dispatch: (action: GameEngineAction) => void;
-  /** Override positioning. Defaults to top-left fixed corner. */
+  /** Override positioning. Defaults to normal flow below the navigation. */
   className?: string;
 }
 
@@ -24,7 +25,7 @@ export const LeaveDungeonButton: React.FC<LeaveDungeonButtonProps> = ({
 
   if (confirming) {
     return (
-      <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 px-4">
+      <Modal isOpen title="Abandon run?" onClose={() => setConfirming(false)} footer={<button className="min-h-11 px-4 text-slate-200" onClick={() => setConfirming(false)}>Stay in dungeon</button>}>
         <div
           className="w-full max-w-xs rounded-xl p-5 text-white text-center"
           style={{
@@ -65,7 +66,7 @@ export const LeaveDungeonButton: React.FC<LeaveDungeonButtonProps> = ({
             </button>
           </div>
         </div>
-      </div>
+      </Modal>
     );
   }
 
@@ -74,7 +75,7 @@ export const LeaveDungeonButton: React.FC<LeaveDungeonButtonProps> = ({
       onClick={() => setConfirming(true)}
       className={
         className ??
-        'fixed top-3 left-3 z-30 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider text-slate-300 hover:text-red-300 transition-colors'
+        'relative self-start mt-3 ml-3 z-30 min-h-11 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider text-slate-300 hover:text-red-300 transition-colors'
       }
       style={{
         background: 'rgba(30,20,40,0.85)',

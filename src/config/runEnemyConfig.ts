@@ -1,3 +1,4 @@
+import { NEW_RUN_ENEMIES } from './enemyConfig';
 import type { RunEnemyTemplate } from '../types/run';
 
 // --- Tier 1: Introductory enemies ---
@@ -173,6 +174,12 @@ const BOSS_ENEMIES: RunEnemyTemplate[] = [
     counterplayHint: 'EQUATION STORM — Constant trace events. Your accuracy IS your defense.',
   },
 ];
+
+// Add the new opponents while keeping IDs from saved adventure maps valid.
+TIER_1_ENEMIES.push(...NEW_RUN_ENEMIES.filter(e => e.tier === 1));
+TIER_2_ENEMIES.push(...NEW_RUN_ENEMIES.filter(e => e.tier === 2));
+TIER_3_ENEMIES.push(...NEW_RUN_ENEMIES.filter(e => e.tier === 3));
+BOSS_ENEMIES.push(...NEW_RUN_ENEMIES.filter(e => e.tier === 'boss'));
 
 // --- All enemies ---
 

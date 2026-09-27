@@ -1,4 +1,4 @@
-export const DAILY_REWARDS = [10, 15, 20, 25, 30, 50, 100] as const;
+export const DAILY_REWARDS = [20, 20, 20, 20, 20, 20, 20] as const;
 
 export const STREAK_MILESTONES: { streak: number; label: string; color: string }[] = [
   { streak: 5, label: 'Bronze', color: 'text-orange-400' },

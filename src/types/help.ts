@@ -54,7 +54,7 @@ export interface HelpState {
   /** Feature IDs the player has encountered (shown in help panel). */
   encounteredFeatures: string[];
   /** Per-hint show counts (key = hintRule.id). */
-  hintCounts: Record<string, number>;
+  hintCounts: { [hintId: string]: number };
   /** Per-hint last-shown timestamps (key = hintRule.id). */
-  hintTimestamps: Record<string, number>;
+  hintTimestamps: { [hintId: string]: number };
 }

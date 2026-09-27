@@ -1,0 +1,58 @@
+{
+  "north": {
+    "viewBox": "18.0 8 69 69",
+    "width": 104,
+    "height": 104,
+    "idleWidth": 104,
+    "idleHeight": 104,
+    "bounds": [
+      37,
+      16,
+      68,
+      77
+    ],
+    "idleViewBox": "23.5 18 59 59"
+  },
+  "east": {
+    "viewBox": "17.5 11 66 66",
+    "width": 104,
+    "height": 104,
+    "idleWidth": 104,
+    "idleHeight": 104,
+    "bounds": [
+      37,
+      19,
+      64,
+      77
+    ],
+    "idleViewBox": "20.0 16 61 61"
+  },
+  "south": {
+    "viewBox": "21.5 15 62 62",
+    "width": 104,
+    "height": 104,
+    "idleWidth": 104,
+    "idleHeight": 104,
+    "bounds": [
+      37,
+      23,
+      68,
+      77
+    ],
+    "idleViewBox": "23.0 18 59 59"
+  },
+  "west": {
+    "viewBox": "20.5 10 67 67",
+    "width": 104,
+    "height": 104,
+    "idleWidth": 104,
+    "idleHeight": 104,
+    "bounds": [
+      41,
+      18,
+      67,
+      77
+    ],
+    "idleViewBox": "23.5 16 61 61"
+  }
+}

@@ -29,7 +29,7 @@ export interface CosmeticInventoryEntry {
 export interface CosmeticState {
   owned: CosmeticInventoryEntry[];
   /** Per-pet-slot equip: { [petId]: { hat: 'id' | null, ... } } */
-  equipped: Record<string, Partial<Record<CosmeticSlot, string | null>>>;
+  equipped: { [petId: string]: Partial<Record<CosmeticSlot, string | null>> };
   /** Gacha pity counter — guarantees a rare/epic every N pulls. */
   gachaPullsSinceRare: number;
   gachaPullsSinceEpic: number;

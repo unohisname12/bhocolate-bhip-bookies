@@ -77,5 +77,5 @@ export const ROOM_DECORATIONS: RoomDecoration[] = [
   { id: 'plant', name: 'Plant', icon: '/assets/generated/final/room_plant.png', cost: { tokens: 30 }, moodBonus: 2 },
   { id: 'lamp', name: 'Lamp', icon: '/assets/generated/final/room_lamp.png', cost: { tokens: 40 }, moodBonus: 3 },
   { id: 'carpet', name: 'Carpet', icon: '/assets/generated/final/room_carpet.png', cost: { tokens: 60 }, moodBonus: 5 },
-  { id: 'painting', name: 'Painting', icon: '/assets/generated/final/room_painting.png', cost: { coins: 3 }, moodBonus: 8 },
+  { id: 'painting', name: 'Painting', icon: '/assets/generated/final/room_painting.png', cost: { tokens: 30 }, moodBonus: 8 },
 ];

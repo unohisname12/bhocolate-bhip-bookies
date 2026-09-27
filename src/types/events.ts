@@ -4,6 +4,7 @@ export type GameEventType =
   | 'pet_fed'
   | 'pet_cleaned'
   | 'pet_played_with'
+  | 'care_game_complete'
   | 'pet_healed'
   | 'math_solved'
   | 'battle_won'

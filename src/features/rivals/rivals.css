@@ -1,0 +1,22 @@
+.rival-board { background:#1f2a2f; color:#ecebdc; border:1px solid #445a57; border-radius:20px; padding:clamp(14px,3vw,24px); margin:18px 0; font:16px/1.5 Inter,system-ui,sans-serif; }
+.rival-board h2 { font-size:1.5rem; font-weight:750; margin:2px 0 6px; }
+.rival-board header p:last-child { color:#bfc7bd; margin:0; }
+.rival-eyebrow { font-size:.75rem; letter-spacing:.07em; text-transform:uppercase; color:#e8b85a; margin:0; }
+.rival-toggle { display:flex; gap:8px; align-items:center; margin:12px 0; font-weight:650; }
+.rival-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; margin-top:14px; }
+.rival-card { display:grid; grid-template-columns:96px 1fr; gap:12px; background:#28363b; border:1px solid #3f5452; border-radius:16px; padding:12px; min-width:0; }
+.rival-portrait { height:96px; display:flex; align-items:center; justify-content:center; overflow:hidden; filter:saturate(.8) hue-rotate(200deg) brightness(.9); }
+.rival-info { min-width:0; overflow-wrap:anywhere; }
+.rival-info h3 { font-size:1.1rem; font-weight:750; margin:0 0 4px; }
+.rival-info p { margin:4px 0; font-size:.9rem; }
+.rival-badge { display:inline-block; padding:1px 8px; border-radius:999px; font-size:.75rem; font-weight:800; background:#3f5452; }
+.rival-badge.rank-3 { background:#6b5a24; } .rival-badge.rank-4 { background:#7a3b2a; } .rival-badge.rank-5 { background:#8a2a52; }
+.rival-weak strong { color:#9fe0c0; }
+.rival-scars { margin:6px 0; padding-left:18px; font-size:.85rem; color:#f0c9a8; }
+.rival-you { font-weight:650; color:#e8b85a; }
+.rival-board button { min-height:40px; margin-top:6px; padding:6px 12px; border-radius:10px; border:1px solid #6b8975; background:#1f2a2f; color:inherit; font:inherit; font-size:.85rem; cursor:pointer; }
+.rival-message:empty { display:none; }
+@media(max-width:420px) { .rival-card { grid-template-columns:72px 1fr; } .rival-portrait { height:72px; } }
+
+/* Unowned species must not preview future pet forms. */
+.rival-mystery { display:grid; place-items:center; width:64px; height:64px; border:2px dashed #6b8975; border-radius:50%; color:#ecebdc; font-size:2rem; font-weight:750; }

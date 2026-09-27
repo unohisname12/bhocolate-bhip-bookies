@@ -168,13 +168,12 @@ export function useBattleSequence() {
 
     // --- PHASE 1: WINDUP ---
     const lungeClass = actor === 'player' ? 'anim-battle-lunge-right' : 'anim-battle-lunge-left';
-    const hasSheet = combatSheet !== null;
 
     setState(prev => ({
       ...prev,
       phase: 'windup',
       isAnimating: true,
-      attackerAnim: type === 'defend' || type === 'heal' ? '' : (hasSheet ? '' : lungeClass),
+      attackerAnim: type === 'defend' ? 'anim-pet-brace' : type === 'heal' ? 'anim-pet-renew' : lungeClass,
       defenderAnim: '',
       screenShake: false,
       impactEffect: null,
@@ -208,7 +207,7 @@ export function useBattleSequence() {
         ...prev,
         phase: 'impact',
         attackerAnim: '',
-        defenderAnim: isHit && !hurtSheet ? `${knockbackClass} anim-battle-hit-flash` : '',
+        defenderAnim: isHit ? `${knockbackClass} anim-battle-hit-flash` : '',
         defenderCombatSheet: isHit ? hurtSheet : null,
         screenShake: isHit,
         impactEffect: showEffect ? { image: effect.image, animClass: effect.animClass, animId: effect.animId, target: type === 'heal' || type === 'defend' ? actor : target } : null,

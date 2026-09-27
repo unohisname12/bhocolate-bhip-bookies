@@ -1,0 +1,3 @@
+import { fullDashboard } from './e2e/fullDashboard';
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'./e2e',testMatch:'pet-duel.spec.ts',globalSetup:'./e2e/pilot-setup.ts',outputDir:'test-results-pet-duel',workers:1,timeout:120000,use:{storageState:fullDashboard('http://127.0.0.1:8831'),baseURL:'http://127.0.0.1:8831',channel:'chrome',headless:true,screenshot:'only-on-failure',extraHTTPHeaders:{'X-Pilot-Request':'1'}},webServer:{command:'npx wrangler dev --ip 127.0.0.1 --port 8831 --persist-to .wrangler/pilot-test-state',url:'http://127.0.0.1:8831',reuseExistingServer:false,timeout:60000}});

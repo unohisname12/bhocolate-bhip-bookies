@@ -85,9 +85,10 @@ export function useHandInteraction(opts: UseHandInteractionOptions): UseHandInte
 
   const checkOverPet = useCallback((vx: number, vy: number) => {
     const g = geomRef.current;
-    const petCenterX = g.petX * g.scale;
-    const petBottomY = window.innerHeight - g.groundY * g.scale;
-    const petSize = PET_HIT_SIZE_NATIVE * (g.petScale / 2) * g.scale;
+    const rect = document.getElementById('vpet-scene')?.getBoundingClientRect();
+    const petCenterX = (rect?.left ?? 0) + g.petX * g.scale;
+    const petBottomY = (rect?.bottom ?? window.innerHeight) - g.groundY * g.scale;
+    const petSize = PET_HIT_SIZE_NATIVE * g.petScale * g.scale;
     return (
       vx >= petCenterX - petSize / 2 &&
       vx <= petCenterX + petSize / 2 &&
@@ -195,16 +196,8 @@ export function useHandInteraction(opts: UseHandInteractionOptions): UseHandInte
     };
   }, [handMode, handlePointerMove, handlePointerDown, handlePointerUp]);
 
-  // Hide the native OS cursor globally while hand mode is active so it
-  // doesn't fight the sprite cursor.
-  useEffect(() => {
-    if (handMode === 'idle') return;
-    const prev = document.body.style.cursor;
-    document.body.style.cursor = 'none';
-    return () => {
-      document.body.style.cursor = prev;
-    };
-  }, [handMode]);
+  // Keep the system cursor visible. Decorative tools must never hide it:
+  // dialogs can sit above the hand sprite and stop its pointer tracking.
 
   // Cleanup timers on unmount
   useEffect(() => {

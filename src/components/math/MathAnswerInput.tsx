@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { GameButton } from '../ui/GameButton';
+import { parseMathAnswer } from '../../services/game/curriculum';
 
 interface MathAnswerInputProps {
   onSubmit: (answer: number) => void;
+  compact?: boolean;
   className?: string;
   isCorrect?: boolean | null; // null means no answer yet
   disabled?: boolean;
@@ -11,6 +13,7 @@ interface MathAnswerInputProps {
 export const MathAnswerInput: React.FC<MathAnswerInputProps> = ({
   onSubmit,
   className = '',
+  compact = false,
   isCorrect = null,
   disabled = false,
 }) => {
@@ -27,7 +30,8 @@ export const MathAnswerInput: React.FC<MathAnswerInputProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (value.trim() !== '' && !disabled) {
-      onSubmit(Number(value));
+      const answer = parseMathAnswer(value);
+      if (Number.isFinite(answer)) onSubmit(answer);
     }
   };
 
@@ -44,13 +48,15 @@ export const MathAnswerInput: React.FC<MathAnswerInputProps> = ({
   const inputStyle = isCorrect === true 
     ? 'border-green-500 bg-green-900/50 text-green-300' 
     : isCorrect === false 
-      ? 'border-red-500 bg-red-900/50 text-red-300 anim-shake' 
+      ? 'border-amber-400 bg-slate-800 text-amber-100'
       : 'border-slate-600 bg-slate-800 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)]';
 
   return (
-    <form onSubmit={handleSubmit} className={`flex flex-col gap-4 w-full max-w-sm mx-auto ${className}`}>
+    <form onSubmit={handleSubmit} className={`math-answer-form ${compact ? 'math-answer-compact' : ''} flex flex-col gap-4 w-full max-w-sm mx-auto ${className}`}>
       <input
-        type="number"
+        type="text"
+        inputMode="decimal"
+        aria-label="Your answer"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         disabled={disabled}
@@ -61,19 +67,20 @@ export const MathAnswerInput: React.FC<MathAnswerInputProps> = ({
       
       {/* Numpad for mobile ease */}
       <div className="grid grid-cols-3 gap-2">
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, '-', 0].map((num) => (
+        {(compact ? [7, 8, 9, '⌫', 4, 5, 6, '-', 1, 2, 3, '/', 0, '.'] : [1, 2, 3, 4, 5, 6, 7, 8, 9, '-', 0, '.', '/']).map((num) => (
           <GameButton
             key={num}
             type="button"
             variant="secondary"
-            onClick={() => handleNumpadClick(num.toString())}
+            onClick={() => num === '⌫' ? handleBackspace() : handleNumpadClick(num.toString())}
+            aria-label={num === '⌫' ? 'Delete last digit' : undefined}
             disabled={disabled}
-            className="text-2xl py-3 font-mono"
+            className={`text-2xl py-3 font-mono ${compact && (num === 0 || num === '.') ? 'col-span-2' : ''}`}
           >
             {num}
           </GameButton>
         ))}
-        <GameButton
+        {!compact && <GameButton
           type="button"
           variant="secondary"
           onClick={handleBackspace}
@@ -81,12 +88,12 @@ export const MathAnswerInput: React.FC<MathAnswerInputProps> = ({
           className="text-2xl py-3 bg-slate-700"
         >
           ⌫
-        </GameButton>
+        </GameButton>}
       </div>
 
       <GameButton 
         type="submit" 
-        variant={isCorrect === false ? 'danger' : 'primary'} 
+        variant="primary"
         size="lg" 
         fullWidth 
         disabled={disabled || value.trim() === ''}

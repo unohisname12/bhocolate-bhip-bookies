@@ -1,5 +1,6 @@
 import React from 'react';
 import type { CatchChoice } from '../types';
+import { tokensFor } from '../mathSprites';
 
 interface Props {
   choices: CatchChoice[];
@@ -20,6 +21,7 @@ export const ChoiceRow: React.FC<Props> = ({ choices, selectedIndex, disabled, o
     >
       {choices.map((c, idx) => {
         const selected = idx === selectedIndex;
+        const sprites = tokensFor(c.label);
         return (
           <button
             key={c.id}
@@ -28,13 +30,15 @@ export const ChoiceRow: React.FC<Props> = ({ choices, selectedIndex, disabled, o
             role="radio"
             aria-checked={selected}
             data-testid={`catch-choice-${idx}`}
+            aria-label={c.label}
             onClick={() => onSelect(idx)}
             disabled={disabled}
-            className="font-black rounded-xl transition-all duration-100 disabled:opacity-40"
+            className="font-black rounded-xl transition-all duration-100 disabled:opacity-40 flex items-center justify-center"
             style={{
               minWidth: 56,
               height: 56,
-              padding: '0 14px',
+              padding: sprites ? '0 8px' : '0 14px',
+              gap: sprites ? 2 : 0,
               fontSize: 20,
               color: selected ? '#0a0604' : '#fde68a',
               background: selected
@@ -48,7 +52,21 @@ export const ChoiceRow: React.FC<Props> = ({ choices, selectedIndex, disabled, o
               cursor: disabled ? 'not-allowed' : 'pointer',
             }}
           >
-            {c.label}
+            {sprites
+              ? sprites.map((src, i) => (
+                  <img
+                    key={i}
+                    src={src}
+                    alt=""
+                    style={{
+                      height: 44,
+                      width: 'auto',
+                      imageRendering: 'pixelated',
+                      filter: selected ? 'drop-shadow(0 0 4px rgba(0,0,0,0.35))' : 'none',
+                    }}
+                  />
+                ))
+              : c.label}
           </button>
         );
       })}

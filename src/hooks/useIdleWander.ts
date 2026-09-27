@@ -6,6 +6,7 @@ interface WalkBounds {
 }
 
 interface WanderState {
+  walking: boolean;
   /** Current X position in native coords. */
   x: number;
   /** Whether the pet is facing left. */
@@ -43,7 +44,7 @@ export function useIdleWander(
   resumeFromRef?: React.MutableRefObject<number | null>,
 ): WanderState {
   const center = (walkBounds.minX + walkBounds.maxX) / 2;
-  const [state, setState] = useState<WanderState>({ x: center, facingLeft: false });
+  const [state, setState] = useState<WanderState>({ x: center, facingLeft: false, walking: false });
 
   // Refs to survive across animation frames without re-renders
   const animRef = useRef<number>(0);
@@ -120,7 +121,7 @@ export function useIdleWander(
       const facingLeft = targetXRef.current < startXRef.current;
 
       currentXRef.current = x;
-      setState({ x, facingLeft });
+      setState({ x, facingLeft, walking: progress < 1 });
 
       // Arrived at target — enter pause
       if (progress >= 1) {

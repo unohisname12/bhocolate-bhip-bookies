@@ -1,3 +1,4 @@
+import {applyMathPower,powerTargets,powerEnergy} from './MomentumPowers';
 // ---------------------------------------------------------------------------
 // MomentumAI — AI move scoring and selection for the Momentum Board mini-game
 // ---------------------------------------------------------------------------
@@ -9,8 +10,8 @@ import type {
   ActiveMomentumState,
   Team,
 } from '../../types/momentum';
-import { RANK_ENERGY } from '../../config/momentumConfig';
-import { computeValidMoves } from './MomentumSystem';
+import { ENERGY_STATIONS, RANK_ENERGY } from '../../config/momentumConfig';
+import { computeValidMoves, grantEnergy, supportTargets } from './MomentumSystem';
 
 // ---------------------------------------------------------------------------
 // Distance Helpers
@@ -70,7 +71,7 @@ export function scoreMove(
   }
 
   // Use-it-or-lose-it: if energy is near cap, encourage spending
-  const maxEnergy = RANK_ENERGY[piece.rank]?.max ?? piece.rank * 2;
+  const maxEnergy = powerEnergy(piece)?.max ?? RANK_ENERGY[piece.rank]?.max ?? piece.rank * 2;
   if (piece.energy >= maxEnergy - 1) {
     score += 10;
   }
@@ -91,16 +92,22 @@ export function scoreMove(
  */
 export function selectAIAction(
   state: ActiveMomentumState,
-): { pieceId: string; moveIndex: number } | null {
+): { pieceId: string; moveIndex: number; tactic?: boolean; targetId?: string } | null {
   const enemyPieces = state.pieces.filter(p => p.team === 'enemy');
 
   let bestScore = -Infinity;
-  let bestAction: { pieceId: string; moveIndex: number } | null = null;
+  let bestAction: { pieceId: string; moveIndex: number; tactic?: boolean; targetId?: string } | null = null;
 
   for (const piece of enemyPieces) {
-    const moves = computeValidMoves(piece, state.pieces);
+    const moves = computeValidMoves(piece, state.pieces, state.mode);
     for (let i = 0; i < moves.length; i++) {
-      const score = scoreMove(piece, moves[i], state.pieces);
+      let score = scoreMove(piece, moves[i], state.pieces);
+      if (state.mode === 'advanced' || state.mode === 'powers') {
+        const simulated = state.pieces.filter(p => p.id !== moves[i].targetPieceId).map(p => p.id === piece.id ? { ...p, position: moves[i].destination, energy: p.energy - moves[i].energyCost } : p);
+        const reply = grantEnergy(simulated, 'player');
+        if (reply.some(p => p.team === 'player' && computeValidMoves(p, reply, state.mode).some(m => m.targetPieceId === piece.id))) score -= 65 + piece.rank * 8;
+        if (state.mode === 'advanced' && ENERGY_STATIONS.some(t => t.x === moves[i].destination.x && t.y === moves[i].destination.y)) score += 30;
+      }
       if (score > bestScore) {
         bestScore = score;
         bestAction = { pieceId: piece.id, moveIndex: i };
@@ -108,5 +115,33 @@ export function selectAIAction(
     }
   }
 
+  if (state.mode === 'advanced') for (const piece of enemyPieces) {
+    const upcoming = grantEnergy(state.pieces, 'player');
+    const threatened = upcoming.some(p => p.team === 'player' && computeValidMoves(p, upcoming, state.mode).some(m => m.targetPieceId === piece.id));
+    if (piece.energy >= 1 && !piece.guarded && threatened && bestScore < 65) {
+      bestScore = 65; bestAction = { pieceId: piece.id, moveIndex: -1, tactic: true };
+    }
+    for (const target of supportTargets(state, piece)) {
+      const supplied = state.pieces.map(p => p.id === target.id ? { ...p, energy: p.energy + 2 } : p);
+      if (computeValidMoves(supplied.find(p => p.id === target.id)!, supplied, state.mode).some(m => m.isAttack) && bestScore < 75) {
+        bestScore = 75; bestAction = { pieceId: piece.id, moveIndex: -1, tactic: true, targetId: target.id };
+      }
+    }
+  }
+  if(state.mode==='powers')for(const piece of enemyPieces)for(const target of powerTargets(state,piece)){
+    const powered=applyMathPower({...state,activeTeam:'enemy'},piece.id,target.id);
+    let score=25;
+    if(piece.mathPower==='subtract'){
+      const before=grantEnergy(state.pieces,'player'),after=grantEnergy(powered.pieces,'player');
+      const threats=computeValidMoves(before.find(p=>p.id===target.id)!,before,'powers').filter(m=>m.isAttack).length;
+      const remaining=computeValidMoves(after.find(p=>p.id===target.id)!,after,'powers').filter(m=>m.isAttack).length;
+      score+=50*(threats-remaining);
+    }else{
+      const p=powered.pieces.find(p=>p.id===target.id)!;
+      const attacks=computeValidMoves(p,powered.pieces,'powers').filter(m=>m.isAttack).length;
+      score+=attacks*45+(p.energy-target.energy)*3;
+    }
+    if(score>bestScore){bestScore=score;bestAction={pieceId:piece.id,moveIndex:-1,tactic:true,targetId:target.id};}
+  }
   return bestAction;
 }

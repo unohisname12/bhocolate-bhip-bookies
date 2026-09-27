@@ -4,26 +4,29 @@ import { createInitialEngineState } from '../state/createInitialEngineState';
 import type { EngineState } from '../core/EngineTypes';
 import type { GameEngineAction } from '../core/ActionTypes';
 import { TICK_INTERVAL_MS } from '../../config/gameConfig';
+import { connectPersistence } from '../../services/persistence/enginePersistence';
 
 /**
  * Thin React wrapper around the pure GameEngine class.
  * Contains NO game logic — only wiring between engine and React state.
  */
-export const useGameEngine = (initialState?: EngineState) => {
+export const useGameEngine = (initialState?: EngineState, persistence = connectPersistence) => {
   const [engine] = useState(() => new GameEngine(initialState ?? createInitialEngineState()));
 
   const [state, setState] = useState<EngineState>(() => engine.getState());
 
   useEffect(() => {
+    const disconnectPersistence = persistence(engine, window, document);
     const unsubscribe = engine.subscribe(setState);
     if (!engine.getState().initialized) {
       engine.start(TICK_INTERVAL_MS);
     }
     return () => {
+      disconnectPersistence();
       unsubscribe();
       engine.stop();
     };
-  }, [engine]);
+  }, [engine, persistence]);
 
   const dispatch = useCallback(
     (action: GameEngineAction) => engine.dispatch(action),

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CurrencyDisplay } from '../ui/CurrencyDisplay';
 import { getMPTier, MP_TIERS } from '../../config/mpConfig';
 import { hasAnyMathBuffs } from '../../config/mathBuffConfig';
 import type { Pet } from '../../types';
 import type { MathBuffs } from '../../types/player';
+import { ASSETS } from '../../config/assetManifest';
+import { petVisualKey } from '../../config/companionConfig';
 
 interface TopHUDProps {
   pet: Pet;
@@ -11,9 +12,11 @@ interface TopHUDProps {
   mp: number;
   mpLifetime: number;
   mathBuffs?: MathBuffs;
+  /** Math points appear (as Power) only once Power Forge, where they are spent, has unlocked. */
+  showPower?: boolean;
 }
 
-export const TopHUD: React.FC<TopHUDProps> = ({ pet, playerTokens, mp, mpLifetime, mathBuffs }) => {
+export const TopHUD: React.FC<TopHUDProps> = ({ pet, playerTokens, mp, mpLifetime, mathBuffs, showPower = false }) => {
   const tierName = getMPTier(mpLifetime);
   const tierConfig = MP_TIERS.find(t => t.name === tierName)!;
 
@@ -37,10 +40,12 @@ export const TopHUD: React.FC<TopHUDProps> = ({ pet, playerTokens, mp, mpLifetim
   }, [tierName]);
 
   return (
-    <div className="fixed top-0 inset-x-0 z-30 pointer-events-none">
-      <div className="max-w-lg mx-auto flex justify-between items-start px-3 py-2">
+    <div className="pet-room-hud fixed top-16 inset-x-0 z-30 pointer-events-none">
+      <div className="max-w-lg mx-auto flex justify-between items-start gap-3 px-3 py-2">
         {/* Pet identity — top-left */}
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto flex items-center gap-2">
+          <img src={ASSETS.petPortraits[petVisualKey(pet)]} alt="" className="h-12 w-12 rounded-xl border border-amber-200/25 bg-teal-950" style={{ imageRendering: 'pixelated' }} />
+          <div>
           <div className="text-sm font-black text-white uppercase tracking-wider drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
             {pet.name}
             <span className="text-purple-300 ml-1.5 text-xs">Lv.{pet.progression.level}</span>
@@ -48,17 +53,18 @@ export const TopHUD: React.FC<TopHUDProps> = ({ pet, playerTokens, mp, mpLifetim
           <div className="text-[10px] font-bold text-slate-300/80 uppercase tracking-widest drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
             {pet.state}
           </div>
+          </div>
         </div>
 
         {/* Currencies — top-right */}
-        <div className="pointer-events-auto flex flex-col gap-1 items-end">
-          <CurrencyDisplay amount={playerTokens} type="energy" />
-          <div key={mp} className="flex items-center gap-1.5 animate-mp-pulse">
-            <CurrencyDisplay amount={mp} type="mp" />
+        <div className="pointer-events-auto flex flex-row flex-wrap gap-1 items-center justify-end max-w-[230px]">
+          <span className="rounded-lg border border-slate-600 bg-slate-950/70 px-3 py-2 text-sm font-bold text-amber-200">{playerTokens} tokens</span>
+          {showPower && <div key={mp} className="flex items-center gap-1.5 animate-mp-pulse">
+            <span className="text-sm font-bold text-blue-200">{mp} Power</span>
             <span className={`text-xs font-black uppercase tracking-wider ${tierConfig.color} drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`}>
               {tierConfig.label}
             </span>
-          </div>
+          </div>}
           {mathBuffs && hasAnyMathBuffs(mathBuffs) && (
             <div
               className="mt-1 rounded-lg border-2 border-amber-400/60 px-2.5 py-1 shadow-[0_0_14px_rgba(251,191,36,0.45)]"

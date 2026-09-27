@@ -1,6 +1,6 @@
 import type React from 'react';
 import type { ActiveMomentumState } from '../../../types/momentum';
-import { DIFFICULTY_SETTINGS } from '../../../config/momentumConfig';
+import { DIFFICULTY_SETTINGS, momentumTurnLimit } from '../../../config/momentumConfig';
 
 interface MomentumHUDProps {
   state: ActiveMomentumState;
@@ -56,9 +56,9 @@ export const MomentumHUD: React.FC<MomentumHUDProps> = ({ state }) => {
         <div className="text-slate-400 text-xs text-center">
           <div>
             Turn <span className="text-white font-bold">{state.turnCount}</span>
-            <span className="text-slate-600">/{settings.maxTurns}</span>
+            <span className="text-slate-600">/{momentumTurnLimit(state.difficulty,state.mode)}</span>
           </div>
-          <div className="text-[10px] text-slate-500 uppercase tracking-wider">{settings.label}</div>
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider">{state.mode === 'powers' ? 'Power Clash' : state.mode === 'advanced' ? 'Advanced' : 'Classic'} · {settings.label}</div>
         </div>
 
         {/* Enemy side */}

@@ -43,6 +43,7 @@ export interface LinearEquation {
 }
 
 export interface CatchRound {
+  learningProblem?: import('../../types').MathProblem;
   id: string;
   mode: CatchMode;
   difficulty: CatchDifficulty;
@@ -59,6 +60,7 @@ export interface CatchRound {
 }
 
 export interface CatchConfig {
+  learning?: import('../../services/game/curriculum').LearningSettings;
   mode: CatchMode;
   difficulty: CatchDifficulty;
   /** Allowed arithmetic operations (missing-number + solve-for-x modes). */

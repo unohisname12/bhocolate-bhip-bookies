@@ -33,6 +33,7 @@ export interface Egg {
 }
 
 export type Pet = {
+  mind?: import('../features/pet-mind/memory').PetMind;
   id: string;
   ownerId: string;
   speciesId: string;
@@ -45,6 +46,8 @@ export type Pet = {
   stats: PetStats;
   bond: number;
   progression: PetProgression;
+  growth?: import('./growth').PetGrowth;
+  identity?: import('../features/pet-identity/model').PetIdentity;
   graceTimer?: number; // ms timestamp when grace period started (health hit bottom)
   // Interaction stats (0–100 each, added by pet interaction system)
   trust?: number;          // grows with consistent positive interaction

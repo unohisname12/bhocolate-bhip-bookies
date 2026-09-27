@@ -1,3 +1,4 @@
+import {powerMoves,powerEnergy,applyMathPower,POWER_ORDER} from './MomentumPowers';
 // ---------------------------------------------------------------------------
 // MomentumSystem — Board helpers & BFS pathfinding
 // ---------------------------------------------------------------------------
@@ -6,13 +7,13 @@ import type {
   MomentumPiece, BoardGrid, BoardPosition, ValidMove, Team,
   ActiveMomentumState, MomentumGameEvent, FlashTriggerReason,
   FlashChoice, FusionTarget, MomentumRewards, PieceRank,
-  MomentumDifficulty,
+  MomentumDifficulty, MomentumMode,
 } from '../../types/momentum';
 import {
   MOMENTUM_BOARD, RANK_ENERGY, RANK4_DURATION,
   MOMENTUM_REWARDS, STARTING_COLUMNS, STARTING_RANKS,
   PLAYER_START_ROW, ENEMY_START_ROW, CLUTCH_EVENT,
-  DIFFICULTY_SETTINGS,
+  DIFFICULTY_SETTINGS, ADVANCED_COLUMNS, ADVANCED_RANKS, ENERGY_STATIONS, momentumSize, momentumTurnLimit,
 } from '../../config/momentumConfig';
 
 // ---------------------------------------------------------------------------
@@ -20,9 +21,9 @@ import {
 // ---------------------------------------------------------------------------
 
 /** Build a 5x5 grid from pieces. grid[row][col] = pieceId or null */
-export function buildBoard(pieces: MomentumPiece[]): BoardGrid {
-  const grid: BoardGrid = Array.from({ length: MOMENTUM_BOARD.gridSize }, () =>
-    Array(MOMENTUM_BOARD.gridSize).fill(null),
+export function buildBoard(pieces: MomentumPiece[], size = MOMENTUM_BOARD.gridSize as number): BoardGrid {
+  const grid: BoardGrid = Array.from({ length: size }, () =>
+    Array(size).fill(null),
   );
   for (const piece of pieces) {
     grid[piece.position.y][piece.position.x] = piece.id;
@@ -31,12 +32,12 @@ export function buildBoard(pieces: MomentumPiece[]): BoardGrid {
 }
 
 /** Check if position is within 0..gridSize-1 bounds */
-export function isInBounds(pos: BoardPosition): boolean {
+export function isInBounds(pos: BoardPosition, size = MOMENTUM_BOARD.gridSize as number): boolean {
   return (
     pos.x >= 0 &&
-    pos.x < MOMENTUM_BOARD.gridSize &&
+    pos.x < size &&
     pos.y >= 0 &&
-    pos.y < MOMENTUM_BOARD.gridSize
+    pos.y < size
   );
 }
 
@@ -77,11 +78,13 @@ const DIRECTIONS: BoardPosition[] = [
 export function computeValidMoves(
   piece: MomentumPiece,
   pieces: MomentumPiece[],
+  mode?: MomentumMode,
 ): ValidMove[] {
+  if (mode === 'powers') return powerMoves(piece,pieces);
   if (piece.energy <= 0) return [];
 
   const moves: ValidMove[] = [];
-  const size = MOMENTUM_BOARD.gridSize;
+  const size = momentumSize(mode);
 
   // visited[row][col] = true if already processed
   const visited: boolean[][] = Array.from({ length: size }, () =>
@@ -133,10 +136,12 @@ export function computeValidMoves(
         // Friendly piece — blocks path, do NOT add as move, do NOT expand
         // (already marked visited so we won't try again)
       } else {
-        // Enemy piece — add as attack move, do NOT expand (can't pass through)
+        // Guarded enemies cost two extra energy to capture. They still block the path.
+        const attackCost = nextCost + (mode === 'advanced' && occupant.guarded ? 2 : 0);
+        if (attackCost > piece.energy) continue;
         moves.push({
           destination: { x: nx, y: ny },
-          energyCost: nextCost,
+          energyCost: attackCost,
           isAttack: true,
           targetPieceId: occupant.id,
         });
@@ -155,7 +160,7 @@ export function computeValidMoves(
 export function grantEnergy(pieces: MomentumPiece[], team: Team): MomentumPiece[] {
   return pieces.map(p => {
     if (p.team !== team) return p;
-    const config = RANK_ENERGY[p.rank];
+    const config = powerEnergy(p) ?? RANK_ENERGY[p.rank];
     const newEnergy = Math.min(p.energy + config.gain, config.max);
     return { ...p, energy: newEnergy };
   });
@@ -190,18 +195,23 @@ export function decayRank4(
 // ---------------------------------------------------------------------------
 
 /** Create the initial game state with starting positions */
-export function initMomentum(difficulty: MomentumDifficulty = 'medium'): ActiveMomentumState {
+export function initMomentum(difficulty: MomentumDifficulty = 'medium', mode: MomentumMode = 'classic'): ActiveMomentumState {
+  if(mode === 'powers') difficulty='hard';
   const settings = DIFFICULTY_SETTINGS[difficulty];
   const pieces: MomentumPiece[] = [];
+  const columns = mode === 'powers' ? [0,2,4,6] : mode === 'advanced' ? ADVANCED_COLUMNS : STARTING_COLUMNS;
+  const ranks = mode === 'powers' ? [2,2,2,2] as PieceRank[] : mode === 'advanced' ? ADVANCED_RANKS : STARTING_RANKS;
+  const enemyRanks = mode === 'powers' ? [2,2,2,2] : mode === 'advanced' ? (difficulty === 'easy' ? [1, 1, 2, 1, 1] : difficulty === 'hard' ? [2, 3, 3, 3, 2] : ADVANCED_RANKS) : settings.enemyRanks;
 
   // Player pieces (bottom row)
-  for (let i = 0; i < MOMENTUM_BOARD.piecesPerSide; i++) {
+  for (let i = 0; i < columns.length; i++) {
     pieces.push({
       id: `p${i + 1}`,
       team: 'player',
-      rank: STARTING_RANKS[i],
-      energy: 0,
-      position: { x: STARTING_COLUMNS[i], y: PLAYER_START_ROW },
+      rank: ranks[i],
+      energy: mode === 'powers' ? 2 : 0,
+      ...(mode === 'powers' ? {mathPower:POWER_ORDER[i]} : {}),
+      position: { x: columns[i], y: mode !== 'classic' ? 6 : PLAYER_START_ROW },
       isTemporaryRank4: false,
       rank4TurnsRemaining: 0,
       previousRank: null,
@@ -209,13 +219,14 @@ export function initMomentum(difficulty: MomentumDifficulty = 'medium'): ActiveM
   }
 
   // Enemy pieces (top row) — ranks vary by difficulty
-  for (let i = 0; i < MOMENTUM_BOARD.piecesPerSide; i++) {
+  for (let i = 0; i < columns.length; i++) {
     pieces.push({
       id: `e${i + 1}`,
       team: 'enemy',
-      rank: settings.enemyRanks[i],
-      energy: 0,
-      position: { x: STARTING_COLUMNS[i], y: ENEMY_START_ROW },
+      rank: enemyRanks[i] as PieceRank,
+      energy: mode === 'powers' ? 2 : 0,
+      ...(mode === 'powers' ? {mathPower:POWER_ORDER[i]} : {}),
+      position: { x: columns[i], y: ENEMY_START_ROW },
       isTemporaryRank4: false,
       rank4TurnsRemaining: 0,
       previousRank: null,
@@ -227,11 +238,12 @@ export function initMomentum(difficulty: MomentumDifficulty = 'medium'): ActiveM
   return {
     active: true,
     difficulty,
+    mode,
     phase: 'player_select',
     turnCount: 1,
     activeTeam: 'player',
     pieces: energized,
-    board: buildBoard(energized),
+    board: buildBoard(energized, momentumSize(mode)),
     selectedPieceId: null,
     validMoves: [],
     flashPending: null,
@@ -255,7 +267,7 @@ export function selectPiece(
 ): ActiveMomentumState {
   const piece = state.pieces.find(p => p.id === pieceId);
   if (!piece || piece.team !== state.activeTeam) return state;
-  const moves = computeValidMoves(piece, state.pieces);
+  const moves = computeValidMoves(piece, state.pieces, state.mode);
   return {
     ...state,
     phase: 'player_move',
@@ -316,7 +328,7 @@ export function beginMove(
     let result: ActiveMomentumState = {
       ...state,
       pieces: updatedPieces,
-      board: buildBoard(updatedPieces),
+      board: buildBoard(updatedPieces, momentumSize(state.mode)),
       phase: 'animating_move',
       lastEvent: {
         type: 'piece_moved',
@@ -366,7 +378,7 @@ export function resolveCombat(state: ActiveMomentumState): ActiveMomentumState {
 
   // Check rank promotion (underdog: lower rank beats higher -> +1 rank, max 3)
   let promotionEvent: MomentumGameEvent | null = null;
-  if (attacker.rank < defender.rank && attacker.rank < 3) {
+  if (state.mode !== 'powers' && attacker.rank < defender.rank && attacker.rank < 3) {
     const newRank = (attacker.rank + 1) as PieceRank;
     promotionEvent = {
       type: 'piece_promoted',
@@ -382,11 +394,11 @@ export function resolveCombat(state: ActiveMomentumState): ActiveMomentumState {
 
   // Check flash trigger (player attacks only)
   const flash =
-    attacker.team === 'player'
+    attacker.team === 'player' && state.mode !== 'powers'
       ? checkFlashTrigger(attacker, defender, energyCost, energyBefore)
       : { triggered: false, reason: null };
 
-  const newBoard = buildBoard(updatedPieces);
+  const newBoard = buildBoard(updatedPieces, momentumSize(state.mode));
   const captureEvent: MomentumGameEvent = {
     type: 'piece_captured',
     capturedId: defenderId,
@@ -474,6 +486,7 @@ export function applyFlashChoice(
     );
     if (!attacker) return state;
 
+    if (attacker.rank === 4) return { ...state, phase: 'animating_flash', flashPending: null, lastEvent: { type: 'flash_upgrade', pieceId: attacker.id, newRank: 4 } };
     if (attacker.rank === 3) {
       // Rank 3 -> temp Rank 4
       updatedPieces = updatedPieces.map(p => {
@@ -509,7 +522,8 @@ export function applyFlashChoice(
     // Verify both pieces exist and are rank 2
     const p1 = updatedPieces.find(p => p.id === pieceId1);
     const p2 = updatedPieces.find(p => p.id === pieceId2);
-    if (!p1 || !p2 || p1.rank !== 2 || p2.rank !== 2) return state;
+    if (!p1 || !p2 || p1.id === p2.id || p1.team !== 'player' || p2.team !== 'player' || p1.rank !== 2 || p2.rank !== 2) return state;
+    if (![p1, p2].some(p => p.position.x === resultPosition.x && p.position.y === resultPosition.y)) return state;
 
     // Remove both pieces, create new rank 3
     updatedPieces = updatedPieces.filter(
@@ -537,7 +551,7 @@ export function applyFlashChoice(
   return {
     ...state,
     pieces: updatedPieces,
-    board: buildBoard(updatedPieces),
+    board: buildBoard(updatedPieces, momentumSize(state.mode)),
     phase: 'animating_flash',
     flashPending: null,
     flashEligibleForFusion: false,
@@ -569,8 +583,8 @@ export function checkClutchTrigger(state: ActiveMomentumState): ActiveMomentumSt
 
   // Find empty tiles
   const emptyTiles: BoardPosition[] = [];
-  for (let y = 0; y < MOMENTUM_BOARD.gridSize; y++) {
-    for (let x = 0; x < MOMENTUM_BOARD.gridSize; x++) {
+  for (let y = 0; y < momentumSize(state.mode); y++) {
+    for (let x = 0; x < momentumSize(state.mode); x++) {
       if (!state.board[y][x]) {
         emptyTiles.push({ x, y });
       }
@@ -642,7 +656,7 @@ export function claimClutchTile(
   return {
     ...state,
     pieces: updatedPieces,
-    board: buildBoard(updatedPieces),
+    board: buildBoard(updatedPieces, momentumSize(state.mode)),
     clutchTile: null,
     clutchCooldown: CLUTCH_EVENT.cooldownTurns,
     lastEvent: event,
@@ -661,13 +675,13 @@ export function claimClutchTile(
 export function calculateRewards(state: ActiveMomentumState): MomentumRewards {
   const turnBonus = Math.max(
     0,
-    (DIFFICULTY_SETTINGS[state.difficulty].maxTurns - state.turnCount) * MOMENTUM_REWARDS.perTurnBonus,
+    (momentumTurnLimit(state.difficulty, state.mode) - state.turnCount) * MOMENTUM_REWARDS.perTurnBonus,
   );
   const shardBonus = MOMENTUM_REWARDS.difficultyShardBonus[state.difficulty] ?? 0;
   return {
-    tokens: MOMENTUM_REWARDS.baseTokens + turnBonus,
+    tokens: Math.min(60, MOMENTUM_REWARDS.baseTokens + turnBonus),
     xp: MOMENTUM_REWARDS.baseXP,
-    shards: MOMENTUM_REWARDS.baseShards + shardBonus,
+    shards: MOMENTUM_REWARDS.baseShards + shardBonus + (state.mode === 'advanced' ? 3 : 0),
   };
 }
 
@@ -686,7 +700,7 @@ export function checkWinCondition(
       rewards: calculateRewards(state),
     };
   }
-  if (playerPieces.length === 0 || state.turnCount >= DIFFICULTY_SETTINGS[state.difficulty].maxTurns) {
+  if (playerPieces.length === 0 || state.turnCount >= momentumTurnLimit(state.difficulty, state.mode)) {
     return {
       ...state,
       phase: 'defeat',
@@ -704,6 +718,10 @@ export function startNextTurn(
   const nextTurn = nextTeam === 'player' ? state.turnCount + 1 : state.turnCount;
 
   let pieces = grantEnergy(state.pieces, nextTeam);
+  if (state.mode === 'advanced') pieces = pieces.map(p => p.team !== nextTeam ? p : {
+    ...p, guarded: false,
+    energy: Math.min(RANK_ENERGY[p.rank].max, p.energy + (ENERGY_STATIONS.some(t => t.x === p.position.x && t.y === p.position.y) ? 1 : 0)),
+  });
   const decay = decayRank4(pieces, nextTeam);
   pieces = decay.pieces;
 
@@ -715,7 +733,7 @@ export function startNextTurn(
   let result: ActiveMomentumState = {
     ...state,
     pieces,
-    board: buildBoard(pieces),
+    board: buildBoard(pieces, momentumSize(state.mode)),
     activeTeam: nextTeam,
     turnCount: nextTurn,
     phase: nextTeam === 'player' ? 'player_select' : 'ai_turn',
@@ -726,7 +744,7 @@ export function startNextTurn(
   };
 
   // Check clutch trigger at start of player turn
-  if (nextTeam === 'player') {
+  if (nextTeam === 'player' && state.mode !== 'powers') {
     result = checkClutchTrigger(result);
   }
 
@@ -747,7 +765,7 @@ export function skipTurn(state: ActiveMomentumState): ActiveMomentumState {
       },
     ],
   };
-  return startNextTurn(withLog);
+  return checkWinCondition(startNextTurn(withLog));
 }
 
 /** Advance state after an animation phase completes */
@@ -769,7 +787,7 @@ export function advanceAfterAnimation(
       const afterWin = checkWinCondition(afterCombat);
       if (afterWin.phase === 'victory' || afterWin.phase === 'defeat')
         return afterWin;
-      return afterCombat;
+      return startNextTurn(afterCombat);
     }
     case 'animating_flash': {
       // Flash reward animation done -> check win, then switch turns
@@ -798,4 +816,24 @@ export function advanceAfterAnimation(
     default:
       return state;
   }
+}
+
+/** Advanced support actions spend this team's turn. */
+export function supportTargets(state: ActiveMomentumState, piece: MomentumPiece): MomentumPiece[] {
+  if (state.mode !== 'advanced' || piece.energy < 2) return [];
+  return state.pieces.filter(p => p.team === piece.team && p.id !== piece.id
+    && Math.abs(p.position.x - piece.position.x) + Math.abs(p.position.y - piece.position.y) === 1
+    && p.energy <= RANK_ENERGY[p.rank].max - 2);
+}
+export function tacticalAction(state: ActiveMomentumState, pieceId: string, targetId?: string): ActiveMomentumState {
+  if(state.mode==='powers'){const next=applyMathPower(state,pieceId,targetId);return next===state?state:checkWinCondition(startNextTurn(next));}
+  if (state.mode !== 'advanced' || !['player_select', 'player_move', 'ai_turn'].includes(state.phase)) return state;
+  const piece = state.pieces.find(p => p.id === pieceId && p.team === state.activeTeam);
+  if (!piece) return state;
+  const target = targetId ? supportTargets(state, piece).find(p => p.id === targetId) : null;
+  if ((targetId && !target) || (!targetId && (piece.energy < 1 || piece.guarded))) return state;
+  const pieces = state.pieces.map(p => p.id === pieceId ? { ...p, energy: p.energy - (target ? 2 : 1), guarded: !target } : p.id === target?.id ? { ...p, energy: p.energy + 2 } : p);
+  const next = { ...state, pieces, log: [...state.log, { turn: state.turnCount, actor: state.activeTeam, message: target ? `${piece.id} transfers 2 energy to ${target.id}.` : `${piece.id} guards: capture costs +2 until its next turn.` }] };
+  const checked = checkWinCondition(next);
+  return checked.phase === 'victory' || checked.phase === 'defeat' ? checked : startNextTurn(next);
 }

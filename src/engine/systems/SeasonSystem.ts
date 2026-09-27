@@ -1,3 +1,4 @@
+import { TOKENS_PER_COIN } from '../../services/game/wallet';
 import type { EngineState } from '../../types/engine';
 import { CURRENT_SEASON, findSeason } from '../../config/seasonConfig';
 
@@ -62,7 +63,7 @@ export const claimTier = (state: EngineState, tier: number): EngineState => {
   if (reward.kind === 'tokens') {
     player = { ...player, currencies: { ...player.currencies, tokens: player.currencies.tokens + reward.amount } };
   } else if (reward.kind === 'coins') {
-    player = { ...player, currencies: { ...player.currencies, coins: player.currencies.coins + reward.amount } };
+    player = { ...player, currencies: { ...player.currencies, tokens: player.currencies.tokens + reward.amount * TOKENS_PER_COIN } };
   } else if (reward.kind === 'shards') {
     player = { ...player, currencies: { ...player.currencies, shards: player.currencies.shards + reward.amount } };
   } else if (reward.kind === 'cosmetic') {

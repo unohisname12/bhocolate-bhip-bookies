@@ -40,9 +40,11 @@ export const ClassRosterScreen: React.FC<ClassRosterScreenProps> = ({
         <GameButton variant="secondary" size="sm" onClick={onBack}>
           Back
         </GameButton>
-        <h1 className="text-xl font-black uppercase tracking-widest text-slate-100">Arena</h1>
+        <h1 className="text-xl font-black uppercase tracking-widest text-slate-100">Practice arena</h1>
         <TicketDisplay ticketState={ticketState} />
       </div>
+
+      <p className="mb-4 text-sm text-slate-300">These rivals are computer-controlled. For a live class match, open Together.</p>
 
       {/* Status bar */}
       {!hasTickets && (
@@ -52,16 +54,16 @@ export const ClassRosterScreen: React.FC<ClassRosterScreenProps> = ({
       )}
       {battlesRemaining <= 0 && (
         <div className="mb-3 px-4 py-2 rounded-xl bg-red-900/40 border border-red-600 text-center text-sm text-red-200">
-          Daily PvP limit reached. Come back tomorrow!
+          Daily practice battle limit reached. Come back tomorrow!
         </div>
       )}
 
       {/* Roster grid */}
       {shuffledClassmates.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
-          <p className="text-slate-400 text-center">No classmates yet!</p>
+          <p className="text-slate-400 text-center">No practice rivals yet.</p>
           <GameButton variant="primary" onClick={() => dispatch({ type: 'GENERATE_CLASSROOM' })}>
-            Find Classmates
+            Find practice rivals
           </GameButton>
         </div>
       ) : (

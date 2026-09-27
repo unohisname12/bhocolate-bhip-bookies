@@ -1,3 +1,7 @@
+import { TOKENS_PER_COIN } from '../services/game/wallet';
+import { usePrediction } from '../features/learning/usePrediction';
+import { quantityDecision } from '../features/learning/decisions';
+import { BATTLE_MILESTONES } from '../features/clash/rewards';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { BattleHPBar } from '../components/battle/BattleHPBar';
 import { BattleLog } from '../components/battle/BattleLog';
@@ -27,7 +31,10 @@ import { TraceEventController } from '../components/battle/TraceEventController'
 import { RUNE_ENERGY_THRESHOLD } from '../config/traceConfig';
 import { MOVE_CATEGORIES } from '../config/battleConfig';
 import { ASSETS } from '../config/assetManifest';
-import { generateMathProblem, checkAnswer } from '../services/game/mathEngine';
+import { checkAnswer } from '../services/game/mathEngine';
+import { generateLearningProblem, parseMathAnswer } from '../services/game/curriculum';
+import { LearningHelp } from '../components/math/LearningHelp';
+import { useLearningSettings } from '../components/LearningContext';
 import type { MathProblem } from '../types';
 import type { ActiveBattleState, BattleLogEntry } from '../types/battle';
 import type { TraceEventType } from '../types/trace';
@@ -40,6 +47,8 @@ interface BattleScreenProps {
   dispatch: (action: GameEngineAction) => void;
   matchHistory?: MatchResult[];
   trophyCase?: TrophyCase;
+  prizeWins?: number;
+  deliveryEncounter?: boolean;
 }
 
 /** Derive the combat phase from engine state + animation state. */
@@ -54,9 +63,12 @@ function deriveCombatPhase(
   return 'RESOLVING';
 }
 
-export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) => {
+export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch, prizeWins = 0, deliveryEncounter = false }) => {
+  const learning = useLearningSettings();
   const { playerPet, enemyPet, phase, rewards, log } = battle;
+  const prediction=usePrediction(JSON.stringify([battle.turnCount,phase,playerPet.energy,playerPet.currentHP]));
   const isPvP = !!battle.pvpMeta;
+  const [mathWrong, setMathWrong] = useState(false);
   const [mathChallenge, setMathChallenge] = useState<MathProblem | null>(null);
   const [mathInput, setMathInput] = useState('');
   const [, setPendingMove] = useState<string | null>(null);
@@ -79,10 +91,13 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
 
   const handleMathSubmit = () => {
     if (!mathChallenge) return;
-    const correct = checkAnswer(mathChallenge, Number(mathInput));
-    if (correct) {
-      dispatch({ type: 'MATH_BONUS_CORRECT' });
-    }
+    const answer = parseMathAnswer(mathInput);
+    if (!Number.isFinite(answer)) return;
+    const correct = checkAnswer(mathChallenge, answer);
+    dispatch({ type: 'RECORD_LEARNING_ATTEMPT', problem: mathChallenge, source: 'battle', correct });
+    if (!correct) { setMathWrong(true); return; }
+    setMathWrong(false);
+    dispatch({ type: 'MATH_BONUS_CORRECT' });
     setMathChallenge(null);
     setMathInput('');
   };
@@ -90,9 +105,11 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
   const handleMove = useCallback((moveId: string) => {
     if (!isPlayerInput) return;
     setPendingMove(moveId);
-    dispatch({ type: 'PLAYER_MOVE', moveId });
+    const move=playerPet.moves.find(m=>m.id===moveId);
+    const task=move && !deliveryEncounter && !isPvP && playerPet.energy>=move.cost?quantityDecision(learning,`battle-plan:${crypto.randomUUID()}`,'battle-plan',playerPet.energy,move.cost,'energy',`Use ${move.name}. Predict energy immediately after paying its cost, before any recovery.`):null;
+    prediction.attempt(task,()=>dispatch({ type: 'PLAYER_MOVE', moveId }));
     setActionMode('main');
-  }, [isPlayerInput, dispatch]);
+  }, [isPlayerInput, dispatch, playerPet, learning, prediction, deliveryEncounter, isPvP]);
 
   // --- Animation queue: drain entries one-at-a-time via onComplete ---
   const animQueueRef = useRef<BattleLogEntry[]>([]);
@@ -153,6 +170,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
   if (isPvP && (phase === 'victory' || phase === 'defeat')) return null;
 
   if (phase === 'victory') {
+    const nextPrize = BATTLE_MILESTONES.find(m => m.wins > prizeWins);
     return (
       <div className="fixed inset-0 bg-slate-900 flex flex-col items-center justify-center p-6 gap-6 text-white">
         <h1 className="text-4xl font-black text-yellow-400 uppercase tracking-widest anim-pop">Victory!</h1>
@@ -160,21 +178,16 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
         {rewards && (
           <div className="flex gap-6 text-center anim-pop" style={{ animationDelay: '0.2s' }}>
             <div>
-              <div className="text-2xl font-black text-amber-400 flex items-center gap-1">+{rewards.tokens} <img src="/assets/generated/final/icon_token.png" alt="" className="w-6 h-6 inline" style={{ imageRendering: 'pixelated' }} /></div>
+              <div className="text-2xl font-black text-amber-400 flex items-center gap-1">+{rewards.tokens + (rewards.coins ?? 0) * TOKENS_PER_COIN} <img src="/assets/generated/final/icon_token.png" alt="" className="w-6 h-6 inline" style={{ imageRendering: 'pixelated' }} /></div>
               <div className="text-xs text-slate-400">Tokens</div>
             </div>
             <div>
               <div className="text-2xl font-black text-purple-400">+{rewards.xp} XP</div>
               <div className="text-xs text-slate-400">Experience</div>
             </div>
-            {rewards.coins && (
-              <div>
-                <div className="text-2xl font-black text-cyan-400 flex items-center gap-1">+{rewards.coins} <img src="/assets/generated/final/icon_coin.png" alt="" className="w-6 h-6 inline" style={{ imageRendering: 'pixelated' }} /></div>
-                <div className="text-xs text-slate-400">Coins</div>
-              </div>
-            )}
           </div>
         )}
+        <div className="max-w-md rounded-xl border border-emerald-700 bg-emerald-950/60 p-4 text-center"><p className="font-bold text-emerald-200">+10 tokens · +1 optional battle boost</p><p className="mt-2 text-sm text-slate-200">{nextPrize ? `${prizeWins}/${nextPrize.wins} victories → ${nextPrize.name}` : `${5 - prizeWins % 5} more wins → 5 bonus medals`}</p><p className="mt-1 text-xs text-slate-300">Visit Prize Studio to collect and decorate.</p></div>
         <GameButton variant="primary" size="lg" onClick={() => dispatch({ type: 'END_BATTLE' })}>
           Continue
         </GameButton>
@@ -203,18 +216,20 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
     : '';
 
   // Filter moves by category for sub-menus
-  const attackMoves = playerPet.moves.filter(m => MOVE_CATEGORIES[m.id] === 'attack');
-  const skillMoves = playerPet.moves.filter(m => MOVE_CATEGORIES[m.id] === 'skill');
+  const moveCategory = (move: typeof playerPet.moves[number]) => MOVE_CATEGORIES[move.id]
+    ?? (move.type === 'heal' || move.type === 'defend' ? 'skill' : 'attack');
+  const attackMoves = playerPet.moves.filter(m => moveCategory(m) === 'attack');
+  const skillMoves = playerPet.moves.filter(m => moveCategory(m) === 'skill');
 
   const isEnemyTurn = combatPhase === 'ENEMY_TURN';
 
   return (
-      <div className="fixed inset-0 bg-slate-900 text-white flex flex-col overflow-hidden">
+      <div className="fixed inset-0 bg-slate-900 text-white flex flex-col overflow-hidden pb-16">
 
         {/* === TOP HUD — Player & Enemy Stats === */}
-        <div data-help="hp-bars" className="battle-hud-bar flex-shrink-0 flex items-stretch bg-slate-900/90 border-b border-slate-700/50 z-10">
+        <div data-help="hp-bars" className="battle-hud-bar flex-shrink-0 flex flex-wrap sm:flex-nowrap items-stretch bg-slate-900/90 border-b border-slate-700/50 z-10">
           {/* Player stats */}
-          <div className="flex-1 flex items-center gap-3 px-4 py-2 min-w-0">
+          <div className="order-1 w-1/2 sm:w-auto sm:flex-1 flex items-center gap-2 px-2 sm:px-4 py-2 min-w-0">
             <div className="w-11 h-11 rounded-lg bg-slate-800 border border-slate-600 flex-shrink-0 flex items-center justify-center overflow-hidden">
               <img
                 src={ASSETS.petPortraits[playerPet.speciesId] ?? ''}
@@ -245,7 +260,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
           </div>
 
           {/* Turn counter + Phase indicator + Combat Feel HUD */}
-          <div className="flex flex-col items-center justify-center px-4 flex-shrink-0 gap-1">
+          <div className="order-3 sm:order-2 w-full sm:w-auto flex flex-row sm:flex-col items-center justify-center px-2 pb-2 sm:pb-0 flex-shrink-0 gap-2">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-800/80 px-4 py-1.5 rounded-full border border-slate-700/50">
               Turn {battle.turnCount}
             </span>
@@ -257,7 +272,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
           </div>
 
           {/* Enemy stats */}
-          <div className="flex-1 flex items-center gap-3 px-4 py-2 min-w-0 justify-end">
+          <div className="order-2 sm:order-3 w-1/2 sm:w-auto sm:flex-1 flex items-center gap-2 px-2 sm:px-4 py-2 min-w-0 justify-end">
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline gap-2 mb-0.5 justify-end">
                 <span className="text-[10px] text-slate-400 flex-shrink-0">Lv.{enemyPet.level}</span>
@@ -296,7 +311,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
             )}
 
             {/* Enemy sprite — upper right */}
-            <div className="absolute top-[15%] right-[22%]">
+            <div className="absolute bottom-[24%] right-[8%] sm:right-[22%]">
               <div className="relative">
                 <WeakPointIndicator combatFeel={battle.combatFeel} />
                 <BattlePetSprite speciesId={enemyPet.speciesId} animClass={enemyAnimClass} combatSheet={seq.attackerSide === 'enemy' ? seq.attackerCombatSheet : seq.attackerSide === 'player' ? seq.defenderCombatSheet : null} flip>
@@ -314,7 +329,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
             </div>
 
             {/* Player sprite — lower left */}
-            <div className="absolute bottom-[15%] left-[22%]">
+            <div className="absolute bottom-[24%] left-[8%] sm:left-[22%]">
               <div className="relative">
                 <BattlePetSprite speciesId={playerPet.speciesId} animClass={playerAnimClass} combatSheet={seq.attackerSide === 'player' ? seq.attackerCombatSheet : seq.attackerSide === 'enemy' ? seq.defenderCombatSheet : null}>
                   {seq.damageNumbers.filter(d => d.target === 'player').map(num => (
@@ -368,13 +383,13 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
             <CollapseOverlay combatFeel={battle.combatFeel} />
 
             {/* Trace event overlay */}
-            <TraceEventController
+            {!deliveryEncounter && <TraceEventController
               battle={battle}
               dispatch={dispatch}
               isAnimating={seq.isAnimating}
               startRequest={traceStartRequest}
               onStartHandled={() => setTraceStartRequest(null)}
-            />
+            />}
           </div>
         </ScreenShake>
 
@@ -382,15 +397,19 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
         <div className="flex-shrink-0 border-t border-slate-700/50 bg-slate-900/95 px-4 py-3">
           {/* Math challenge overlay — renders above action bar */}
           {mathChallenge && (
-            <div className="rounded-2xl bg-indigo-900/60 border border-indigo-500 p-4 flex flex-col gap-2 mb-3 max-w-xl mx-auto">
+            <div className="rounded-2xl bg-indigo-900/60 border border-indigo-500 p-4 flex flex-col gap-2 mb-3 max-w-xl mx-auto max-h-[60dvh] overflow-y-auto" role="region" aria-label="Battle math">
               <div className="text-sm font-bold text-indigo-200">Solve for bonus damage + energy!</div>
               <div className="text-lg font-black text-white text-center">{mathChallenge.question}</div>
+              {mathWrong && <><p role="status" className="text-amber-200">Not quite yet. Try again or return to battle.</p><LearningHelp key={mathChallenge.id} problem={mathChallenge} onRetry={() => { setMathWrong(false); document.querySelector<HTMLInputElement>('[aria-label="Battle answer"]')?.select(); }} /></>}
+              <button type="button" className="text-indigo-100 underline min-h-11" onClick={() => { setMathChallenge(null); setMathInput(''); setMathWrong(false); }}>Back to battle</button>
               <div className="flex gap-2">
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  aria-label="Battle answer"
                   value={mathInput}
                   onChange={(e) => setMathInput(e.target.value)}
-                  className="flex-1 rounded-lg bg-slate-700 border border-slate-500 text-white px-3 py-2 text-center font-bold"
+                  className="flex-1 min-w-0 rounded-lg bg-slate-700 border border-slate-500 text-white px-3 py-2 text-center font-bold"
                   placeholder="?"
                   autoFocus
                   onKeyDown={(e) => e.key === 'Enter' && handleMathSubmit()}
@@ -411,7 +430,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
                 onSkill={() => setActionMode('skill')}
                 onFocus={() => dispatch({ type: 'PLAYER_FOCUS' })}
                 onFlee={() => dispatch({ type: 'PLAYER_FLEE_ATTEMPT' })}
-                combatPhase={combatPhase}
+                combatPhase={mathChallenge ? 'RESOLVING' : combatPhase}
                 focusUsed={battle.focusUsedThisTurn}
               />
             )}
@@ -450,10 +469,11 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
             )}
           </div>
 
+          {!deliveryEncounter && !isPvP && <div>{prediction.toggle}{prediction.panel}</div>}
           {/* Power Rune + Brain Boost — always visible during player input so
               beta testers can actually find tracing. Individual buttons
               disable themselves with a hint when the prerequisite isn't met. */}
-          {isPlayerInput && actionMode === 'main' && !traceStartRequest && (
+          {!deliveryEncounter && isPlayerInput && actionMode === 'main' && !traceStartRequest && (
             <div className="max-w-5xl mx-auto mt-2 flex gap-2 items-center flex-wrap">
               {(() => {
                 const runeReady = playerPet.energy >= RUNE_ENERGY_THRESHOLD && !battle.traceBuffs.runeBoostTier;
@@ -474,14 +494,14 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch }) 
               })()}
 
               {(() => {
-                const mathReady = !battle.mathBuffActive && !battle.traceBuffs.mathTraceTier;
+                const mathReady = isPlayerInput && !battle.mathBuffActive && !battle.traceBuffs.mathTraceTier;
                 return (
                   <>
                     <GameButton
                       variant="primary"
                       size="sm"
                       disabled={!mathReady}
-                      onClick={() => mathReady && setMathChallenge(generateMathProblem(1))}
+                      onClick={() => mathReady && setMathChallenge(generateLearningProblem(learning))}
                     >
                       {mathReady ? 'Type Answer' : 'Math Active'}
                     </GameButton>

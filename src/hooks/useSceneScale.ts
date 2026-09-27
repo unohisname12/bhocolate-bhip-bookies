@@ -1,20 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useLayoutEffect, useState, type RefObject } from 'react';
 
-/** Native canvas width the scene is authored at. */
-const NATIVE_WIDTH = 400;
-
-/**
- * Returns a scale factor that converts native 400×224 scene coordinates
- * to the current viewport size. Listens for window resize.
- */
-export function useSceneScale(): number {
-  const [scale, setScale] = useState(() => window.innerWidth / NATIVE_WIDTH);
-
-  useEffect(() => {
-    const update = () => setScale(window.innerWidth / NATIVE_WIDTH);
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
-
+/** Fit the authored 400 × 224 world to its own available layout area. */
+export function useSceneScale(viewport: RefObject<HTMLDivElement | null>): number {
+  const [scale, setScale] = useState(1);
+  useLayoutEffect(() => {
+    const element = viewport.current;
+    if (!element) return;
+    const measure = () => setScale(Math.max(0.1, Math.min(
+      (element.clientWidth - 16) / 400,
+      (element.clientHeight - 16) / 224,
+    )));
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    measure();
+    return () => observer.disconnect();
+  }, [viewport]);
   return scale;
 }

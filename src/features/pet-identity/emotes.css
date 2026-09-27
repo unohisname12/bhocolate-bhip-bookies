@@ -1,0 +1,5 @@
+.emote-bubble { position:absolute; left:50%; top:-6px; transform:translateX(-50%); background:white; color:#203b38; border-radius:14px; padding:5px 10px; font-weight:700; font-size:14px; white-space:nowrap; box-shadow:0 4px 14px #0003; z-index:2; animation:emote-pop .25s ease-out; }
+@keyframes emote-pop { from { transform:translateX(-50%) scale(.6); opacity:0; } }
+.emote-bar { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
+.emote-bar button { font-size:22px; min-width:44px; min-height:44px; border-radius:12px; border:1px solid #0002; background:#fff8; cursor:pointer; }
+@media(prefers-reduced-motion:reduce) { .emote-bubble { animation:none; } }

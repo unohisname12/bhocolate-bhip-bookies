@@ -1,29 +1,37 @@
+import {CaptureSequence, CAPTURE_DURATION} from '../components/momentum/effects/CaptureSequence';
+import { Modal } from '../components/ui/Modal';
+import {MomentumPowerVideo,MomentumPowerCards} from '../components/momentum/ui/MomentumPowerGuide';
+import {PetSprite} from '../components/pet/PetSprite';
+import { usePrediction } from '../features/learning/usePrediction';
+import { quantityDecision } from '../features/learning/decisions';
+import { useLearningSettings } from '../components/LearningContext';
+import { GameRules } from '../components/game/GameRules';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import type {
   ActiveMomentumState,
   BoardPosition,
   FlashChoice,
-  MomentumDifficulty,
+  MomentumDifficulty, MomentumMode,
   MomentumGameEvent,
   MomentumPiece,
   MomentumPhase,
 } from '../types/momentum';
 import type { GameEngineAction } from '../engine/core/ActionTypes';
-import { DIFFICULTY_SETTINGS } from '../config/momentumConfig';
+import { DIFFICULTY_SETTINGS, momentumTurnLimit } from '../config/momentumConfig';
 import {
   MomentumBoard,
   MomentumHUD,
   MomentumActionBar,
   MomentumLog,
   MomentumResultOverlay,
-  PetOverlay,
   PieceMoveAnimator,
-  AttackImpact,
   FlashSequence,
   FusionAnimation,
   DEFAULT_THEME,
 } from '../components/momentum';
 import '../components/momentum/effects/MomentumAnimations.css';
+import { MomentumCoach, MomentumRules } from '../components/momentum/ui/MomentumGuide';
+import './MomentumScreen.css';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -62,8 +70,7 @@ const EMPTY_META: AnimationMeta = {
 // ─── Layout Constants ────────────────────────────────────────────────────────
 
 const GRID_GAP = DEFAULT_THEME.gridGap; // 2
-const BOARD_SIZE = 320;
-const CELL_SIZE = (BOARD_SIZE - 4 * GRID_GAP) / 5; // (320 - 8) / 5 = 62.4
+
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -149,10 +156,23 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
   dispatch,
 }) => {
   const theme = DEFAULT_THEME;
-  const cellSize = CELL_SIZE;
+  const [guideOpen,setGuideOpen]=useState(false);
+  const learning=useLearningSettings();
+  const prediction=usePrediction(JSON.stringify([state.turnCount,state.phase,state.pieces,state.selectedPieceId]));
+  const [boardSize, setBoardSize] = useState(320);
+  const boardFrame = useRef<HTMLDivElement>(null);
+  const cellSize = (boardSize - (state.board.length - 1) * GRID_GAP) / state.board.length;
+  const [mode, setMode] = useState<MomentumMode>(state.mode ?? 'classic');
+  useEffect(() => {
+    const frame = boardFrame.current;
+    if (!frame) return;
+    const observer = new ResizeObserver(([entry]) => setBoardSize(Math.max(200, entry.contentRect.width - 16)));
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
 
   // Difficulty picker — shown on first mount
-  const [showDifficultyPicker, setShowDifficultyPicker] = useState(true);
+  const [showDifficultyPicker, setShowDifficultyPicker] = useState(state.turnCount === 1 && state.log.length === 0);
 
   // Previous state tracking for detecting phase transitions
   const prevStateRef = useRef<ActiveMomentumState>(state);
@@ -160,20 +180,6 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
 
   // Animation metadata captured on phase transition
   const [animMeta, setAnimMeta] = useState<AnimationMeta>(EMPTY_META);
-
-  // Board shake
-  const [shakeActive, setShakeActive] = useState(false);
-  const shakeTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
-
-  // Attack sub-phase: for animating_attack / animating_ai that are attacks,
-  // we show move first, then impact
-  const [attackSubPhase, setAttackSubPhase] = useState<'lunge' | 'impact' | null>(null);
-
-  // Turn transition banner
-  const [turnBanner, setTurnBanner] = useState<{ team: 'player' | 'enemy'; key: number } | null>(
-    null,
-  );
-  const turnBannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // "Zzz" skip feedback
   const [skipFx, setSkipFx] = useState<{ team: 'player' | 'enemy'; key: number } | null>(null);
@@ -209,39 +215,35 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
         m => m.destination.x === x && m.destination.y === y,
       );
       if (moveIndex >= 0) {
-        dispatch({ type: 'MOMENTUM_EXECUTE_MOVE', moveIndex });
+        if(state.mode==='powers'){dispatch({type:'MOMENTUM_EXECUTE_MOVE',moveIndex});return;}
+        const piece=state.pieces.find(p=>p.id===state.selectedPieceId),move=state.validMoves[moveIndex];
+        const task=piece?quantityDecision(learning,`momentum-plan:${crypto.randomUUID()}`,'momentum',piece.energy,move.energyCost,'energy',`Move to column ${x+1}, row ${y+1}. Predict energy after the move cost, before station or capture effects.`):null;
+        prediction.attempt(task,()=>dispatch({ type: 'MOMENTUM_EXECUTE_MOVE', moveIndex }));
       }
     },
-    [state.validMoves, dispatch],
+    [state.mode, state.validMoves, state.pieces, state.selectedPieceId, learning, prediction, dispatch],
   );
 
+  const animationKey = `${state.turnCount}:${state.phase}:${JSON.stringify(state.lastEvent)}`;
+  const completedAnimation = useRef<string|null>(null);
   const handleAnimationDone = useCallback(() => {
-    setAttackSubPhase(null);
+    if (completedAnimation.current === animationKey) return;
+    completedAnimation.current = animationKey;
     dispatch({ type: 'MOMENTUM_ANIMATION_DONE' });
-  }, [dispatch]);
+  }, [dispatch, animationKey]);
+  // Attacks retain both pieces in engine state until their cinematic completes.
+  const attack = (state.phase === 'animating_attack' || state.phase === 'animating_ai') && state.lastEvent?.type === 'piece_attacked' ? state.lastEvent : null;
+  const attacker = attack ? state.pieces.find(piece => piece.id === attack.attackerId) : null;
+  const defender = attack ? state.pieces.find(piece => piece.id === attack.defenderId) : null;
 
   // ─── Phase transition detection ──────────────────────────────────────
 
   useEffect(() => {
+    let upgradeTimer: ReturnType<typeof setTimeout> | undefined;
+    const frame = requestAnimationFrame(() => {
     const prevPhase = prevPhaseRef.current;
     const prevState = prevStateRef.current;
     const currentPhase = state.phase;
-
-    // ── Turn-banner: phase-based so it fires on every transition ────
-    // Player attack keeps activeTeam=player even when phase flips to ai_turn,
-    // so we key off phase, not team.
-    const bannerTeam =
-      prevPhase !== 'ai_turn' && currentPhase === 'ai_turn'
-        ? 'enemy'
-        : (currentPhase === 'player_select' &&
-            (prevPhase === 'animating_ai' || prevPhase === 'ai_turn'))
-          ? 'player'
-          : null;
-    if (bannerTeam) {
-      if (turnBannerTimerRef.current) clearTimeout(turnBannerTimerRef.current);
-      setTurnBanner({ team: bannerTeam, key: Date.now() });
-      turnBannerTimerRef.current = setTimeout(() => setTurnBanner(null), 1250);
-    }
 
     // ── Skip event detection ────────────────────────────────────────
     if (
@@ -279,31 +281,12 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
     switch (currentPhase) {
       case 'animating_move': {
         setAnimMeta(meta);
-        setAttackSubPhase(null);
         break;
       }
 
-      case 'animating_attack': {
-        setAnimMeta(meta);
-        setAttackSubPhase('lunge');
-        // Activate board shake
-        setShakeActive(true);
-        if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
-        shakeTimerRef.current = setTimeout(() => setShakeActive(false), 300);
-        break;
-      }
-
+      case 'animating_attack':
       case 'animating_ai': {
-        // AI moves work the same — check if it's an attack via lastEvent
         setAnimMeta(meta);
-        if (meta.isAttack) {
-          setAttackSubPhase('lunge');
-          setShakeActive(true);
-          if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
-          shakeTimerRef.current = setTimeout(() => setShakeActive(false), 300);
-        } else {
-          setAttackSubPhase(null);
-        }
         break;
       }
 
@@ -326,10 +309,10 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
         // If upgrade (not fusion), dispatch done after brief timeout
         // since there's no separate upgrade animation component
         if (state.lastEvent?.type === 'flash_upgrade') {
-          const timer = setTimeout(() => {
+          upgradeTimer = setTimeout(() => {
             dispatch({ type: 'MOMENTUM_ANIMATION_DONE' });
           }, 500);
-          return () => clearTimeout(timer);
+
         }
         break;
       }
@@ -337,20 +320,28 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
       default:
         // Reset animation state on non-animation phases
         setAnimMeta(EMPTY_META);
-        setAttackSubPhase(null);
         break;
     }
+    });
+    return () => { cancelAnimationFrame(frame); if (upgradeTimer) clearTimeout(upgradeTimer); };
   }, [state, dispatch]);
 
-  // ─── AI turn pacing — delay so "Enemy Turn" banner can land ────────
+  // A resumed save or a rank-up event may not have a previous animation frame.
+  useEffect(() => {
+    if (!state.phase.startsWith('animating')) return;
+    const timer = setTimeout(handleAnimationDone, attack ? CAPTURE_DURATION + 1200 : 1800);
+    return () => clearTimeout(timer);
+  }, [state.phase, handleAnimationDone, attack, guideOpen]);
+
+  // ─── AI turn pacing — a short pause to follow each move ────────
 
   useEffect(() => {
-    if (state.phase !== 'ai_turn') return;
+    if (state.phase !== 'ai_turn' || guideOpen) return;
     const timer = setTimeout(() => {
       dispatch({ type: 'MOMENTUM_AI_EXECUTE' });
     }, 2000);
     return () => clearTimeout(timer);
-  }, [state.phase, dispatch]);
+  }, [state.phase, dispatch, guideOpen]);
 
   // ─── Visibility change handler — prevent animation phase stuck ──────
 
@@ -364,8 +355,8 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
           'animating_ai',
         ];
         if (animPhases.includes(state.phase)) {
-          dispatch({ type: 'MOMENTUM_ANIMATION_DONE' });
-        } else if (state.phase === 'ai_turn') {
+          handleAnimationDone();
+        } else if (state.phase === 'ai_turn' && !guideOpen) {
           dispatch({ type: 'MOMENTUM_AI_EXECUTE' });
         }
       }
@@ -373,30 +364,18 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
 
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [state.phase, dispatch]);
+  }, [state.phase, dispatch, guideOpen, handleAnimationDone]);
 
   // ─── Cleanup timers ─────────────────────────────────────────────────
 
   useEffect(() => {
     return () => {
-      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
-      if (turnBannerTimerRef.current) clearTimeout(turnBannerTimerRef.current);
       if (skipFxTimerRef.current) clearTimeout(skipFxTimerRef.current);
       if (promoteFxTimerRef.current) clearTimeout(promoteFxTimerRef.current);
     };
   }, []);
 
   // ─── Animation overlay rendering helpers ────────────────────────────
-
-  const handleMoveLungeComplete = useCallback(() => {
-    if (attackSubPhase === 'lunge') {
-      // Transition to impact sub-phase
-      setAttackSubPhase('impact');
-    } else {
-      // Non-attack move — we're done
-      handleAnimationDone();
-    }
-  }, [attackSubPhase, handleAnimationDone]);
 
   // Determine what to show
   const isMovingPhase =
@@ -409,16 +388,7 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
     animMeta.movingPiece &&
     animMeta.moveFrom &&
     animMeta.moveTo &&
-    (attackSubPhase === 'lunge' || (!animMeta.isAttack && attackSubPhase === null));
-
-  const showAttackImpact =
-    isMovingPhase && animMeta.isAttack && attackSubPhase === 'impact' && animMeta.attackPosition;
-
-  // Determine team color for attack impact
-  const attackTeamColor =
-    animMeta.movingPiece?.team === 'player'
-      ? 'rgba(103, 232, 249, 0.8)'
-      : 'rgba(252, 165, 165, 0.8)';
+    !animMeta.isAttack;
 
   // AI "thinking" dim — enemy is acting and the board is not player-interactive
   const aiThinking =
@@ -429,9 +399,10 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
 
   return (
     <div
-      className="min-h-screen relative overflow-hidden"
+      className="momentum-screen min-h-screen relative overflow-hidden"
       style={{ background: theme.backdrop }}
     >
+      <header className="momentum-titlebar"><div><span>AURALITH TACTICS</span><h1>Momentum<span>{state.mode==='powers'?'POWER CLASH':'THE GUARDIAN BOARD'}</span></h1></div><MomentumPowerVideo onOpenChange={setGuideOpen}/></header>
       {/* Backdrop: strategy chamber scene, full screen */}
       <img
         src="/assets/generated/final/scene_strategy_chamber.png"
@@ -441,12 +412,12 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
       />
       {/* Dark vignette for focus on the board */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="momentum-vignette absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.65) 100%)' }}
       />
 
       {/* ===== HUD — floats at top like a hanging banner ===== */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
+      <div className="momentum-hud relative z-20">
         <div
           className="px-4 py-2 rounded-xl border-2 border-cyan-400/40 shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
           style={{
@@ -458,21 +429,22 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
         </div>
       </div>
 
+      <div className="relative z-20 momentum-coach-wrap"><MomentumCoach state={state} dispatch={dispatch}/></div>
+
+      {state.mode!=='powers'&&<div className="relative z-20 momentum-coach-wrap momentum-planning">{prediction.toggle}{prediction.panel}</div>}
       {/* ===== BOARD — sits on the altar with a perspective tilt ===== */}
       <div
+        ref={boardFrame}
         data-help="momentum-board"
-        className="absolute left-1/2 z-10"
+        className="momentum-board-wrap relative z-10"
         style={{
-          top: '42%',
-          transform: 'translateX(-50%) perspective(1200px) rotateX(12deg)',
-          transformOrigin: 'center bottom',
+          width: '100%',
           filter: 'drop-shadow(0 20px 24px rgba(0,0,0,0.6))',
         }}
       >
         {/* Board shake + AI-thinking + entrance wrapper */}
         <div
           className={[
-            shakeActive ? 'momentum-board-shake' : '',
             aiThinking ? 'momentum-ai-thinking' : '',
             boardEntered ? '' : 'momentum-board-entrance',
           ]
@@ -481,6 +453,7 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
         >
           <MomentumBoard
             state={state}
+            boardSize={boardSize}
             onCellClick={handleCellClick}
             onPieceClick={handlePieceClick}
             promoteFx={promoteFx}
@@ -490,7 +463,7 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
         {/* Animation overlays aligned to the board's grid */}
         <div
           className="absolute pointer-events-none"
-          style={{ top: 8, left: 8, width: BOARD_SIZE, height: BOARD_SIZE }}
+          style={{ top: 8, left: 8, width: boardSize, height: boardSize }}
         >
           {showMoveAnim && animMeta.movingPiece && animMeta.moveFrom && animMeta.moveTo && (
             <PieceMoveAnimator
@@ -501,23 +474,16 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
               theme={theme}
               cellSize={cellSize}
               gridGap={GRID_GAP}
-              onComplete={handleMoveLungeComplete}
-            />
-          )}
-          {showAttackImpact && animMeta.attackPosition && (
-            <AttackImpact
-              position={animMeta.attackPosition}
-              cellSize={cellSize}
-              gridGap={GRID_GAP}
-              teamColor={attackTeamColor}
               onComplete={handleAnimationDone}
             />
           )}
         </div>
       </div>
 
+      {attacker && defender && <CaptureSequence key={animationKey} attacker={attacker} defender={defender} onComplete={handleAnimationDone}/> }
+
       {/* ===== Action log — carved stone tablet on the left ===== */}
-      <div className="absolute left-3 top-24 z-10 max-w-[200px]">
+      <div className="momentum-log-wrap relative z-10">
         <div
           className="p-2 rounded-lg border-2 border-cyan-400/30 shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
           style={{
@@ -525,12 +491,15 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
             backdropFilter: 'blur(3px)',
           }}
         >
-          <MomentumLog log={state.log} />
+          {petSpeciesId&&<div className="momentum-companion"><PetSprite speciesId={petSpeciesId} animationName="idle" scale={.65}/><span>Your companion is cheering you on</span></div>}
+          <p className="momentum-win-note">Capture every red guardian.<br/>Win before turn {momentumTurnLimit(state.difficulty,state.mode)}.</p>
+          {state.mode==='powers'&&<p className="momentum-win-note">+ add energy · − drain energy<br/>× double stride · ÷ share power</p>}
+          <details><summary>Recent moves</summary><MomentumLog log={state.log} /></details>
         </div>
       </div>
 
       {/* ===== Action bar — bottom center ===== */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
+      <div className="momentum-actions relative z-20">
         <div
           className="px-3 py-2 rounded-xl border-2 border-cyan-400/40 shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
           style={{
@@ -545,58 +514,6 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
           />
         </div>
       </div>
-
-      {/* Pet overlay — bottom-left, z-30 */}
-      {petSpeciesId && (
-        <PetOverlay speciesId={petSpeciesId} lastEvent={state.lastEvent} />
-      )}
-
-      {/* ===== Turn Transition Banner + Flash ===== */}
-      {turnBanner && (
-        <>
-          <div
-            key={`flash-${turnBanner.key}`}
-            className="absolute inset-0 pointer-events-none z-[35] momentum-turn-flash"
-            style={{
-              background:
-                turnBanner.team === 'player'
-                  ? 'radial-gradient(ellipse at center, rgba(103,232,249,0.55) 0%, transparent 70%)'
-                  : 'radial-gradient(ellipse at center, rgba(252,165,165,0.55) 0%, transparent 70%)',
-            }}
-          />
-          <div className="absolute inset-0 pointer-events-none z-[36] flex items-center justify-center overflow-hidden">
-            <div
-              key={`banner-${turnBanner.key}`}
-              className="momentum-turn-banner px-10 py-3 border-y-4"
-              style={{
-                background:
-                  turnBanner.team === 'player'
-                    ? 'linear-gradient(90deg, rgba(8,47,73,0.95) 0%, rgba(22,78,99,0.95) 50%, rgba(8,47,73,0.95) 100%)'
-                    : 'linear-gradient(90deg, rgba(69,10,10,0.95) 0%, rgba(127,29,29,0.95) 50%, rgba(69,10,10,0.95) 100%)',
-                borderColor:
-                  turnBanner.team === 'player' ? 'rgba(103,232,249,0.8)' : 'rgba(252,165,165,0.8)',
-                boxShadow:
-                  turnBanner.team === 'player'
-                    ? '0 0 40px rgba(34,211,238,0.6)'
-                    : '0 0 40px rgba(239,68,68,0.6)',
-              }}
-            >
-              <div
-                className="text-3xl font-black tracking-[0.2em] uppercase"
-                style={{
-                  color: turnBanner.team === 'player' ? '#a5f3fc' : '#fecaca',
-                  textShadow:
-                    turnBanner.team === 'player'
-                      ? '0 0 12px rgba(34,211,238,0.9)'
-                      : '0 0 12px rgba(239,68,68,0.9)',
-                }}
-              >
-                {turnBanner.team === 'player' ? 'Your Turn' : 'Enemy Turn'}
-              </div>
-            </div>
-          </div>
-        </>
-      )}
 
       {/* ===== Skip "Zzz" Feedback ===== */}
       {skipFx && (
@@ -660,10 +577,14 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
 
       {/* Difficulty picker — shown on game start */}
       {showDifficultyPicker && (
-        <div className="fixed inset-0 z-50 bg-slate-900/90 flex flex-col items-center justify-center gap-6">
-          <h2 className="text-2xl font-black text-white tracking-wide">Choose Difficulty</h2>
+        <Modal isOpen onClose={() => dispatch({ type: 'END_MOMENTUM' })} title="Choose your Momentum game" panelClassName="!max-w-2xl">
+        <div className="momentum-picker flex flex-col items-center gap-4">
+          <div className="flex flex-wrap justify-center gap-3" aria-label="Board mode">{(['classic','advanced','powers'] as MomentumMode[]).map(m=><button key={m} aria-pressed={mode===m} className="px-4 py-3 rounded border border-cyan-300 text-white aria-pressed:bg-cyan-800" onClick={()=>setMode(m)}>{m==='classic'?'Classic · 5×5':m==='advanced'?'Advanced · 7×7':'Power Clash · Hard'}</button>)}</div>
+          <p className="max-w-md px-5 text-slate-200">{mode==='powers'?'Four guardians. Four math powers. No questions to answer. A tougher 7×7 battle against an opponent with the same abilities.':mode==='advanced'?'Five pieces per side. Guard, transfer energy, and control three energy stations.':'Three pieces per side. Learn movement, captures and upgrades.'}</p>
+          {mode==='powers'?<div className="momentum-picker-powers"><MomentumPowerVideo/><MomentumPowerCards/></div>:<div className="max-w-lg px-5 text-slate-200"><GameRules name="Momentum setup"><section aria-label="Momentum quick start"><p>Start with Easy. Skip Turn stores energy but gives your opponent a turn too.</p></section><MomentumRules advanced={mode==='advanced'}/></GameRules></div>}
           <div className="flex gap-3">
-            {(['easy', 'medium', 'hard'] as MomentumDifficulty[]).map(d => {
+            {(mode==='powers'?['hard']:['easy', 'medium', 'hard'] as MomentumDifficulty[]).map(value => {
+              const d=value as MomentumDifficulty;
               const s = DIFFICULTY_SETTINGS[d];
               const colors = d === 'easy'
                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
@@ -675,12 +596,12 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
                   key={d}
                   className={`px-5 py-3 rounded-xl font-bold text-lg ${colors} transition-colors`}
                   onClick={() => {
-                    dispatch({ type: 'MOMENTUM_SET_DIFFICULTY', difficulty: d });
+                    dispatch({ type: 'MOMENTUM_SET_DIFFICULTY', difficulty: d, mode });
                     setShowDifficultyPicker(false);
                   }}
                 >
                   <div>{s.label}</div>
-                  <div className="text-xs font-normal opacity-80">{s.maxTurns} turns</div>
+                  <div className="text-xs font-normal opacity-80">{momentumTurnLimit(d,mode)} turns</div>
                 </button>
               );
             })}
@@ -692,6 +613,7 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
             Back
           </button>
         </div>
+        </Modal>
       )}
     </div>
   );

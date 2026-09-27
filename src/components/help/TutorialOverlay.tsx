@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { SpotlightMask } from './SpotlightMask';
 import { DialogueBubble } from './DialogueBubble';
 import { getTutorialSteps } from '../../services/help/tutorialEngine';
@@ -16,6 +17,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
   dispatch,
   onComplete,
 }) => {
+  const panel = useRef<HTMLDivElement>(null);
   const steps = getTutorialSteps(featureId);
   const [stepIndex, setStepIndex] = useState(0);
 
@@ -57,12 +59,18 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
     onComplete();
   }, [featureId, dispatch, onComplete]);
 
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    panel.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    return () => { if (previous?.isConnected) previous.focus({ preventScroll: true }); };
+  }, []);
+
   if (!currentStep) return null;
 
   const isLast = stepIndex === steps.length - 1;
 
-  return (
-    <>
+  return createPortal(
+    <div ref={panel} className="fixed inset-0 z-[600]" role="dialog" aria-modal="true" aria-label="Tutorial" onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); handleSkip(); } if (e.key === 'Tab') { const buttons = Array.from(panel.current?.querySelectorAll<HTMLButtonElement>('button') ?? []); const first = buttons[0], last = buttons.at(-1); if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); } } }}>
       {/* Spotlight mask if we have a target */}
       {currentStep.target && (
         <SpotlightMask
@@ -88,6 +96,6 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
         onSkip={handleSkip}
         isLastStep={isLast}
       />
-    </>
+    </div>, document.body
   );
 };

@@ -1,10 +1,11 @@
+import { fullDashboard } from './e2e/fullDashboard';
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
   timeout: 30000,
   use: {
-    baseURL: 'http://localhost:5007',
+    storageState:fullDashboard('http://localhost:5007'),baseURL: 'http://localhost:5007',
     headless: true,
     screenshot: 'only-on-failure',
   },

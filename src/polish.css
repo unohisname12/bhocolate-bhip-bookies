@@ -1,0 +1,79 @@
+/* Motion is decoration, never a gate to interaction. No transforms on the
+   screen root: fixed-position game overlays must stay viewport-relative. */
+.screen-reveal { animation: screen-reveal 240ms ease-out both; }
+@keyframes screen-reveal { from { opacity: .35; } to { opacity: 1; } }
+.room-reveal { animation: screen-reveal 450ms ease-out both; }
+button { -webkit-tap-highlight-color: transparent; }
+button:not(:disabled) { transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, filter 160ms ease; }
+button:not(:disabled):active { filter: brightness(1.18); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #8ce3cd; outline-offset: 4px; }
+.eyebrow { color: #9cd6c4; font-size: 10px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+.home-heading { position: fixed; top: 126px; left: 18px; right: 18px; text-align: center; }
+.home-heading h1 { margin: 5px 0; font-size: clamp(24px, 3vw, 32px); line-height: 1.15; color: #f3ecdc; font-weight: 900; letter-spacing: -.035em; }
+.home-heading p { display: none; }
+.home-world { border: 3px solid #887355; border-radius: 19px; box-shadow: 0 0 0 5px #141f2b, 0 0 0 6px #354049, 0 22px 65px #0007, 0 0 65px #dbb05b12; }
+.home-world::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 24px #0003; border-radius: inherit; pointer-events: none; z-index: 29; }
+.home-companion-card { border: 1px solid #62746a70; border-radius: 18px; background: linear-gradient(150deg, #203934ee, #13242eee); box-shadow: 0 8px 30px #0003; }
+.home-quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ffffff12; }
+.home-quick-actions button { display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid #69898055; background: #ffffff08; border-radius: 10px; min-height: 44px; color: #e3efe5; font-size: 12px; font-weight: 700; }
+.home-quick-actions button:hover { background: #8ce3cd20; border-color: #8ce3cd; }
+.home-quick-actions img { width: 24px; height: 24px; image-rendering: pixelated; object-fit: contain; }
+.world-atmosphere { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 11; }
+.world-mote { position: absolute; display: block; width: 3px; height: 3px; background: #ffdfa0; box-shadow: 0 0 7px #eebb6399; animation: mote-drift var(--duration) ease-in-out var(--delay) infinite; }
+.outside .world-mote { background: #daf795; box-shadow: 0 0 8px #b8ee74; }
+@keyframes mote-drift { 0%,100% { opacity: 0; translate: -8px 15px; } 40%,60% { opacity: .7; } 90% { translate: 15px -26px; opacity: 0; } }
+.world-lightbeam { position: absolute; left: 50%; top: 15%; width: 40%; height: 75%; background: linear-gradient(110deg, transparent, #ffeec116, transparent 65%); transform: skewX(-15deg); transform-origin: top; animation: light-breathe 7s ease-in-out infinite; }
+@keyframes light-breathe { 0%,100% { opacity: .4; } 50% { opacity: 1; } }
+.hearth-embers { position: absolute; bottom: 35%; left: 83%; width: 5%; height: 18%; }
+.hearth-embers i { position: absolute; bottom: 0; width: 3px; height: 4px; background: #ffc268; box-shadow: 0 0 8px #f8773288; animation: ember-rise 3s ease-out infinite; }
+@keyframes ember-rise { from { opacity: .85; translate: 0 0; } to { opacity: 0; translate: 12px -55px; } }
+.passing-cloud { position: absolute; top: 8%; left: -30%; width: 26%; height: 12%; background: #fff2; border-radius: 48%; filter: blur(7px); animation: cloud-pass 45s linear infinite; }
+.cloud-two { top: 15%; width: 15%; animation-delay: -23s; animation-duration: 60s; }
+@keyframes cloud-pass { to { left: 110%; } }
+.pet-greeting { position: absolute; left: 50%; top: 10%; pointer-events: none; color: #ffb5cd; font-size: 20px; }
+.pet-greeting span { display: inline-block; position: absolute; opacity: 0; animation: greeting-rise 1500ms ease-out both; text-shadow: 0 0 8px #f975b0; }
+.pet-greeting span:nth-child(2) { left: 20px; animation-delay: 150ms; color: #ffe3a0; }
+.pet-greeting span:nth-child(3) { left: -20px; animation-delay: 300ms; }
+@keyframes greeting-rise { 0% { opacity: 0; scale: .4; translate: 0 5px; } 20% { opacity: 1; scale: 1.2; } 65% { opacity: 1; scale: 1; } 100% { opacity: 0; translate: 0 -75px; } }
+.play-tile { animation: tile-arrive 350ms ease-out both; animation-delay: calc(var(--tile-index) * 45ms); transition: translate 180ms ease, border-color 180ms ease, background 180ms ease; }
+.play-tile:hover { translate: 0 -4px; background: #163530; box-shadow: 0 12px 24px #0004; }
+.play-tile:hover img { animation: icon-hop 700ms ease-in-out; }
+.woodland-play { background: radial-gradient(ellipse at 65% 0%, #28473c, #101e24 55%, #0c151e); padding-bottom: 210px; }
+.woodland-play-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 25px 0; padding: 24px; border: 1px solid #b8955555; border-radius: 20px; background: linear-gradient(90deg, #102a29f2, #142c27c9), url('/assets/woodland-v1/home.png') center/cover; }
+.woodland-play-header > img { width: 120px; height: 120px; image-rendering: pixelated; flex-shrink: 0; }
+.woodland-icon-plaque { flex-shrink: 0; padding: 8px; border: 1px solid #b8955544; background: #080e1844; border-radius: 14px; }
+.woodland-play .play-tile { background: linear-gradient(145deg, #243a35, #17272d); border-color: #b8955544; box-shadow: inset 0 1px #fff1, 0 6px 18px #0002; }
+.woodland-play .play-tile:hover { border-color: #edc58a; }
+@media (max-width: 600px) { .woodland-play-header { padding: 18px; } .woodland-play-header > img { display: none; } .woodland-icon-plaque { padding: 2px; } }
+@keyframes tile-arrive { from { opacity: 0; translate: 0 12px; } to { opacity: 1; translate: 0 0; } }
+@keyframes icon-hop { 35% { translate: 0 -8px; rotate: -8deg; } 65% { rotate: 6deg; } }
+.dev-launcher, .dev-return { position: fixed; z-index: 10900; bottom: 144px; right: 12px; border: 1px solid #e4b55d; border-radius: 10px; min-height: 44px; padding: 8px 13px; background: #1b1823ee; color: #ffe0a3; font-size: 11px; font-weight: 900; box-shadow: 0 4px 18px #0005; }
+.dev-launcher.is-active { background: #62410e; }
+.dev-launcher[data-game-screen="battle"], .dev-return[data-game-screen="battle"] { bottom: 8px; }
+.dev-return { right: auto; left: 12px; }
+.dev-screen-browser { position: fixed; inset: 0; z-index: 11000; background: #090f1cfa; color: #e9edf4; overflow-y: auto; padding: 24px 18px 50px; backdrop-filter: blur(15px); animation: screen-reveal 160ms ease-out; }
+.dev-browser-inner { max-width: 920px; margin: auto; }
+.dev-browser-inner header { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.dev-browser-inner h1 { font-size: clamp(24px, 4vw, 36px); font-weight: 900; letter-spacing: -.03em; margin: 8px 0 12px; }
+.dev-explainer { color: #a9b8c9; font-size: 14px; line-height: 1.7; max-width: 760px; margin-bottom: 20px; }
+.dev-browser-inner input { width: 100%; background: #152133; border: 1px solid #617489; padding: 15px; color: white; border-radius: 12px; }
+.dev-browser-inner button { min-height: 44px; padding: 10px 14px; border: 1px solid #4e6076; border-radius: 10px; background: #1a283b; color: #e0e9f2; }
+.dev-browser-inner button:hover { border-color: #f0c777; background: #304054; }
+.dev-browser-inner h2 { font-weight: 800; color: #edc58a; margin: 24px 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; }
+.dev-utility-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 15px 0; }
+.dev-utility-row span { color: #93a6bc; font-size: 12px; }
+.dev-screen-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.dev-screen-grid button { text-align: left; padding: 16px; }
+.dev-screen-grid strong, .dev-screen-grid span { display: block; }
+.dev-screen-grid span { color: #92a6bc; margin-top: 6px; font-size: 11px; }
+@media (max-width: 600px) { .dev-screen-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .home-heading p { font-size: 11px; } .home-quick-actions button { flex-direction: column; font-size: 11px; padding: 6px 2px; } }
+@media (prefers-reduced-motion: reduce) {
+  .screen-reveal, .room-reveal, .world-mote, .world-lightbeam, .hearth-embers i, .passing-cloud, .pet-greeting span, .play-tile, .play-tile:hover img { animation: none !important; }
+  .world-mote, .hearth-embers, .passing-cloud, .pet-greeting { display: none; }
+  .play-tile:hover { translate: none; }
+}
+/* Keep both developer entry points reachable on the compact battle layout. */
+.dev-tools-launcher[data-game-screen="battle"]{bottom:64px}
+/* Keep preview navigation clear of the care tray and its activity controls. */
+body:has(.care-touch-tray) .dev-launcher,body:has(.care-touch-tray) .dev-return,
+body:has(.care-session) .dev-launcher,body:has(.care-session) .dev-return{top:64px;bottom:auto}

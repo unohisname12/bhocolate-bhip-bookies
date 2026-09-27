@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ASSETS } from '../../config/assetManifest';
 import { COMBAT_TIMINGS } from './combatTimings';
 import type { CombatSheetConfig } from '../../config/assetManifest';
@@ -92,54 +92,19 @@ export const BattlePetSprite: React.FC<{
   flip?: boolean;
   children?: React.ReactNode;
 }> = ({ speciesId, animClass = '', combatSheet = null, flip = false, children }) => {
-  const [frame, setFrame] = useState(0);
-  const frameRef = useRef(0);
-  const [playing, setPlaying] = useState(false);
-  // Hold the last sheet + final frame to prevent flash on transition back to portrait
-  const lastSheetRef = useRef<CombatSheetConfig | null>(null);
-  const [holdover, setHoldover] = useState<{ sheet: CombatSheetConfig; frame: number } | null>(null);
-
-  // Play combat sheet when provided
+  const [playback, setPlayback] = useState<{ sheet: CombatSheetConfig | null; frame: number }>({ sheet: null, frame: 0 });
+  if (playback.sheet !== combatSheet) setPlayback({ sheet: combatSheet, frame: 0 });
   useEffect(() => {
-    if (!combatSheet) {
-      // If we were playing, hold the last frame briefly to prevent jitter
-      if (lastSheetRef.current && playing) {
-        const held = { sheet: lastSheetRef.current, frame: frameRef.current };
-        setHoldover(held);
-        const t = setTimeout(() => setHoldover(null), COMBAT_TIMINGS.combatSheetHoldover);
-        setPlaying(false);
-        setFrame(0);
-        frameRef.current = 0;
-        return () => clearTimeout(t);
-      }
-      setPlaying(false);
-      setFrame(0);
-      frameRef.current = 0;
-      return;
-    }
-
-    lastSheetRef.current = combatSheet;
-    setHoldover(null);
-    setPlaying(true);
-    frameRef.current = 0;
-    setFrame(0);
-
+    if (!combatSheet) return;
+    const started = performance.now();
     const interval = setInterval(() => {
-      frameRef.current += 1;
-      if (frameRef.current >= combatSheet.frameCount) {
-        clearInterval(interval);
-        setPlaying(false);
-        return;
-      }
-      setFrame(frameRef.current);
+      setPlayback({ sheet: combatSheet, frame: Math.min(combatSheet.frameCount - 1, Math.floor((performance.now() - started) / combatSheet.frameDuration)) });
     }, combatSheet.frameDuration);
-
     return () => clearInterval(interval);
-  }, [combatSheet]); // eslint-disable-line react-hooks/exhaustive-deps -- playing is intentionally not a dep
-
-  // Render combat sheet animation (active or holdover)
-  const activeSheet = playing && combatSheet ? combatSheet : holdover?.sheet ?? null;
-  const activeFrame = playing && combatSheet ? frame : holdover?.frame ?? 0;
+  }, [combatSheet]);
+  // A new action renders its own first frame immediately, before effects run.
+  const activeSheet = combatSheet;
+  const activeFrame = playback.sheet === combatSheet ? playback.frame : 0;
 
   if (activeSheet) {
     const displaySize = 160;

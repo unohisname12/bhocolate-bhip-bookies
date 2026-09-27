@@ -33,7 +33,7 @@ export const applyPetDecay = (pet: Pet, deltaMs: number): Pet => {
   const newHunger = clamp(pet.needs.hunger - (DECAY_RATES.hunger / 5) * decayFactor * hungerMultiplier * dm.hunger);
   const newHappiness = clamp(pet.needs.happiness - (DECAY_RATES.happiness / 3.333) * decayFactor * dm.happiness);
   const newCleanliness = clamp(pet.needs.cleanliness - (DECAY_RATES.cleanliness / 7.5) * decayFactor * dm.cleanliness);
-  const rawHealth = pet.needs.health - (DECAY_RATES.health / 5) * decayFactor * healthMultiplier * dm.health;
+  const rawHealth = pet.needs.health - (pet.needs.hunger < 20 || pet.needs.cleanliness < 20 ? (DECAY_RATES.health / 5) * decayFactor * healthMultiplier * dm.health : 0);
 
   // Grace period: clamp health to 1 minimum; track when it bottomed out
   const now = Date.now();

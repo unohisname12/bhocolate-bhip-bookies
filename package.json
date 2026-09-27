@@ -11,17 +11,34 @@
     "test": "vitest run",
     "test:unit": "vitest run",
     "test:e2e": "npx playwright test",
+    "test:recovery": "npm run build && playwright test --config playwright.recovery.config.ts",
     "verify": "tsc -b && eslint . && vitest run && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "pilot:schema": "node scripts/generate-pilot-schema.mjs",
+    "pilot:build": "npm run pilot:schema && tsc -b && vite build --mode pilot --outDir dist-pilot",
+    "pilot:types": "wrangler types && tsc -p worker/tsconfig.json",
+    "pilot:dev": "wrangler dev --port 8787",
+    "pilot:migrate:local": "wrangler d1 migrations apply auralith-classroom-pilot --local",
+    "pilot:migrate:remote": "wrangler d1 migrations apply auralith-classroom-pilot --remote",
+    "pilot:teacher": "node scripts/provision-pilot-teacher.mjs",
+    "pilot:backup": "node scripts/backup-pilot.mjs",
+    "pilot:deploy": "npm run pilot:build && npm run pilot:types && wrangler deploy",
+    "test:pilot": "playwright test --config playwright.pilot.config.ts",
+    "demo:build": "tsc -b && vite build --mode demo --outDir dist-demo",
+    "demo:deploy": "npm run demo:build && wrangler deploy --config wrangler.demo.jsonc",
+    "test:combined": "npm run pilot:build && npm run test:unit && tsc -p worker/tsconfig.json && playwright test --config playwright.skill-challenge.config.ts && playwright test --config playwright.teacher-battle.config.ts && playwright test --config playwright.student-navigation.config.ts && playwright test --config playwright.egg-prompt.config.ts && playwright test --config playwright.prizes.config.ts"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
+    "ajv": "^8.20.0",
+    "exceljs": "4.4.0",
     "firebase": "^12.11.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260907.1",
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.59.1",
     "@types/node": "^24.12.0",
@@ -34,11 +51,13 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "postcss": "^8.5.8",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.4",
     "tailwindcss": "^3.4.19",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.0",
+    "typescript-json-schema": "^0.68.0",
     "vite": "^8.0.1",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.2",
+    "wrangler": "^4.129.1"
   }
 }

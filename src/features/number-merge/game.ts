@@ -158,7 +158,7 @@ const getReachabilityWindow = (
   turnsRemaining: number | null,
 ): number => {
   if (turnsRemaining !== null) {
-    return Math.max(1, turnsRemaining);
+    return Math.min(2, Math.max(1, turnsRemaining));
   }
 
   return Math.max(1, getSearchWindowTurns(difficulty, () => 0) ?? 1);
@@ -467,6 +467,11 @@ const withReachableGoal = (
 ): NumberMergeGameSnapshot => {
   const windowTurns = getReachabilityWindow(snapshot.difficulty, snapshot.turnsRemaining);
   const reachableValues = collectReachableMergeValues(snapshot.board, windowTurns);
+  if (reachableValues.size === 0 && snapshot.difficulty === 'easy') {
+    const board = snapshot.board.map(row => row.map(tile => tile ?? createRandomNumberTile(random)));
+    return { ...snapshot, board, searchTarget: chooseGoalTargetForBoard(board, 'easy', snapshot.turns, 1, random),
+      feedback: createFeedback('neutral', 'Fresh numbers filled the empty spaces. Your points and hearts are safe.') };
+  }
   if (reachableValues.has(snapshot.searchTarget)) {
     return feedbackOverride
       ? { ...snapshot, feedback: feedbackOverride }
@@ -484,10 +489,10 @@ const withReachableGoal = (
 
   return {
     ...snapshot,
-    goalStars: Math.max(0, snapshot.goalStars - 0.5),
+    goalStars: snapshot.difficulty === 'easy' ? snapshot.goalStars : Math.max(0, snapshot.goalStars - 0.5),
     searchTarget: nextTarget,
     turnsRemaining: nextTurnsRemaining,
-    feedback: feedbackOverride ?? createFeedback('warning', `That goal was no longer possible. Lost half a star. New goal: ${nextTarget}.`),
+    feedback: feedbackOverride ?? (snapshot.difficulty === 'easy' ? createFeedback('neutral', `New reachable target: ${nextTarget}. Keep experimenting—your stars are safe.`) : createFeedback('warning', `That goal was no longer possible. Lost half a star. New goal: ${nextTarget}.`)),
     lastOverseerEvent: snapshot.lastOverseerEvent?.type === 'warning'
       ? {
           ...snapshot.lastOverseerEvent,
@@ -735,9 +740,14 @@ export const applyResolvedMove = (
   now: number,
   random: () => number = Math.random,
 ): NumberMergeGameSnapshot => {
+  if (snapshot.phase === 'won' || snapshot.phase === 'lost') return snapshot;
   const preset = getNumberMergeDifficultyPreset(snapshot.difficulty);
+  const earnedScore = snapshot.score + resolveResult.scoreDelta;
   const isTargetHit = resolveResult.action === 'merge'
     && (resolveResult.createdTileValue === snapshot.searchTarget || resolveResult.mergeValue === snapshot.searchTarget);
+  if (earnedScore >= preset.winScore) return checkWinCondition({ ...snapshot, board: resolveResult.board,
+    score: earnedScore + (isTargetHit ? snapshot.searchTarget * 3 : 0),
+    turns: resolveResult.turnUsed, lastMove: resolveResult, phase: 'playing' });
   let nextBoard = resolveResult.board;
   let nextPhase: NumberMergeGameSnapshot['phase'] = 'playing';
   let chainExpiresAt: number | null = null;
@@ -793,6 +803,7 @@ export const applyResolvedMove = (
       const failedState: NumberMergeGameSnapshot = {
         ...snapshot,
         board: nextBoard,
+        score: earnedScore,
         turns: resolveResult.turnUsed,
         combo: Math.max(snapshot.combo, resolveResult.comboCount + 1),
         passiveReadyTurn: resolveResult.nextPassiveReadyTurn,
@@ -805,6 +816,12 @@ export const applyResolvedMove = (
         lastOverseerEvent,
       };
 
+      if (preset.warningBeforePenalty && snapshot.warningCount + 1 < preset.missesBeforeLifeLoss) {
+        return withReachableGoal({ ...failedState, warningCount: snapshot.warningCount + 1,
+          turnsRemaining: getSearchWindowTurns(snapshot.difficulty, random),
+          lastOverseerEvent: { type: 'warning', description: 'First missed window: keep your heart and try again.', positions: [], corruptionDelta: 0 },
+          feedback: createFeedback('warning', 'A practice warning—no heart lost. The next missed window costs one heart.') }, random);
+      }
       return withReachableGoal(applyPenalty(
         failedState,
         `You missed target ${snapshot.searchTarget} before the search window closed.`,
@@ -839,6 +856,11 @@ export const applyResolvedMove = (
       ),
     }, random);
   }
+
+  if (snapshot.difficulty === 'easy') return withReachableGoal({ ...snapshot, board: nextBoard, score: earnedScore,
+    turns: resolveResult.turnUsed, lastMove: resolveResult, passiveReadyTurn: resolveResult.nextPassiveReadyTurn,
+    combo: Math.max(snapshot.combo, resolveResult.comboCount + 1),
+    feedback: createFeedback('neutral', `Keep trying for ${snapshot.searchTarget}. No time limit or lost hearts in Easy.`) }, random);
 
   const nextWarningCount = snapshot.warningCount + 1;
   if (preset.warningBeforePenalty && nextWarningCount < preset.missesBeforeLifeLoss) {

@@ -125,9 +125,6 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ tokens, coins, mpLifetim
             <span className={`text-amber-400 font-black text-lg flex items-center gap-1 transition-transform ${currencyPulse === 'tokens' ? 'animate-shop-spend' : ''}`}>
               {tokens} <img src="/assets/generated/final/icon_token.png" alt="" className="w-5 h-5 inline" style={{ imageRendering: 'pixelated' }} />
             </span>
-            <span className={`text-cyan-400 font-black text-lg flex items-center gap-1 transition-transform ${currencyPulse === 'coins' ? 'animate-shop-spend' : ''}`}>
-              {coins} <img src="/assets/generated/final/icon_coin.png" alt="" className="w-5 h-5 inline" style={{ imageRendering: 'pixelated' }} />
-            </span>
             <GameButton variant="secondary" size="sm" onClick={onClose}>✕</GameButton>
           </div>
         </div>

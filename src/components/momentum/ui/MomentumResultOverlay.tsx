@@ -1,3 +1,4 @@
+import { momentumTurnLimit } from '../../../config/momentumConfig';
 import type React from 'react';
 import type { ActiveMomentumState } from '../../../types/momentum';
 
@@ -23,8 +24,8 @@ export const MomentumResultOverlay: React.FC<MomentumResultOverlayProps> = ({ st
         <p className="text-slate-400 text-sm mb-4">
           {isVictory
             ? 'All enemies eliminated!'
-            : state.turnCount >= 50
-            ? 'Time ran out...'
+            : state.turnCount >= momentumTurnLimit(state.difficulty,state.mode)
+            ? 'Turn limit reached.'
             : 'Your forces were overwhelmed...'}
         </p>
 

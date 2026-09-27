@@ -10,7 +10,7 @@ import { getXPForLevel, checkEvolution } from '../services/game/evolutionEngine'
 import type { Pet } from '../types';
 import type { DailyGoals } from '../types/engine';
 
-const DAILY_MATH_GOAL = 3;
+const DAILY_MATH_GOAL = 5;
 const DAILY_BATTLE_GOAL = 1;
 
 interface PetHomeScreenProps {
@@ -126,7 +126,7 @@ export const PetHomeScreen: React.FC<PetHomeScreenProps> = ({
             </span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-300 flex items-center gap-1"><img src="/assets/generated/final/effect_hit.png" alt="" className="w-4 h-4 inline" style={{ imageRendering: 'pixelated' }} /> Win {DAILY_BATTLE_GOAL} battle</span>
+            <span className="text-slate-300 flex items-center gap-1"><img src="/assets/generated/final/effect_hit.png" alt="" className="w-4 h-4 inline" style={{ imageRendering: 'pixelated' }} /> Or 3 math + {DAILY_BATTLE_GOAL} battle win</span>
             <span className={`font-black ${battleDone >= DAILY_BATTLE_GOAL ? 'text-green-400' : 'text-slate-400'}`}>
               {battleDone}/{DAILY_BATTLE_GOAL}
             </span>

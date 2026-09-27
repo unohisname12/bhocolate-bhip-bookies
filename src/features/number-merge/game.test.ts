@@ -28,7 +28,7 @@ const createSnapshot = (
 });
 
 describe('number merge difficulty architecture', () => {
-  it('easy mode uses a short turn window and loses a heart on expiry', () => {
+  it('easy mode allows missed targets without losing hearts', () => {
     const board = createFilledBoard();
     board[5][0] = makeNumberTile('a', 2);
     board[5][1] = makeNumberTile('b', 3);
@@ -36,7 +36,7 @@ describe('number merge difficulty architecture', () => {
     const snapshot = {
       ...createSnapshot(board, 'easy'),
       searchTarget: 9,
-      turnsRemaining: 1,
+      turnsRemaining: null,
     };
 
     const resolved = resolveMove(snapshot, {
@@ -45,9 +45,9 @@ describe('number merge difficulty architecture', () => {
     }, () => 0);
 
     const next = applyResolvedMove(snapshot, resolved!, 1000, () => 0);
-    expect(next.lives).toBe(snapshot.lives - 1);
-    expect(next.turnsRemaining).toBe(2);
-    expect(next.feedback?.tone).toBe('warning');
+    expect(next.lives).toBe(snapshot.lives);
+    expect(next.turnsRemaining).toBeNull();
+    expect(next.score).toBeGreaterThan(snapshot.score);
   });
 
   it('leaves the moved-from spot empty after a normal merge', () => {
@@ -58,7 +58,7 @@ describe('number merge difficulty architecture', () => {
     const snapshot = {
       ...createSnapshot(board, 'easy'),
       searchTarget: 12,
-      turnsRemaining: 2,
+      turnsRemaining: null,
     };
 
     const resolved = resolveMove(snapshot, {
@@ -72,7 +72,7 @@ describe('number merge difficulty architecture', () => {
     expect(next.board[5][1]?.value).toBe(5);
   });
 
-  it('normal mode uses a fixed search window and penalizes expiry', () => {
+  it('normal mode gives a warning before losing a heart', () => {
     const board = createFilledBoard();
     board[5][0] = makeNumberTile('a', 2);
     board[5][1] = makeNumberTile('b', 3);
@@ -89,8 +89,13 @@ describe('number merge difficulty architecture', () => {
     }, () => 0);
 
     const next = applyResolvedMove(snapshot, resolved!, 1000, () => 0);
-    expect(next.lives).toBe(snapshot.lives - 1);
+    expect(next.lives).toBe(snapshot.lives);
     expect(next.turnsRemaining).toBe(2);
+    expect(next.warningCount).toBe(1);
+    expect(next.score).toBe(snapshot.score + resolved!.scoreDelta);
+    const penalized = applyResolvedMove({ ...snapshot, warningCount: 1 }, resolved!, 1000, () => 0);
+    expect(penalized.lives).toBe(snapshot.lives - 1);
+    expect(penalized.score).toBeGreaterThanOrEqual(snapshot.score + resolved!.scoreDelta);
   });
 
   it('hard mode opens a chain window and overseer strike injects corruption', () => {
@@ -141,7 +146,7 @@ describe('number merge difficulty architecture', () => {
     const snapshot = {
       ...createSnapshot(board, 'easy'),
       searchTarget: 9,
-      turnsRemaining: 2,
+      turnsRemaining: null,
       goalStars: 3,
     };
 
@@ -152,19 +157,19 @@ describe('number merge difficulty architecture', () => {
 
     const next = applyResolvedMove(snapshot, resolved!, 1000, () => 0);
     expect(resolved?.action).toBe('slide');
-    expect(next.turnsRemaining).toBe(2);
-    expect(next.board[5][0]).toBeNull();
+    expect(next.turnsRemaining).toBeNull();
+    expect(next.board.flat().filter(Boolean).length).toBeGreaterThan(1);
     expect(next.board[5][1]?.kind).toBe('number');
   });
 
-  it('rerolls an impossible goal and removes half a star', () => {
+  it('refills a stranded easy board without losing earned stars', () => {
     const board = createEmptyBoard();
     board[5][0] = makeNumberTile('a', 2);
 
     const snapshot = {
       ...createSnapshot(board, 'easy'),
       searchTarget: 9,
-      turnsRemaining: 2,
+      turnsRemaining: null,
       goalStars: 3,
     };
 
@@ -174,9 +179,23 @@ describe('number merge difficulty architecture', () => {
     }, () => 0);
 
     const next = applyResolvedMove(snapshot, resolved!, 1000, () => 0);
-    expect(next.goalStars).toBe(2.5);
+    expect(next.goalStars).toBe(3);
     expect(next.searchTarget).not.toBe(9);
-    expect(next.feedback?.message).toContain('Lost half a star');
+    expect(next.feedback?.message).toContain('safe');
+    expect(next.board.flat().every(Boolean)).toBe(true);
+  });
+
+
+  it('wins on any scoring merge and cannot award another win after completion', () => {
+    const board = createFilledBoard();
+    const snapshot = { ...createSnapshot(board, 'easy'), score: 249, searchTarget: 99 };
+    const resolved = resolveMove(snapshot, { from: { row: 0, col: 0 }, to: { row: 0, col: 1 } }, () => 0)!;
+    const won = applyResolvedMove(snapshot, resolved, 1000, () => 0);
+    expect(won.phase).toBe('won');
+    expect(won.score).toBeGreaterThanOrEqual(250);
+    expect(applyResolvedMove(won, resolved, 1001, () => 0)).toBe(won);
+    const lost = { ...snapshot, phase: 'lost' as const };
+    expect(applyResolvedMove(lost, resolved, 1001, () => 0)).toBe(lost);
   });
 
   it('collapse after an overseer strike keeps open cells instead of refilling', () => {

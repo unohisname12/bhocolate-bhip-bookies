@@ -1,22 +1,23 @@
 import type { EngineState } from '../core/EngineTypes';
 import { createDefaultInteractionState } from '../../types/interaction';
 import { CURRENT_SEASON } from '../../config/seasonConfig';
+import { DEFAULT_LEARNING } from '../../services/game/curriculum';
+import { createEggDiscovery } from '../../services/game/eggDiscovery';
 
 export const createInitialEngineState = (): EngineState => ({
+  economy: { version: 1, receipts: {}, careBonusDay: '', bonusDay: '', bonusAnswers: 0, pendingXP: 0, pendingBond: 0 },
+  learning: { ...DEFAULT_LEARNING },
   initialized: false,
   mode: 'normal',
-  screen: 'incubation',
+  screen: 'discovery',
   elapsedMs: 0,
   tickCount: 0,
   engineTime: 0,
   pet: null,
-  egg: {
-    id: `egg_${Date.now()}`,
-    type: 'basic',
-    state: 'incubating',
-    progress: 0,
-    createdAt: new Date().toISOString(),
-  },
+  companionRoster: [],
+  growthTrial: null,
+  eggDiscovery: createEggDiscovery(),
+  egg: null,
   player: {
     id: 'player_1',
     displayName: 'Player',

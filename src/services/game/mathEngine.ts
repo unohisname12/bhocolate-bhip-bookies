@@ -1,4 +1,5 @@
 import type { MathProblem } from '../../types';
+import { answerMatches } from './curriculum';
 
 export type MathProblemType = 'arithmetic' | 'comparison' | 'missing_number' | 'word_problem';
 
@@ -101,6 +102,7 @@ const generateMissingNumberProblem = (difficulty: number): { question: string; a
     a = answer + b;
     question = `${a} - _ = ${answer}`;
     hint = `Subtract: ${a} - ${answer}`;
+    answer = b;
   } else {
     b = Math.floor(Math.random() * (difficulty * 5)) + 2;
     answer = Math.floor(Math.random() * (difficulty * 5)) + 1;
@@ -155,7 +157,7 @@ export const generateMathProblem = (
 };
 
 export const checkAnswer = (problem: MathProblem, userAnswer: number): boolean =>
-  problem.answer === userAnswer;
+  answerMatches(userAnswer, problem.answer, problem.question);
 
 export const getAdaptiveDifficulty = (correctAnswers: number): number =>
   Math.min(5, Math.floor(correctAnswers / 10) + 1);

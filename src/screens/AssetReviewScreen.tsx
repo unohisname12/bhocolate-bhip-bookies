@@ -30,15 +30,17 @@ export const AssetReviewScreen: React.FC<AssetReviewScreenProps> = ({ onExit }) 
   const [showExportPanel, setShowExportPanel] = useState(false);
   const [noteInput, setNoteInput] = useState('');
   const [showContextPreview, setShowContextPreview] = useState(false);
+  const [curatedOnly, setCuratedOnly] = useState(true);
 
   // Filtered asset list
   const filteredAssets = useMemo(() => {
     return GENERATED_ASSETS.filter((a) => {
+      if (curatedOnly && a.isPreviewable !== true) return false;
       if (categoryFilter !== 'all' && a.category !== categoryFilter) return false;
       if (statusFilter !== 'all' && (reviews[a.id]?.status ?? 'unreviewed') !== statusFilter) return false;
       return true;
     });
-  }, [categoryFilter, statusFilter, reviews]);
+  }, [categoryFilter, statusFilter, reviews, curatedOnly]);
 
   const currentAsset = filteredAssets[currentIndex] ?? null;
   const currentReview = currentAsset ? reviews[currentAsset.id] : null;
@@ -240,6 +242,20 @@ export const AssetReviewScreen: React.FC<AssetReviewScreenProps> = ({ onExit }) 
       {/* Filters */}
       <div className="flex gap-2 px-4 py-2 bg-slate-800/50 border-b border-slate-700 overflow-x-auto">
         <div className="flex gap-1 items-center mr-2">
+          <button
+            onClick={() => { setCuratedOnly((v) => !v); setCurrentIndex(0); }}
+            className={`px-3 py-0.5 rounded text-xs font-black uppercase tracking-wider transition-colors ${
+              curatedOnly
+                ? 'bg-cyan-500 text-slate-900 ring-2 ring-cyan-300'
+                : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+            }`}
+            title="Toggle Curated showcase — when ON, only assets marked isPreviewable are shown"
+          >
+            {curatedOnly ? '★ Curated' : '☆ All Assets'}
+          </button>
+        </div>
+        <div className="w-px bg-slate-600 mx-1" />
+        <div className="flex gap-1 items-center mr-2">
           <span className="text-xs text-slate-500 uppercase font-bold">Cat:</span>
           <FilterButton active={categoryFilter === 'all'} onClick={() => { setCategoryFilter('all'); setCurrentIndex(0); }}>All</FilterButton>
           {ASSET_CATEGORIES.map((cat, i) => (
@@ -308,6 +324,17 @@ export const AssetReviewScreen: React.FC<AssetReviewScreenProps> = ({ onExit }) 
 
               {/* Asset info */}
               <div className="text-center space-y-1">
+                {currentAsset.group && (
+                  <div className="flex items-center justify-center gap-2 text-xs">
+                    <span className="px-2 py-0.5 rounded-full bg-cyan-900 text-cyan-300 font-bold">{currentAsset.group}</span>
+                    {currentAsset.direction && (
+                      <span className="px-2 py-0.5 rounded-full bg-purple-900 text-purple-300 font-bold">{currentAsset.direction}</span>
+                    )}
+                    {currentAsset.state && (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-900 text-amber-300 font-bold">{currentAsset.state}</span>
+                    )}
+                  </div>
+                )}
                 <h2 className="text-lg font-black text-slate-100">{currentAsset.id}</h2>
                 <p className="text-xs text-slate-500 font-mono">{currentAsset.path}</p>
                 <p className="text-xs text-slate-400">{currentAsset.width}x{currentAsset.height} — {CATEGORY_LABELS[currentAsset.category]}</p>
@@ -353,6 +380,14 @@ export const AssetReviewScreen: React.FC<AssetReviewScreenProps> = ({ onExit }) 
                   Next →
                 </button>
               </div>
+
+              {/* Fix pipeline — visible when status is 'fix' */}
+              {currentReview?.status === 'fix' && (
+                <FixPipelineBar
+                  assetId={currentAsset.id}
+                  assetPath={currentAsset.path}
+                />
+              )}
 
               {/* Note input */}
               <div className="flex gap-2 w-full max-w-md">
@@ -538,6 +573,168 @@ function ContextBox({ label, bg, children }: { label: string; bg: string; childr
         {children}
       </div>
       <span className="text-[10px] text-slate-500">{label}</span>
+    </div>
+  );
+}
+
+/** Fix pipeline controls — open the current asset in Aseprite, download the
+ *  edited copy, or commit edits back over the original (with auto-backup). */
+function FixPipelineBar({ assetId, assetPath }: { assetId: string; assetPath: string }) {
+  const [inboxInfo, setInboxInfo] = useState<{ exists: boolean; mtime?: number; size?: number; inboxPath?: string } | null>(null);
+  const [flash, setFlash] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const refreshStatus = useCallback(async () => {
+    try {
+      const r = await fetch(`/__fix/status?id=${encodeURIComponent(assetId)}`);
+      setInboxInfo(await r.json());
+    } catch {
+      setInboxInfo({ exists: false });
+    }
+  }, [assetId]);
+
+  useEffect(() => { refreshStatus(); }, [refreshStatus]);
+
+  const showFlash = (msg: string) => {
+    setFlash(msg);
+    setTimeout(() => setFlash(null), 3500);
+  };
+
+  const openInEditor = async () => {
+    setBusy(true);
+    try {
+      const r = await fetch('/__fix/open', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: assetId, path: assetPath }),
+      });
+      const body = await r.json();
+      if (!r.ok) throw new Error(body.error ?? 'failed');
+      showFlash(`Launched editor → ${body.inboxPath}`);
+      await refreshStatus();
+    } catch (e: any) {
+      showFlash(`Error: ${e.message}`);
+    } finally { setBusy(false); }
+  };
+
+  const openFolder = async () => {
+    setBusy(true);
+    try {
+      const r = await fetch('/__fix/open-folder', { method: 'POST' });
+      const body = await r.json();
+      if (!r.ok) throw new Error(body.error ?? 'failed');
+      showFlash(`Opened folder → ${body.folder}`);
+    } catch (e: any) {
+      showFlash(`Error: ${e.message}`);
+    } finally { setBusy(false); }
+  };
+
+  const downloadEdited = async () => {
+    setBusy(true);
+    try {
+      const r = await fetch(`/__fix/download?id=${encodeURIComponent(assetId)}`);
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${r.status}`);
+      }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${assetId}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showFlash('Downloaded edited file');
+    } catch (e: any) {
+      showFlash(`Error: ${e.message}`);
+    } finally { setBusy(false); }
+  };
+
+  const commitEdit = async () => {
+    if (!window.confirm(`Commit edited version of "${assetId}" over the original at ${assetPath}?\n\nThe original will be auto-backed-up to public/assets/_fix_inbox/_backups/ before overwriting.`)) return;
+    setBusy(true);
+    try {
+      const r = await fetch('/__fix/commit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: assetId, path: assetPath }),
+      });
+      const body = await r.json();
+      if (!r.ok) throw new Error(body.error ?? 'failed');
+      showFlash(`✅ Committed over original. Backup: ${body.backup}`);
+    } catch (e: any) {
+      showFlash(`Error: ${e.message}`);
+    } finally { setBusy(false); }
+  };
+
+  const inboxMtime = inboxInfo?.mtime ? new Date(inboxInfo.mtime).toLocaleString() : null;
+
+  return (
+    <div className="w-full max-w-xl bg-amber-950/60 border border-amber-700 rounded-xl p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-black text-amber-300 uppercase tracking-wider">Fix Pipeline</h3>
+        <div className="text-xs">
+          {inboxInfo?.exists ? (
+            <span className="text-green-400 font-bold">● Inbox file ready</span>
+          ) : (
+            <span className="text-slate-500">○ No edits yet</span>
+          )}
+        </div>
+      </div>
+
+      {inboxInfo?.exists && inboxInfo.inboxPath && (
+        <div className="text-xs text-slate-400 font-mono truncate">
+          <span className="text-slate-500">WIP:</span> {inboxInfo.inboxPath}
+          {inboxMtime && <span className="text-slate-500 ml-2">({inboxMtime})</span>}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={openInEditor}
+          disabled={busy}
+          className="px-3 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 rounded-lg font-bold text-sm text-white"
+          title="Copies asset to _fix_inbox (if not there) and opens in Aseprite"
+        >
+          🎨 Open in Aseprite
+        </button>
+        <button
+          onClick={refreshStatus}
+          disabled={busy}
+          className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 rounded-lg font-bold text-sm"
+        >
+          🔄 Refresh status
+        </button>
+        <button
+          onClick={downloadEdited}
+          disabled={busy || !inboxInfo?.exists}
+          className="px-3 py-2 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-40 rounded-lg font-bold text-sm"
+          title="Download the edited file to your browser's download folder"
+        >
+          💾 Download edited
+        </button>
+        <button
+          onClick={openFolder}
+          disabled={busy}
+          className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 rounded-lg font-bold text-sm"
+          title="Open the _fix_inbox folder in your file manager"
+        >
+          📂 Open fix folder
+        </button>
+      </div>
+
+      <button
+        onClick={commitEdit}
+        disabled={busy || !inboxInfo?.exists}
+        className="w-full px-3 py-2 bg-green-700 hover:bg-green-600 disabled:opacity-40 rounded-lg font-black text-sm text-white"
+        title="Overwrite the original asset with your edited version (auto-backs up original first)"
+      >
+        ✅ Commit edit → original (auto-backup)
+      </button>
+
+      {flash && (
+        <div className="text-xs text-amber-200 bg-amber-900/50 rounded px-2 py-1">{flash}</div>
+      )}
     </div>
   );
 }

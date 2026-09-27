@@ -12,16 +12,17 @@ const daysBetween = (a: string, b: string): number => {
 export const checkLoginStreak = (
   player: PlayerProfile,
   now: number,
+  schoolSafe = false,
 ): { streak: number; isNewDay: boolean; reward: number } => {
   const todayStr = toDateString(now);
   const lastStr = player.lastLoginDate ?? '';
 
-  if (!lastStr || lastStr === todayStr) {
+  if (lastStr === todayStr) {
     return { streak: player.streaks.login, isNewDay: false, reward: 0 };
   }
 
-  const diff = daysBetween(lastStr, todayStr);
-  const streak = diff === 1 ? player.streaks.login + 1 : 1;
+  const diff = lastStr ? daysBetween(lastStr, todayStr) : 0;
+  const streak = schoolSafe || diff === 1 ? player.streaks.login + 1 : 1;
   const dayIndex = Math.min(streak - 1, DAILY_REWARDS.length - 1);
   const reward = DAILY_REWARDS[dayIndex];
 

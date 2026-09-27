@@ -32,10 +32,10 @@ export const PowerForgeScreen: React.FC<PowerForgeScreenProps> = ({
       </div>
 
       <div className="rounded-2xl bg-slate-800/70 border border-slate-700 p-3 mb-5 text-center">
-        <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-0.5">Math Points</div>
+        <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-0.5">Power</div>
         <div className="text-2xl font-black text-cyan-300">{mp}</div>
         <p className="text-[11px] text-slate-500 mt-1">
-          MP earned from every math question. Spend it here on permanent pet buffs.
+          Power comes from every math question you solve. Spend it here on permanent upgrades for your pet.
         </p>
       </div>
 
@@ -80,7 +80,7 @@ export const PowerForgeScreen: React.FC<PowerForgeScreenProps> = ({
                       : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                 }`}
               >
-                {maxed ? 'Maxed' : `${cost} MP`}
+                {maxed ? 'Maxed' : `${cost} Power`}
               </button>
             </div>
           );

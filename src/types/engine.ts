@@ -51,7 +51,37 @@ export interface MailboxState {
   totalClaimed: number;       // lifetime count (for scaling rewards)
 }
 
+export interface EconomyProgress {
+  version: number;
+  receipts: { [questionId: string]: number };
+  careBonusDay: string;
+  bonusDay: string;
+  bonusAnswers: number;
+  pendingXP: number;
+  pendingBond: number;
+}
+
 export interface EngineState {
+  economy?: EconomyProgress;
+  activityRoute?: 'delivery' | 'arcade-dash' | 'arcade-guard' | 'arcade-cafe' | 'arcade-shop' | '';
+  practiceCheckpoint?: { problem: import('./index').MathProblem; correct: boolean | null; completed: number };
+
+  arcade?: import('../features/arcade/model').ArcadeProgress;
+  firstAdventure?: import('../features/first-adventure/model').FirstAdventure;
+  homeBase?: import('../features/home-base/model').HomeBase;
+  prizes?: import('../features/clash/rewards').PrizeProgress;
+  /** Save ownership for this loaded profile, independent of other browser tabs. */
+  learnerProfileId?: string;
+  /** Ephemeral developer playground; never persisted as player progress. */
+  devPreview?: boolean;
+  /** Inactive companions only; active pet remains canonical in `pet`. */
+  companionRoster?: Pet[];
+  growthTrial?: import('./growth').GrowthTrial | null;
+  eggDiscovery?: import('./discovery').EggDiscovery | null;
+  learning: import('../services/game/curriculum').LearningSettings;
+  skillReviews?: import('./woodland').SkillReview[];
+  learningEvidence?: import('./woodland').LearningEvidence[];
+  woodland?: import('./woodland').WoodlandChapter;
   initialized: boolean;
   mode: EngineMode;
   screen: ScreenName; // ScreenName defined in types/session.ts

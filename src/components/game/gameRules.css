@@ -1,0 +1,9 @@
+.game-rules{max-width:100%;margin:8px 0;color:inherit;text-align:left;}
+.game-rules>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;width:fit-content;border:1px solid #94a3b866;border-radius:9px;padding:8px 12px;font-size:14px;font-weight:700;background:#64748b18;}
+.game-rules>summary:focus-visible{outline:3px solid #fbbf24;outline-offset:3px;}
+.game-rules-hide{display:none;}
+.game-rules[open]>summary>.game-rules-show{display:none;}
+.game-rules[open]>summary>.game-rules-hide{display:inline;}
+.game-rules-content{padding:10px 0;}
+
+.game-rules-close{min-height:44px;padding:8px 12px;margin-top:12px;border:1px solid #94a3b866;border-radius:9px;font-weight:700;}

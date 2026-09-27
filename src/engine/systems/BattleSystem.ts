@@ -1,3 +1,4 @@
+import { ENEMIES, ENEMY_IDS, isEnemy, enemyMoves } from '../../config/enemyConfig';
 import type { Pet } from '../../types';
 import type {
   ActiveBattleState,
@@ -11,6 +12,7 @@ import { hasAnyMathBuffs } from '../../config/mathBuffConfig';
 import { computeForgeBonuses, type PowerForgeState } from '../../config/powerForgeConfig';
 import type { ClassmateProfile } from '../../types/classroom';
 import { SPECIES_MOVES, BATTLE_CONSTANTS, ENEMY_SCALING, SPECIES_BASE_STATS, STAGE_MULTIPLIERS, MOOD_HINT_MULTIPLIERS } from '../../config/battleConfig';
+import { evolutionMoves, petVisualKey } from '../../config/companionConfig';
 import { SPECIES_CONFIG } from '../../config/speciesConfig';
 import { TRACE_TIER_MULTIPLIERS } from '../../config/traceConfig';
 import { selectEnemyMove, selectEnemyIntent } from './BattleAI';
@@ -37,17 +39,17 @@ export const applyMathBuffsToBattle = (
   buffs: MathBuffs,
 ): ActiveBattleState => {
   if (!hasAnyMathBuffs(buffs)) {
-    // Math-gate #1: untrained — player deals reduced damage until they earn any buff.
+    // Practice adds bonuses; skipping practice never subtracts normal damage.
     return {
       ...battle,
-      untrained: true,
+      untrained: false,
       log: [
         ...battle.log,
         {
           turn: 0,
           actor: 'player',
           action: 'math_prep',
-          message: 'Untrained: no Math Prep applied. Damage reduced.',
+          message: 'Ready for battle. Math practice can add a bonus next time!',
         },
       ],
     };
@@ -122,7 +124,7 @@ export const getPetReadiness = (pet: import('../../types').Pet): number => {
 };
 
 const getMoves = (speciesId: string): BattleMove[] =>
-  SPECIES_MOVES[speciesId] ?? SPECIES_MOVES.default;
+  isEnemy(speciesId) ? enemyMoves(speciesId) : SPECIES_MOVES[speciesId] ?? SPECIES_MOVES.default;
 
 export const petToBattlePet = (pet: Pet, needModifiers = true): BattlePet => {
   let strengthMod = 1.0;
@@ -141,7 +143,7 @@ export const petToBattlePet = (pet: Pet, needModifiers = true): BattlePet => {
   return {
     petId: pet.id,
     name: pet.name,
-    speciesId: pet.speciesId,
+    speciesId: petVisualKey(pet),
     level: pet.progression.level,
     maxHP,
     currentHP: maxHP,
@@ -150,43 +152,15 @@ export const petToBattlePet = (pet: Pet, needModifiers = true): BattlePet => {
     strength: Math.max(10, Math.floor(pet.stats.strength * strengthMod * (1 + pet.progression.level * 0.15))),
     speed: Math.max(10, Math.floor(pet.stats.speed * speedMod * (1 + pet.progression.level * 0.15))),
     defense: Math.max(8, Math.floor(pet.stats.defense * (1 + pet.progression.level * 0.12))),
-    moves: getMoves(pet.speciesId),
+    moves: evolutionMoves(pet, getMoves(pet.speciesId)),
     buffs: [],
   };
 };
 
 const generateEnemyPet = (playerLevel: number): BattlePet => {
   const level = Math.max(1, playerLevel + Math.floor((Math.random() - 0.5) * ENEMY_SCALING.levelVariance * 2));
-  const speciesIds = ['slime_baby', 'mech_bot', 'koala_sprite'];
-  const speciesId = speciesIds[Math.floor(Math.random() * speciesIds.length)];
-
-  // Use species base stats + level scaling (same approach as PvP)
-  const speciesBase = SPECIES_BASE_STATS[speciesId] ?? { str: 10, spd: 10, def: 10 };
-  const levelScale = 1 + level * 0.15;
-  const str = Math.floor(speciesBase.str * levelScale * ENEMY_SCALING.statMultiplier);
-  const spd = Math.floor(speciesBase.spd * levelScale * ENEMY_SCALING.statMultiplier);
-  const def = Math.floor(speciesBase.def * levelScale * ENEMY_SCALING.statMultiplier);
-
-  // HP uses same formula as player: base health value * multiplier
-  // Enemy "health" is 70 + level*8 (capped at 100), so HP lands in 150-250 range
-  const healthValue = Math.min(100, 70 + level * 8);
-  const maxHP = Math.max(1, Math.floor(healthValue * BATTLE_CONSTANTS.baseHPMultiplier));
-
-  return {
-    petId: `enemy_${Date.now()}`,
-    name: `Wild ${SPECIES_CONFIG[speciesId]?.name ?? speciesId}`,
-    speciesId,
-    level,
-    maxHP,
-    currentHP: maxHP,
-    energy: BATTLE_CONSTANTS.startingEnergy,
-    maxEnergy: BATTLE_CONSTANTS.maxEnergy,
-    strength: str,
-    speed: spd,
-    defense: def,
-    moves: getMoves(speciesId),
-    buffs: [],
-  };
+  const id = ENEMY_IDS[Math.floor(Math.random() * ENEMY_IDS.length)];
+  return { ...speciesIdToBattlePet(id, level), petId: `enemy_${id}_${Date.now()}` };
 };
 
 /**
@@ -194,7 +168,7 @@ const generateEnemyPet = (playerLevel: number): BattlePet => {
  * Used by the DEV pre-combat character picker.
  */
 export const speciesIdToBattlePet = (speciesId: string, level = 5): BattlePet => {
-  const species = SPECIES_CONFIG[speciesId];
+  const species = isEnemy(speciesId) ? { name: ENEMIES[speciesId].name, baseStats: ENEMIES[speciesId].stats } : SPECIES_CONFIG[speciesId];
   if (!species) {
     console.warn(`Missing species config for "${speciesId}" — using koala_sprite`);
     return speciesIdToBattlePet('koala_sprite', level);
@@ -433,7 +407,9 @@ export const executePlayerMove = (battle: ActiveBattleState, moveId: string): Ac
   let combo = battle.combo;
 
   if (move.type === 'defend') {
-    player = applyDefend(player);
+    player = move.id.startsWith('growth_')
+      ? { ...player, buffs: [...player.buffs, { stat: 'defense', multiplier: 1 + move.power / 100, turnsRemaining: 2 }] }
+      : applyDefend(player);
     player = { ...player, energy: Math.min(player.maxEnergy, player.energy + BATTLE_CONSTANTS.defenseEnergyGain) };
     combo = incrementCombo(combo, move.id);
     message = `${player.name} takes a defensive stance!`;
@@ -446,9 +422,8 @@ export const executePlayerMove = (battle: ActiveBattleState, moveId: string): Ac
     message = `${player.name} healed for ${healAmt} HP!`;
   } else {
     const result = calcDamage(player, enemy, move, battle.mathBuffActive, battle.traceBuffs, combo);
-    // Math-gate #1: untrained players (zero math buffs at battle start) deal reduced damage.
-    const untrainedFloor = battle.untrained ? 0.6 : 1.0;
-    const finalDamage = result.damage === 0 ? 0 : Math.max(1, Math.floor(result.damage * untrainedFloor));
+    // Preserve normal damage even for older saves carrying the legacy untrained flag.
+    const finalDamage = result.damage === 0 ? 0 : Math.max(1, Math.floor(result.damage));
     enemy = { ...enemy, currentHP: clampHP(enemy.currentHP - finalDamage) };
     if (finalDamage === 0) {
       // Miss resets combo

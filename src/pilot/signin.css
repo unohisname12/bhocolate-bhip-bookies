@@ -1,0 +1,18 @@
+.pilot-shell.signin-shell{background:#f5f5f7;color:#1d1d1f;font-family:-apple-system,BlinkMacSystemFont,Inter,sans-serif}
+.signin-shell>.pilot-card{background:#fff;color:#1d1d1f;border:1px solid #e5e5ea;border-radius:28px;box-shadow:0 16px 60px #00000006;padding:40px;max-width:540px}
+.signin-shell .pilot-card h1{font-size:38px;letter-spacing:-.045em;font-weight:700;line-height:1.1}
+.signin-shell .pilot-card p{color:#606068}.signin-shell .pilot-eyebrow{color:#0066cc!important}
+.signin-shell .pilot-card input{background:#fafafa;color:#1d1d1f;border:1px solid #c7c7ce;font-size:18px;min-height:52px}
+.signin-shell .pilot-card button{background:#f5f5f7;color:#1d1d1f;border:1px solid #dedee3;border-radius:12px;min-height:48px}
+.signin-shell .pilot-card .pilot-primary{background:#0066cc;color:white;border:0;box-shadow:none;width:100%;font-size:17px}
+.signin-shell .pilot-card .signin-show{flex-direction:row;align-items:center;font-size:14px;font-weight:400}
+.signin-shell .pilot-card input[type=checkbox]{width:20px;min-height:20px;accent-color:#0066cc}
+.signin-shell .pilot-card :focus-visible{outline:3px solid #0071e3;outline-offset:3px}
+.signin-shell .pilot-welcome>img{width:72px;height:72px;margin-left:12px}
+.signin-shell .pilot-link{margin:16px 0}.signin-shell [role=alert]:empty{display:none}
+.signin-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin:15px 0;break-inside:avoid}
+.signin-card img{width:200px;height:200px;max-width:100%;object-fit:contain;background:white;image-rendering:pixelated}
+.signin-card a{color:#0066cc;text-decoration:underline;overflow-wrap:anywhere}.signin-card small{line-height:1.5}
+@media(max-width:540px){.signin-shell{padding:20px 16px}.signin-shell>.pilot-card{padding:26px 22px}.signin-shell .pilot-card h1{font-size:32px}}
+@media print{.signin-card img{width:160px;height:160px}.signin-card a,.signin-card [role=status]{display:none}}
+.signin-tab-notice{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:30000;width:min(94vw,700px);padding:18px;display:flex;flex-wrap:wrap;align-items:center;gap:15px;background:#fff;color:#1d1d1f;border:1px solid #b5cfee;border-radius:16px;box-shadow:0 8px 30px #0002}.signin-tab-notice a{color:#0066cc;text-decoration:underline;font-weight:600}.signin-tab-notice button{padding:8px;background:#f5f5f7;border:1px solid #ddd;border-radius:8px}

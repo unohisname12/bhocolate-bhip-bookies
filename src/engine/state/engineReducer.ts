@@ -1,3 +1,15 @@
+import { TOKENS_PER_COIN } from '../../services/game/wallet';
+import { ECONOMY, freshEconomy, rewardMath, claimPendingGrowth, awardDailyGoal } from '../../services/game/economy';
+import { updateReviews } from '../../features/learning/review';
+import { validEvidence } from '../../services/game/validWoodland';
+import { checkAnswer as checkPrediction } from '../../services/game/mathEngine';
+import { observeDiscoveryActivity } from '../../services/game/discoveryActivity';
+import { useEarlyHatchPass as consumeEarlyHatchPass, grantTeacherGift } from '../../features/clash/teacherGifts';
+import { reduceArcade, observeArcade } from '../../features/arcade/model';
+import { reduceFirstAdventure, observeFirstAdventure } from '../../features/first-adventure/model';
+import { observeCare, reduceMind } from '../../features/pet-mind/memory';
+import { reduceHomeBase } from '../../features/home-base/model';
+import { reducePrizes, awardTransitions } from '../../features/clash/rewards';
 import { applyPetDecay, applyPetFeed, applyPetClean, applyPetPlay, applyMoodBoost } from '../systems/PetNeedSystem';
 import { evaluatePetMood } from '../systems/MoodSystem';
 import { addItem, removeItem } from '../systems/InventorySystem';
@@ -6,20 +18,21 @@ import { checkAchievements } from '../systems/AchievementSystem';
 import { initBattle, initBattleWithSpecies, initPvPBattle, executePlayerMove, executeEnemyTurn, resolveRound, executeFocus, executeDefendAction, attemptFlee, applyMathBuffsToBattle, applyPowerForgeToBattle } from '../systems/BattleSystem';
 import { EMPTY_MATH_BUFFS } from '../../config/mathBuffConfig';
 import { BATTLE_CONSTANTS } from '../../config/battleConfig';
-import { checkLoginStreak, updateMathStreak, updateMastery } from '../systems/StreakSystem';
+import { checkLoginStreak } from '../systems/StreakSystem';
 import { generateClassroom, refreshNPCClassmates } from '../systems/ClassroomSimulator';
 import { canChallenge, calculateTokenStake, updateMatchupTracker } from '../systems/MatchmakingSystem';
 import { shouldMintTrophy, createTrophy } from '../systems/TrophySystem';
 import { createTestEngineState } from './createTestEngineState';
-import { initMomentum, selectPiece, deselectPiece, beginMove, applyFlashChoice, skipTurn, advanceAfterAnimation } from '../systems/MomentumSystem';
+import { tacticalAction, initMomentum, selectPiece, deselectPiece, beginMove, applyFlashChoice, skipTurn, advanceAfterAnimation } from '../systems/MomentumSystem';
 import { selectAIAction } from '../systems/MomentumAI';
-import { interactWithEgg, hatchEgg, addXP, evolvePet, checkEvolution } from '../../services/game/evolutionEngine';
+import { interactWithEgg, hatchEgg, addXP } from '../../services/game/evolutionEngine';
+import { careDate, careProgress, recordCare } from '../../services/game/petGrowth';
+import { reduceGrowth } from '../systems/GrowthSystem';
+import { reduceDiscovery } from '../systems/DiscoverySystem';
 import { REWARD_CONFIG } from '../../config/rewardConfig';
 import { PVP_CONFIG } from '../../config/pvpConfig';
 import { EGG_CONFIG, CARE_ACTIONS, HINT_COST } from '../../config/gameConfig';
 import { SHOP_ITEMS } from '../../config/shopConfig';
-import { MP_EARN } from '../../config/mpConfig';
-import { MATH_BUFF_PER_CORRECT, addMathBuffs } from '../../config/mathBuffConfig';
 import { startRun, startRunBattle, handleRunVictory, handleRunDefeat, selectRunReward, endRun, selectMapNode, handleRestLight, handleRestStabilize, handleRestFortify, handleEventChoice } from '../systems/RunSystem';
 import { applyTurnStartEffects, applyPostPlayerAttack, applyPostEnemyAttack, applyFortifiedReduction, checkPhaseShift } from '../systems/RunPassiveEffects';
 import { createCombatFeelState, afterPlayerAttack as cfAfterPlayerAttack, afterEnemyAttack as cfAfterEnemyAttack, onTurnStart as cfOnTurnStart, afterTrace as cfAfterTrace, shouldTriggerCollapse, triggerCollapse, resolveCollapse, applyReflect } from '../systems/CombatFeelSystem';
@@ -34,9 +47,21 @@ import { getCareToolById } from '../../config/careToolConfig';
 import { rollQuestsIfNeeded, progressOnEvent as questProgressOnEvent, progressOnSnapshot as questProgressOnSnapshot, claimQuest } from '../systems/QuestSystem';
 import { claimTier as claimSeasonTier } from '../systems/SeasonSystem';
 import { gachaPull, gachaCraftWithShards, equipCosmetic, unequipSlot } from '../systems/GachaSystem';
-import { POWER_FORGE_UPGRADES, nextForgeCost, computeForgeBonuses } from '../../config/powerForgeConfig';
+import { POWER_FORGE_UPGRADES, nextForgeCost } from '../../config/powerForgeConfig';
 import { markSeen as dexMarkSeen, markOwned as dexMarkOwned } from '../systems/DexSystem';
 import type { GameEventType } from '../../types/events';
+import { applyLearningSettings } from '../../services/game/applyLearningSettings';
+import { recordLearning } from '../../services/game/learningEvidence';
+import { applyDiscoveryBond } from '../../services/game/discoveryBond';
+import { reduceWoodland, bridgeDelivery } from '../systems/WoodlandSystem';
+import { earnedTitles, resolvePetName } from '../../features/pet-identity/model';
+import { observeLife } from '../../features/pet-mind/life';
+import { COMPANIONS, isCompanion } from '../../config/companionConfig';
+import type { Pet } from '../../types';
+
+// A favorite is a small nudge toward bonding, not a reason to skip other care.
+const FAVORITE_BOND = 1;
+const speciesName = (id: string) => isCompanion(id) ? COMPANIONS[id].name : 'Companion';
 
 const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -76,10 +101,10 @@ const deductTokens = (state: EngineState, cost: number): EngineState => ({
 const canAfford = (state: EngineState, cost: number): boolean =>
   state.player.currencies.tokens >= cost;
 
-const logEvent = (state: EngineState, eventType: string, payload?: Record<string, unknown>): EngineState => {
+const logEvent = (state: EngineState, eventType: GameEventType, payload?: Record<string, unknown>): EngineState => {
   const event = {
     id: `evt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    type: eventType as import('../../types').GameEventType,
+    type: eventType,
     playerId: state.player.id,
     petId: state.pet?.id,
     payload: payload ?? {},
@@ -90,7 +115,7 @@ const logEvent = (state: EngineState, eventType: string, payload?: Record<string
   const afterAchievements = checkAchievements(withEvent).state;
   // Quest progress hook: increment any active quest targeting this event,
   // then re-evaluate snapshot quests (bond/level/streak/distinct-*).
-  const afterQuestEvent = questProgressOnEvent(afterAchievements, eventType as GameEventType);
+  const afterQuestEvent = questProgressOnEvent(afterAchievements, eventType);
   return questProgressOnSnapshot(afterQuestEvent);
 };
 
@@ -124,14 +149,88 @@ const earnTicket = (state: EngineState, source: BattleTicket['source']): EngineS
   return logEvent(result, 'ticket_earned', { source });
 };
 
+/** All care entrances share day, quest and ticket credit. */
+const creditCare = (state: EngineState, task: 'feed' | 'clean' | 'play', payload?: Record<string, unknown>): EngineState => {
+  if (!state.pet) return state;
+  const beforeDays = careProgress(state.pet).days;
+  let pet = recordCare(state.pet, task);
+  const economy = state.economy ?? freshEconomy();
+  const careBonus = careProgress(pet).days > beforeDays && state.learning.schoolSafe !== false && economy.careBonusDay !== careDate();
+  if (careBonus) pet = addXP(pet, ECONOMY.careDayXP);
+  const before = state.battleTickets.careActionsToday;
+  const flags = { ...before, [task === 'feed' ? 'fed' : task === 'clean' ? 'cleaned' : 'played']: true };
+  let next: EngineState = { ...state, pet, economy: careBonus ? { ...economy, careBonusDay: careDate() } : economy, battleTickets: { ...state.battleTickets, careActionsToday: flags } };
+  if (!(before.fed && before.cleaned && before.played) && flags.fed && flags.cleaned && flags.played) next = earnTicket(next, 'care');
+  if (next.woodland?.phase === 'care') next = { ...next, woodland: { ...next.woodland, phase: 'reward' } };
+  return logEvent(next, task === 'feed' ? 'pet_fed' : task === 'clean' ? 'pet_cleaned' : 'pet_played_with', payload);
+};
+
 // Pet is "battle ready" if core needs are above 40
 const isPetBattleReady = (pet: import('../../types').Pet): boolean =>
   pet.needs.hunger >= 40 && pet.needs.happiness >= 40 && pet.needs.health >= 40;
 
-export const engineReducer = (state: EngineState, action: GameEngineAction): EngineState => {
+const reduceEngine = (state: EngineState, action: GameEngineAction): EngineState => {
+  const woodlandState = reduceWoodland(state, action);
+  if (woodlandState) return action.type === 'ANSWER_BRIDGE_QUESTION' && woodlandState.woodland?.index !== state.woodland?.index ? logEvent(woodlandState, 'math_solved') : woodlandState;
+  const discoveryState = reduceDiscovery(state, action);
+  if (discoveryState) return discoveryState.player.lifetimeMathCorrect > state.player.lifetimeMathCorrect ? logEvent(discoveryState, 'math_solved') : discoveryState;
+  let growthState = reduceGrowth(state, action);
+  if (growthState && growthState.player.lifetimeMathCorrect > state.player.lifetimeMathCorrect) growthState = logEvent(growthState, 'math_solved');
+  if (growthState) return state.pet && growthState.pet && state.pet.stage !== growthState.pet.stage
+    ? logEvent(growthState, 'pet_evolved', { stage: growthState.pet.stage }) : growthState;
   switch (action.type) {
+    case 'SYNC_CLASSROOM_ALIAS':
+      return { ...state, player: { ...state.player, displayName: action.alias } };
+    case 'SET_PET_IDENTITY': {
+      if (!state.pet) return state;
+      const identity = { ...state.pet.identity, ...action.patch };
+      if (identity.title && !earnedTitles(state.player.lifetimeMathCorrect, state.skillReviews).includes(identity.title)) return state;
+      if (identity.nameSource === 'typed' && !action.approvedName && state.pet.identity?.nameSource !== 'typed') return state;
+      const approved = action.approvedName ?? (state.pet.identity?.nameSource === 'typed' ? state.pet.name : null);
+      return { ...state, pet: { ...state.pet, identity, name: resolvePetName(identity, speciesName(state.pet.speciesId), approved) } };
+    }
+    case 'SYNC_APPROVED_PET_NAMES': {
+      const sync = (p: Pet): Pet => p.identity?.nameSource !== 'typed' ? p : { ...p, name: resolvePetName(p.identity, speciesName(p.speciesId), action.names[p.id]) };
+      const pet = state.pet && sync(state.pet), roster = (state.companionRoster ?? []).map(sync);
+      if (pet?.name === state.pet?.name && roster.every((p, i) => p.name === state.companionRoster?.[i]?.name)) return state;
+      return { ...state, pet, ...(state.companionRoster ? { companionRoster: roster } : {}) };
+    }
+    case 'SET_LEARNING_SETTINGS':
+      return applyLearningSettings(state, action.settings);
     case 'START_ENGINE':
-      return { ...state, initialized: true };
+      return { ...rollQuestsIfNeeded(state), initialized: true };
+    case 'RECORD_LEARNING_ATTEMPT':
+      return rewardMath(state, action.problem, action.correct, action.source);
+    case 'RECORD_GAME_PREDICTION':
+      return recordLearning(state,action.problem,action.problem.context ?? 'game-plan',checkPrediction(action.problem,action.answer));
+    case 'SYNC_DELIVERY_EVIDENCE': {
+      if(!validEvidence(action.rows))return state;
+      let next=state;
+      for(const row of action.rows) {
+        const old=next.learningEvidence?.find(r=>r.questionId===row.questionId);
+        if(row.source!=='delivery' || old && old.updatedAt>=row.updatedAt)continue;
+        next={...next,learningEvidence:[...(next.learningEvidence??[]).filter(r=>r.questionId!==row.questionId),row].sort((a,b)=>a.updatedAt-b.updatedAt).slice(-200),
+          skillReviews:old?.correct?next.skillReviews:updateReviews(next.skillReviews??[],row,row.updatedAt)};
+      }
+      return next;
+    }
+    case 'RECORD_LEARNING_HELP':
+      return recordLearning(state, action.problem, 'help', undefined, action.support);
+    case 'RECORD_MINI_LESSON_HELP':
+      if (!action.problem.id.startsWith('mini:')) return state;
+      return recordLearning(state, { ...action.problem, context: 'mini-lesson' }, 'mini-lesson', undefined, 'explanation');
+    case 'RECORD_MINI_LESSON_ATTEMPT': {
+      if (!action.problem.id.startsWith('mini:') || !Number.isFinite(action.problem.answer)) return state;
+      const problem = { ...action.problem, context: 'mini-lesson' }, support = action.revealed ? 'explanation' : 'hint';
+      const supported = recordLearning(state, problem, 'mini-lesson', undefined, support);
+      return recordLearning(supported, problem, 'mini-lesson', action.correct, support);
+    }
+    case 'COMPLETE_MINI_LESSON': {
+      // Supported practice only: no currency, qualification, or underlying game move.
+      const ids = new Set(action.attempts.map(a => a.problem.id));
+      if (ids.size !== 2 || [...ids].some(id => !state.learningEvidence?.some(row => row.questionId === id && row.source === 'mini-lesson' && row.attempts > 0))) return state;
+      return { ...state, learningEvidence: state.learningEvidence!.map(row => ids.has(row.questionId) && row.context !== 'mini-lesson-complete' ? { ...row, context: 'mini-lesson-complete' } : row) };
+    }
     case 'STOP_ENGINE':
       return { ...state, initialized: false };
     case 'PAUSE_ENGINE':
@@ -139,12 +238,13 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
     case 'RESUME_ENGINE':
       return { ...state, initialized: true };
     case 'TICK': {
+      if (state.dailyGoals.date !== todayISO()) state = engineReducer(state, { type: 'CHECK_DAILY_GOALS' });
       const elapsedMs = state.elapsedMs + action.deltaMs;
-      let pet = state.pet ? applyPetDecay(state.pet, action.deltaMs) : state.pet;
+      let pet = state.pet && state.learning.schoolSafe === false ? applyPetDecay(state.pet, action.deltaMs) : state.pet;
       if (pet) {
         pet = evaluatePetMood(pet);
         // Passive XP: 1 XP per minute alive
-        const passiveXP = action.deltaMs / 60000;
+        const passiveXP = Math.floor(elapsedMs / 60000) - Math.floor(state.elapsedMs / 60000);
         if (passiveXP >= 1) {
           pet = addXP(pet, Math.floor(passiveXP));
         }
@@ -164,10 +264,15 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       return {
         ...state,
         mode: 'normal',
+        screen: state.pet ? 'home' : 'incubation',
         test: { active: false, label: 'Normal Mode' },
       };
     case 'RESET_TEST_STATE':
       return createTestEngineState();
+    case 'SET_ACTIVITY_ROUTE':
+      return { ...state, activityRoute: action.route };
+    case 'SAVE_PRACTICE_CHECKPOINT':
+      return { ...state, practiceCheckpoint: action.checkpoint };
     case 'SET_SCREEN':
       return { ...state, screen: action.screen };
     case 'SET_PET_STATE':
@@ -193,14 +298,17 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       return { ...state, session: action.session };
     case 'TAP_EGG':
       if (!state.egg) return state;
+      if (!state.devPreview && state.eggDiscovery && state.eggDiscovery.status !== 'claimed') return state;
       return {
         ...state,
         egg: interactWithEgg(state.egg, EGG_CONFIG.tapIncrement),
       };
     case 'HATCH_EGG': {
       if (!state.egg || state.egg.state !== 'ready') return state;
-      const pet = hatchEgg(state.egg);
-      if (!pet) return state;
+      if (!state.devPreview && state.eggDiscovery && state.eggDiscovery.status !== 'claimed') return state;
+      const hatched = hatchEgg(state.egg);
+      if (!hatched) return state;
+      const pet = applyDiscoveryBond({ ...hatched, ownerId: state.player.id }, state.eggDiscovery);
       const hatchResult: EngineState = {
         ...state,
         egg: null,
@@ -208,22 +316,31 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
         player: { ...state.player, activePetId: pet.id },
         screen: 'home',
       };
-      return logEvent(hatchResult, 'pet_hatched');
+      return logEvent(claimPendingGrowth(hatchResult), 'pet_hatched');
+    }
+    case 'FREE_SCHOOL_CARE': {
+      if (!state.pet || state.learning.schoolSafe === false || state.battle.active || state.run.active || state.momentum.active) return state;
+      const pet = state.pet;
+      const cared = action.task === 'feed' ? applyPetFeed(pet, 100) : action.task === 'clean' ? applyPetClean(pet, 100) : action.task === 'play' ? applyPetPlay(pet, 40)
+        : { ...pet, state: 'idle' as const, graceTimer: undefined, needs: { ...pet.needs, health: 100 } };
+      const next = { ...state, pet: evaluatePetMood(cared) };
+      if (action.task === 'rest') return next;
+      // Repeating free essentials is welcome, but cannot farm tickets, quests or XP.
+      if (careProgress(pet).today.includes(action.task)) return next.woodland?.phase === 'care' ? { ...next, woodland: { ...next.woodland, phase: 'reward' } } : next;
+      return creditCare(next, action.task, action.task === 'feed' ? { foodId: 'school_snack' } : undefined);
     }
     case 'FEED_PET': {
       if (!state.pet || !canAfford(state, action.food.cost)) return state;
       const afterDeduct = deductTokens(state, action.food.cost);
+      if (action.food.rarity === 'medicine') {
+        const pet = evaluatePetMood({ ...state.pet, needs: { ...state.pet.needs, health: Math.min(100, state.pet.needs.health + action.food.nutrition) }, graceTimer: undefined });
+        return logEvent({ ...afterDeduct, pet }, 'pet_healed');
+      }
       let pet = evaluatePetMood(applyPetFeed(state.pet, action.food.nutrition));
-      pet = { ...pet, bond: pet.bond + REWARD_CONFIG.careAction.bondIncrease };
-      const { canEvolve } = checkEvolution(pet, state.player.lifetimeMathCorrect);
-      if (canEvolve) pet = evolvePet(pet, state.player.lifetimeMathCorrect);
+      pet = { ...pet, bond: pet.bond + REWARD_CONFIG.careAction.bondIncrease + (state.pet.identity?.snack === action.food.id ? FAVORITE_BOND : 0) };
+
       let result: EngineState = { ...afterDeduct, pet };
-      // Track care-toward-ticket
-      const feedCare = { ...result.battleTickets.careActionsToday, fed: true };
-      result = { ...result, battleTickets: { ...result.battleTickets, careActionsToday: feedCare } };
-      if (feedCare.fed && feedCare.cleaned && feedCare.played) result = earnTicket(result, 'care');
-      result = logEvent(result, 'pet_fed', { foodId: action.food.id });
-      if (canEvolve) result = logEvent(result, 'pet_evolved');
+      result = creditCare(result, 'feed', { foodId: action.food.id });
       return result;
     }
     case 'CLEAN_PET': {
@@ -231,14 +348,9 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       const afterDeduct = deductTokens(state, CARE_ACTIONS.clean.cost);
       let pet = evaluatePetMood(applyPetClean(state.pet, CARE_ACTIONS.clean.impact));
       pet = { ...pet, bond: pet.bond + REWARD_CONFIG.careAction.bondIncrease };
-      const { canEvolve } = checkEvolution(pet, state.player.lifetimeMathCorrect);
-      if (canEvolve) pet = evolvePet(pet, state.player.lifetimeMathCorrect);
+
       let result: EngineState = { ...afterDeduct, pet };
-      const cleanCare = { ...result.battleTickets.careActionsToday, cleaned: true };
-      result = { ...result, battleTickets: { ...result.battleTickets, careActionsToday: cleanCare } };
-      if (cleanCare.fed && cleanCare.cleaned && cleanCare.played) result = earnTicket(result, 'care');
-      result = logEvent(result, 'pet_cleaned');
-      if (canEvolve) result = logEvent(result, 'pet_evolved');
+      result = creditCare(result, 'clean');
       return result;
     }
     case 'PLAY_PET': {
@@ -246,14 +358,9 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       const afterDeduct = deductTokens(state, CARE_ACTIONS.play.cost);
       let pet = evaluatePetMood(applyPetPlay(state.pet, CARE_ACTIONS.play.impact));
       pet = { ...pet, bond: pet.bond + REWARD_CONFIG.careAction.bondIncrease };
-      const { canEvolve } = checkEvolution(pet, state.player.lifetimeMathCorrect);
-      if (canEvolve) pet = evolvePet(pet, state.player.lifetimeMathCorrect);
+
       let result: EngineState = { ...afterDeduct, pet };
-      const playCare = { ...result.battleTickets.careActionsToday, played: true };
-      result = { ...result, battleTickets: { ...result.battleTickets, careActionsToday: playCare } };
-      if (playCare.fed && playCare.cleaned && playCare.played) result = earnTicket(result, 'care');
-      result = logEvent(result, 'pet_played_with');
-      if (canEvolve) result = logEvent(result, 'pet_evolved');
+      result = creditCare(result, 'play');
       return result;
     }
     case 'BOOST_MOOD': {
@@ -261,11 +368,8 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       const afterDeduct = deductTokens(state, CARE_ACTIONS.heal.cost);
       let pet = evaluatePetMood(applyMoodBoost(state.pet, CARE_ACTIONS.heal.impact));
       pet = { ...pet, bond: pet.bond + REWARD_CONFIG.careAction.bondIncrease };
-      const { canEvolve } = checkEvolution(pet, state.player.lifetimeMathCorrect);
-      if (canEvolve) pet = evolvePet(pet, state.player.lifetimeMathCorrect);
       let result: EngineState = { ...afterDeduct, pet };
       result = logEvent(result, 'pet_healed');
-      if (canEvolve) result = logEvent(result, 'pet_evolved');
       return result;
     }
     case 'AWARD_TOKENS':
@@ -280,61 +384,12 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
         },
       };
     case 'SOLVE_MATH': {
-      const playerAfterStreak = updateMathStreak(state.player, action.correct);
-      const playerAfterMastery = updateMastery(playerAfterStreak, 'arithmetic', action.correct);
-      const mpEarned = action.correct ? MP_EARN.correct : MP_EARN.wrong;
-      const playerWithMP = {
-        ...playerAfterMastery,
-        currencies: {
-          ...playerAfterMastery.currencies,
-          mp: playerAfterMastery.currencies.mp + mpEarned,
-          mpLifetime: playerAfterMastery.currencies.mpLifetime + mpEarned,
-        },
-      };
-      if (!action.correct) return { ...state, player: playerWithMP };
-      // Correct answer — accumulate battle-prep buffs + lifetime counter
-      const playerWithBuffs = {
-        ...playerWithMP,
-        mathBuffs: addMathBuffs(playerWithMP.mathBuffs, MATH_BUFF_PER_CORRECT),
-        lifetimeMathCorrect: playerWithMP.lifetimeMathCorrect + 1,
-      };
-      const xpGain = action.difficulty * 5;
-      let petWithXP = state.pet ? addXP(state.pet, xpGain) : state.pet;
-      // Math-to-bond link: every correct answer grows the pet's bond (+1).
-      if (petWithXP) {
-        petWithXP = { ...petWithXP, bond: petWithXP.bond + 1 };
-      }
-      const newMathSolved = state.dailyGoals.mathSolved + 1;
-      const mathGoalJustMet = newMathSolved === DAILY_MATH_GOAL;
-      // Track math-toward-ticket
-      const mathForTicket = state.battleTickets.mathForNextTicket + 1;
-      const ticketEarned = mathForTicket >= PVP_CONFIG.mathProblemsPerTicket;
-      const forgeMathMult = computeForgeBonuses(state.player.powerForge).mathRewardMult;
-      const forgedReward = Math.round(action.reward * forgeMathMult);
-      let solveResult: EngineState = {
-        ...state,
-        pet: petWithXP,
-        player: {
-          ...playerWithBuffs,
-          currencies: {
-            ...playerWithBuffs.currencies,
-            tokens: playerWithBuffs.currencies.tokens + forgedReward,
-          },
-        },
-        dailyGoals: { ...state.dailyGoals, mathSolved: newMathSolved },
-        battleTickets: {
-          ...state.battleTickets,
-          mathForNextTicket: ticketEarned ? 0 : mathForTicket,
-        },
-        notifications: mathGoalJustMet
-          ? [...state.notifications, { id: `goal_math_${Date.now()}`, message: '🎯 Math goal done! Beat a battle for a bonus!', icon: '🎯', timestamp: Date.now() }]
-          : state.notifications,
-      };
-      if (ticketEarned) solveResult = earnTicket(solveResult, 'math');
-      return logEvent(solveResult, 'math_solved');
+      if (!action.problem) return state;
+      const next = rewardMath(state, action.problem, action.correct, action.source ?? 'practice');
+      return next !== state && action.correct && action.source === 'catch' ? bridgeDelivery(next, action.problem.id) : next;
     }
     case 'CHECK_LOGIN_STREAK': {
-      const { streak, isNewDay, reward } = checkLoginStreak(state.player, Date.now());
+      const { streak, isNewDay, reward } = checkLoginStreak(state.player, Date.now(), state.learning.schoolSafe !== false);
       if (!isNewDay) return state;
       const todayStr = new Date().toISOString().slice(0, 10);
       return {
@@ -352,16 +407,15 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
           ...state.notifications,
           { id: `login_${Date.now()}`, message: `Day ${streak} streak! +${reward} tokens`, icon: '/assets/generated/final/icon_streak_flame.png', timestamp: Date.now() },
         ],
-        // Reveal the Power Path modal once per new day — only if onboarding
-        // is complete (don't stack it on top of the first-run tutorial).
-        showDailyRitual: state.player.hasOnboarded ? true : state.showDailyRitual,
+        // Keep the legacy daily popup out of the school chapter flow.
+        showDailyRitual: state.learning.schoolSafe === false && state.player.hasOnboarded,
       };
     }
     case 'CHECK_DAILY_GOALS': {
       const today = todayISO();
-      if (state.dailyGoals.date === today) return state; // already today's goals
+      if (state.dailyGoals.date === today) return rollQuestsIfNeeded(state); // also check weekly rollover
       // Math-absence penalty: if yesterday had real play (date was set) but zero math, pet sulks.
-      const missedMath = !!state.dailyGoals.date
+      const missedMath = state.learning.schoolSafe === false && !!state.dailyGoals.date
         && state.dailyGoals.date !== today
         && state.dailyGoals.mathSolved === 0;
       let pet = state.pet;
@@ -393,7 +447,7 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
         ? refreshNPCClassmates(state.classroom.classmates, pet?.progression.level ?? 1, daysSinceRefresh)
         : state.classroom.classmates;
       return {
-        ...state,
+        ...rollQuestsIfNeeded(state),
         pet,
         notifications,
         dailyGoals: { date: today, mathSolved: 0, battlesWon: 0, rewardClaimed: false },
@@ -461,17 +515,16 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       const { type, value } = shopItem.effect;
       if (type === 'feed') pet = evaluatePetMood(applyPetFeed(pet, value));
       else if (type === 'play') pet = evaluatePetMood(applyPetPlay(pet, value));
-      else if (type === 'heal') pet = evaluatePetMood(applyMoodBoost(pet, value));
+      else if (type === 'heal') pet = evaluatePetMood({ ...pet, needs: { ...pet.needs, health: Math.min(100, pet.needs.health + value) }, graceTimer: undefined });
       else if (type === 'clean') pet = evaluatePetMood(applyPetClean(pet, value));
       return { ...state, inventory: afterUse, pet };
     }
     case 'ADD_XP':
       return state.pet ? { ...state, pet: addXP(state.pet, action.amount) } : state;
     case 'EVOLVE_PET':
-      return state.pet
-        ? { ...state, pet: evolvePet(state.pet, state.player.lifetimeMathCorrect) }
-        : state;
+      return reduceGrowth(state, { type: 'START_GROWTH_TRIAL', kind: 'evolution' }) ?? state;
     case 'PLACE_ROOM_ITEM': {
+      if (action.itemId.startsWith('clash_') && (!state.player.unlockedRoomItems.includes(action.itemId) || !Number.isFinite(action.position.x) || !Number.isFinite(action.position.y) || action.position.x < 12 || action.position.x > 88 || action.position.y < 40 || action.position.y > 92)) return state;
       const updatedRoom = placeItem(state.room, action.itemId, action.position);
       return { ...state, room: { ...updatedRoom, moodBonus: calculateRoomMoodBonus(updatedRoom) } };
     }
@@ -487,8 +540,8 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       const today = todayISO();
       if (state.mailbox.lastClaimedDate === today) return state; // already claimed today
       const streak = state.mailbox.totalClaimed;
-      // Reward scales slightly with streak: base 15, +2 per previous claim, cap at 50
-      const reward = Math.min(50, 15 + streak * 2);
+      // A small flat welcome gift; practice is the main repeatable income.
+      const reward = ECONOMY.mailTokens;
       return {
         ...state,
         mailbox: { lastClaimedDate: today, totalClaimed: streak + 1 },
@@ -514,6 +567,8 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       return logEvent(state, action.eventType, action.payload);
     case 'DISMISS_NOTIFICATION':
       return { ...state, notifications: state.notifications.filter((n) => n.id !== action.id) };
+    case 'CANCEL_BATTLE_WARMUP':
+      return { ...state, pendingBattleWarmup: null };
     case 'START_BATTLE': {
       if (!state.pet || state.pet.state === 'sick' || state.pet.state === 'dead') return state;
       // Math-gate #2: queue a warmup question before the wild battle begins.
@@ -898,8 +953,7 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
                 ...state.player,
                 currencies: {
                   ...state.player.currencies,
-                  tokens: state.player.currencies.tokens + (rewards.tokens ?? 0) + goalBonus,
-                  coins: state.player.currencies.coins + (rewards.coins ?? 0),
+                  tokens: state.player.currencies.tokens + (rewards.tokens ?? 0) + goalBonus + (rewards.coins ?? 0) * TOKENS_PER_COIN,
                 },
               }
             : state.player),
@@ -1183,28 +1237,34 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
         },
       };
     // --- Momentum Board actions ---
+    case 'GIVE_LOCAL_EARLY_EGG_PASS': return grantTeacherGift(state, action.receipt, 'gift_early_hatch');
+    case 'USE_EARLY_HATCH_PASS': return consumeEarlyHatchPass(state);
     case 'START_MOMENTUM': {
-      const momentum = initMomentum(action.difficulty ?? 'medium');
+      const momentum = initMomentum(action.difficulty ?? (state.learning.challenge === 'support' ? 'easy' : state.learning.challenge === 'stretch' ? 'hard' : 'medium'));
       return { ...state, momentum, screen: 'momentum' };
     }
     case 'MOMENTUM_SET_DIFFICULTY': {
-      const momentum = initMomentum(action.difficulty);
+      const momentum = initMomentum(action.difficulty, action.mode);
       return { ...state, momentum };
     }
+    case 'MOMENTUM_TACTIC': {
+      if (!state.momentum.active || state.momentum.activeTeam !== 'player') return state;
+      return { ...state, momentum: tacticalAction(state.momentum, action.pieceId, action.targetId) };
+    }
     case 'MOMENTUM_SELECT_PIECE': {
-      if (!state.momentum.active) return state;
+      if (!state.momentum.active || state.momentum.activeTeam !== 'player' || !['player_select', 'player_move'].includes(state.momentum.phase)) return state;
       return { ...state, momentum: selectPiece(state.momentum, action.pieceId) };
     }
     case 'MOMENTUM_DESELECT_PIECE': {
-      if (!state.momentum.active) return state;
+      if (!state.momentum.active || state.momentum.activeTeam !== 'player' || !['player_select', 'player_move'].includes(state.momentum.phase)) return state;
       return { ...state, momentum: deselectPiece(state.momentum) };
     }
     case 'MOMENTUM_EXECUTE_MOVE': {
-      if (!state.momentum.active) return state;
+      if (!state.momentum.active || state.momentum.activeTeam !== 'player' || !['player_select', 'player_move'].includes(state.momentum.phase)) return state;
       return { ...state, momentum: beginMove(state.momentum, action.moveIndex) };
     }
     case 'MOMENTUM_SKIP_TURN': {
-      if (!state.momentum.active) return state;
+      if (!state.momentum.active || state.momentum.activeTeam !== 'player' || !['player_select', 'player_move'].includes(state.momentum.phase)) return state;
       return { ...state, momentum: skipTurn(state.momentum) };
     }
     case 'MOMENTUM_FLASH_CHOICE': {
@@ -1227,7 +1287,9 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       // so selectPiece accepts enemy pieces
       let momentum: typeof state.momentum = { ...state.momentum, activeTeam: 'enemy' };
       const aiAction = selectAIAction(momentum);
-      if (aiAction) {
+      if (aiAction?.tactic) {
+        momentum = tacticalAction(momentum, aiAction.pieceId, aiAction.targetId);
+      } else if (aiAction) {
         momentum = selectPiece(momentum, aiAction.pieceId);
         momentum = beginMove(momentum, aiAction.moveIndex);
         momentum = { ...momentum, phase: 'animating_ai' };
@@ -1377,11 +1439,12 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
     // ── Pet Interaction System ──────────────────────────────────────
     case 'SET_HAND_MODE': {
       const interaction = state.interaction ?? createDefaultInteractionState();
-      return { ...state, interaction: { ...interaction, activeMode: action.mode } };
+      return { ...state, interaction: { ...(action.mode !== interaction.activeMode || action.mode === 'idle' && interaction.careGameActive ? endInteractionFn(interaction) : interaction), activeMode: action.mode } };
     }
     case 'START_PET_INTERACTION': {
       if (!state.pet) return state;
       const interaction = state.interaction ?? createDefaultInteractionState();
+      if (interaction.careGameActive) return state;
       const check = canInteractCheck(state.pet, action.mode, interaction, state.player.currencies.tokens);
       if (!check.allowed) return state;
       // Don't apply stats yet — the care mini-game will do that via CARE_GAME_COMPLETE.
@@ -1407,15 +1470,18 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
     case 'CARE_GAME_COMPLETE': {
       if (!state.pet) return state;
       const interaction = state.interaction ?? createDefaultInteractionState();
+      if (!interaction.careGameActive || interaction.activeMode !== action.mode || !Number.isFinite(action.quality)) return state;
       const check = canInteractCheck(state.pet, action.mode, interaction, state.player.currencies.tokens);
       if (!check.allowed) {
         return { ...state, interaction: endInteractionFn(interaction) };
       }
+      if (action.quality <= 0) return { ...state, interaction: endInteractionFn(interaction) };
       const result = applyInteractionFn(state.pet, action.mode, interaction);
-      const q = Math.max(0.1, action.quality);
+      if (!Number.isFinite(action.quality) || interaction.activeMode !== action.mode) return state;
+      const q = Math.min(1, Math.max(0.1, action.quality));
       const scaledPet: typeof result.pet = {
         ...result.pet,
-        bond: state.pet.bond + (result.pet.bond - state.pet.bond) * q,
+        bond: state.pet.bond + (result.pet.bond - state.pet.bond) * q + (state.pet.identity?.activity === action.mode ? FAVORITE_BOND * q : 0),
         trust: (state.pet.trust ?? 20) + ((result.pet.trust ?? 20) - (state.pet.trust ?? 20)) * q,
         discipline: (state.pet.discipline ?? 0) + ((result.pet.discipline ?? 0) - (state.pet.discipline ?? 0)) * q,
         groomingScore: (state.pet.groomingScore ?? 50) + ((result.pet.groomingScore ?? 50) - (state.pet.groomingScore ?? 50)) * q,
@@ -1433,6 +1499,7 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       };
       const scaledCost = Math.ceil(result.tokenCost * q);
       if (scaledCost > 0) next = deductTokens(next, scaledCost);
+      next = creditCare(next, action.mode === 'wash' || action.mode === 'brush' ? 'clean' : 'play');
       next = logEvent(next, 'care_game_complete', { mode: action.mode, quality: action.quality });
       return next;
     }
@@ -1515,3 +1582,17 @@ export const engineReducer = (state: EngineState, action: GameEngineAction): Eng
       return state;
   }
 };
+
+function observeEconomy(before: EngineState, next: EngineState, action: GameEngineAction): EngineState {
+  if (next === before) return next;
+  const earned = next.player.lifetimeMathCorrect > before.player.lifetimeMathCorrect;
+  if (earned && ['SOLVE_MATH', 'RECORD_LEARNING_ATTEMPT', 'ANSWER_DISCOVERY_MISSION', 'ANSWER_BRIDGE_QUESTION', 'ANSWER_GROWTH_TRIAL'].includes(action.type)) {
+    const count = next.battleTickets.mathForNextTicket + 1;
+    next = { ...next, battleTickets: { ...next.battleTickets, mathForNextTicket: count >= PVP_CONFIG.mathProblemsPerTicket ? 0 : count } };
+    if (count >= PVP_CONFIG.mathProblemsPerTicket) next = earnTicket(next, 'math');
+    next = logEvent(next, 'math_solved');
+  }
+  return ['END_BATTLE', 'END_PVP_BATTLE'].includes(action.type) ? awardDailyGoal(next) : next;
+}
+
+export const engineReducer = (state: EngineState, action: GameEngineAction): EngineState => observeLife(state, observeDiscoveryActivity(state, observeArcade(state, observeFirstAdventure(state, observeCare(state, awardTransitions(state, reduceArcade(state, action) ?? reduceFirstAdventure(state, action) ?? reduceMind(state, action) ?? reduceHomeBase(state, action) ?? reducePrizes(state, action) ?? observeEconomy(state, reduceEngine(state, action), action), action), action), action), action), action));

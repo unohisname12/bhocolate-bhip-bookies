@@ -1,4 +1,9 @@
+import { ENEMY_IDS, ENEMIES } from './enemyConfig';
+import { PET_ANIMATIONS, COMBAT_ANIMATIONS } from './petAnimationCoverage';
 import type { SpriteSheetConfig } from '../engine/animation/types';
+import { PIP_PETS, PIP_COMBAT, WOODLAND_ART } from './woodlandArt';
+import { COMPANION_PETS, COMPANION_PORTRAITS, COMPANION_COMBAT } from './companionArt';
+import { COMPANIONS, GROWTH_ART } from './companionConfig';
 
 export interface BaseAssetConfig {
   url: string;
@@ -43,43 +48,19 @@ export const ASSETS: AssetManifest = {
     },
   },
   pets: {
+    // These species currently have portraits, not animation sheets. Keep their
+    // identity consistent with battle instead of displaying a different pet.
     slime_baby: {
-      url: '/assets/koala_sprite.png',
-      alt: 'Slime Baby',
-      spriteSheet: true,
-      cols: 5,
-      rows: 4,
-      frameWidth: 128,
-      frameHeight: 128,
-      frames: 20,
-      groundOffsetY: 13,
-      animations: {
-        idle: { startFrame: 0, endFrame: 4, frameDuration: 180 },
-        hungry: { startFrame: 5, endFrame: 9, frameDuration: 160 },
-        happy: { startFrame: 10, endFrame: 14, frameDuration: 140 },
-        sleeping: { startFrame: 15, endFrame: 19, frameDuration: 240 },
-        sick: { startFrame: 5, endFrame: 9, frameDuration: 300 },
-        dead: { startFrame: 15, endFrame: 15, frameDuration: 1000 },
-      },
+      url: '/assets/generated/final/pet_slime_baby.png', alt: 'Slime Baby',
+      spriteSheet: true, cols: 1, rows: 1, frameWidth: 128, frameHeight: 128,
+      frames: 1, groundOffsetY: 0,
+      animations: { idle: { startFrame: 0, endFrame: 0, frameDuration: 1000 } },
     },
     mech_bot: {
-      url: '/assets/koala_sprite.png',
-      alt: 'Mech Bot',
-      spriteSheet: true,
-      cols: 5,
-      rows: 4,
-      frameWidth: 128,
-      frameHeight: 128,
-      frames: 20,
-      groundOffsetY: 13,
-      animations: {
-        idle: { startFrame: 0, endFrame: 4, frameDuration: 180 },
-        hungry: { startFrame: 5, endFrame: 9, frameDuration: 160 },
-        happy: { startFrame: 10, endFrame: 14, frameDuration: 140 },
-        sleeping: { startFrame: 15, endFrame: 19, frameDuration: 240 },
-        sick: { startFrame: 5, endFrame: 9, frameDuration: 300 },
-        dead: { startFrame: 15, endFrame: 15, frameDuration: 1000 },
-      },
+      url: '/assets/generated/final/pet_mech_bot.png', alt: 'Mech Bot',
+      spriteSheet: true, cols: 1, rows: 1, frameWidth: 128, frameHeight: 128,
+      frames: 1, groundOffsetY: 0,
+      animations: { idle: { startFrame: 0, endFrame: 0, frameDuration: 1000 } },
     },
     koala_sprite: {
       url: '/assets/koala_sprite.png',
@@ -679,7 +660,7 @@ export const ASSETS: AssetManifest = {
   petPortraits: {
     slime_baby: '/assets/generated/final/pet_slime_baby.png',
     mech_bot: '/assets/generated/final/pet_mech_bot.png',
-    koala_sprite: '/assets/pets/blue-koala/portrait.png',
+    koala_sprite: `${WOODLAND_ART}/pip-portrait.png`,
     subtrak: '/assets/pets/subtrak/portrait.png',
   },
   combatAnims: {
@@ -773,10 +754,10 @@ export const ASSETS: AssetManifest = {
     },
   },
   icons: {
-    heart: '/assets/generated/final/icon_heart.png',
-    food: '/assets/generated/final/icon_hunger.png',
+    heart: `${WOODLAND_ART}/icon-heart.png`,
+    food: `${WOODLAND_ART}/icon-feed.png`,
     energy: '/assets/generated/final/icon_token.png',
-    clean: '/assets/generated/final/icon_clean.png',
+    clean: `${WOODLAND_ART}/icon-care.png`,
     train: '/assets/generated/final/icon_energy.png',
     shield: '/assets/generated/final/icon_shield.png',
     sword: '/assets/generated/final/icon_sword.png',
@@ -812,6 +793,48 @@ export const ASSETS: AssetManifest = {
     shopInterior: '/assets/generated/final/scene_shop_interior.png',
   },
 };
+
+// Preserve Subtrak's original PixelLab identity and care animations.
+const subtrakOriginal = Object.fromEntries(Object.entries(ASSETS.pets).filter(([key]) => key === 'subtrak' || key.startsWith('subtrak__')));
+const subtrakCombat = ASSETS.combatAnims.subtrak;
+
+// Keep legacy art definitions recoverable for the archive/review screens while
+// making the entire playable companion consistently use the new production set.
+Object.assign(ASSETS.pets, PIP_PETS);
+ASSETS.combatAnims.koala_sprite = PIP_COMBAT;
+for (const key of Object.keys(ASSETS.pets)) if (['slime_baby__', 'mech_bot__', 'subtrak__'].some(prefix => key.startsWith(prefix))) delete ASSETS.pets[key];
+Object.assign(ASSETS.pets, COMPANION_PETS);
+Object.assign(ASSETS.petPortraits, COMPANION_PORTRAITS);
+Object.assign(ASSETS.combatAnims, COMPANION_COMBAT);
+for (const [id, companion] of Object.entries(COMPANIONS)) ASSETS.eggs[companion.egg] = { url: id === 'subtrak' ? ASSETS.eggs.basic.url : `${GROWTH_ART}/${id}-egg.png`, alt: `${companion.name}'s egg` };
+Object.assign(ASSETS.pets, subtrakOriginal);
+ASSETS.petPortraits.subtrak = '/assets/pets/subtrak/portrait.png';
+ASSETS.combatAnims.subtrak = subtrakCombat;
+ASSETS.pets.subtrak__being_petted = {
+  url: '/assets/pets/subtrak/new-20260926/greeting.png', alt: 'Subtrak greets you',
+  spriteSheet: true, cols: 9, rows: 1, frames: 9, frameWidth: 128, frameHeight: 128, groundOffsetY: 23,
+  animations: { idle: { startFrame: 0, endFrame: 8, frameDuration: 170 }, being_petted: { startFrame: 0, endFrame: 8, frameDuration: 170 } },
+};
+
+ASSETS.pets.subtrak__happy = {
+  url: '/assets/pets/subtrak/new-20260926/celebrate.png', alt: 'Subtrak celebrates',
+  spriteSheet: true, cols: 9, rows: 1, frames: 9, frameWidth: 128, frameHeight: 128, groundOffsetY: 22,
+  animations: { idle: { startFrame: 0, endFrame: 8, frameDuration: 150 }, happy: { startFrame: 0, endFrame: 8, frameDuration: 150 }, playing_with_hand: { startFrame: 0, endFrame: 8, frameDuration: 150 } },
+};
+ASSETS.pets.subtrak__playing_with_hand = ASSETS.pets.subtrak__happy;
+
+// Legacy companions retain their identity and now support every shared care action.
+for (const id of ['slime_baby', 'mech_bot', 'subtrak']) {
+  const sheet = ASSETS.pets[id];
+  if (!sheet.spriteSheet) continue;
+  for (const name of PET_ANIMATIONS) if (!sheet.animations[name] && !ASSETS.pets[`${id}__${name}`])
+    sheet.animations[name] = { ...sheet.animations.idle, ...(name === 'dead' ? { endFrame: sheet.animations.idle.startFrame } : {}) };
+  ASSETS.combatAnims[id] ??= {};
+  for (const name of COMBAT_ANIMATIONS) ASSETS.combatAnims[id][name] ??= {
+    url: sheet.url, frameWidth: sheet.frameWidth, frameHeight: sheet.frameHeight,
+    frameCount: Math.min(sheet.cols, sheet.frames), frameDuration: 180,
+  };
+}
 
 // ── Hand cursor sprite sheets ────────────────────────────────────────
 
@@ -856,3 +879,12 @@ export const HAND_ANIM_TO_ASSET: Record<string, string> = {
 export type AssetType = typeof ASSETS;
 export type EggType = keyof typeof ASSETS.eggs;
 export type PetType = keyof typeof ASSETS.pets;
+
+// Opponents have combat assets but are deliberately excluded from adoption.
+for (const id of ENEMY_IDS) {
+  ASSETS.petPortraits[id] = `/assets/enemies-v1/${id}-portrait.png`;
+  ASSETS.combatAnims[id] = Object.fromEntries(['idle', ...COMBAT_ANIMATIONS].map(action => [action, {
+    url: `/assets/enemies-v1/${id}-${action}.png`, frameWidth: 128, frameHeight: 128, frameCount: 4, frameDuration: 160,
+  }]));
+  ASSETS.pets[id] = { url: `/assets/enemies-v1/${id}-idle.png`, alt: ENEMIES[id].name, spriteSheet: true, cols: 4, rows: 1, frames: 4, frameWidth: 128, frameHeight: 128, animations: { idle: { startFrame: 0, endFrame: 3, frameDuration: 300 } } };
+}

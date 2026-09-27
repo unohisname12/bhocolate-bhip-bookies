@@ -10,12 +10,14 @@ interface HelpProviderProps {
   helpState: HelpState;
   dispatch: (action: GameEngineAction) => void;
   children: React.ReactNode;
+  showButton?: boolean;
 }
 
 export const HelpProvider: React.FC<HelpProviderProps> = ({
   helpState,
   dispatch,
   children,
+  showButton = true,
 }) => {
   const [showPanel, setShowPanel] = useState(false);
   const [activeTutorial, setActiveTutorial] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export const HelpProvider: React.FC<HelpProviderProps> = ({
       {children}
 
       {/* Help button — always visible */}
-      <HelpButton onClick={() => setShowPanel(true)} />
+      {showButton && <HelpButton onClick={() => setShowPanel(true)} />}
 
       {/* Help panel (on-demand) */}
       {showPanel && (

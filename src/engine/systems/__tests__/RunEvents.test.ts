@@ -223,53 +223,19 @@ describe('map generation includes event nodes', () => {
 });
 
 describe('selectMapNode routes to event', () => {
-  it('transitions to event_choice when selecting an event node', () => {
-    let state = createInitialEngineState();
-    state = { ...state, pet: mockPet(), initialized: true, screen: 'home' };
-    state = startRun(state);
-    if (!state.run.active) return;
-
-    // Find an event node that's reachable, or inject one
-    const eventNode = state.run.map.nodes.find(n => n.type === 'event' && n.tier === 1);
-    if (!eventNode) {
-      // Inject event node into tier 1
-      const node = {
-        id: 'injected_event',
-        tier: 1,
-        type: 'event' as const,
-        eventId: 'equation_cache',
-        rewardTier: 'common' as const,
-        connections: [],
-        visited: false,
-      };
-      state = {
-        ...state,
-        run: {
-          ...state.run,
-          map: { ...state.run.map, nodes: [...state.run.map.nodes, node] },
-        },
-      };
-      // Wire a tier 0 node to connect to it
-      const tier0 = (state.run as ActiveRunState).map.nodes.find((n: { tier: number }) => n.tier === 0)!;
-      tier0.connections.push('injected_event');
-      // First select tier 0 node
-      state = selectMapNode(state, tier0.id);
-      if (!state.run.active) return;
-      // Now select the event node
-      state = selectMapNode(state, 'injected_event');
-    } else {
-      // Navigate to tier 0, then the event node
-      const tier0 = state.run.map.nodes.find(n => n.tier === 0 && n.connections.includes(eventNode.id));
-      if (!tier0) return;
-      state = selectMapNode(state, tier0.id);
-      if (!state.run.active || state.run.phase === 'event_choice') return;
-      // Skip to map select if we ended up in combat
-      if (state.run.phase !== 'map_select') return;
-      state = selectMapNode(state, eventNode.id);
-    }
-
-    if (!state.run.active) return;
+  it('transitions to event_choice when selecting a reachable event node', () => {
+    let state = startRun({ ...createInitialEngineState(), pet: mockPet(), initialized: true, screen: 'home' });
+    if (!state.run.active) throw new Error('Run must start');
+    // Explicitly model a completed first encounter. The previous test attempted
+    // to leave an unfinished random combat and sometimes returned without asserting.
+    const first = { id: 'first', tier: 0, type: 'combat' as const, rewardTier: 'common' as const, connections: ['event'], visited: true };
+    const event = { id: 'event', tier: 1, type: 'event' as const, eventId: 'equation_cache', rewardTier: 'common' as const, connections: [], visited: false };
+    state = { ...state, run: { ...state.run, phase: 'map_select', currentNodeId: first.id, map: { nodes: [first, event], currentPath: [first.id] } } };
+    state = selectMapNode(state, event.id);
+    if (!state.run.active) throw new Error('Run must remain active');
     expect(state.run.phase).toBe('event_choice');
     expect(state.screen).toBe('run_event');
+    expect(state.run.currentNodeId).toBe(event.id);
+    expect(state.run.map.nodes.find(node => node.id === event.id)?.visited).toBe(true);
   });
 });

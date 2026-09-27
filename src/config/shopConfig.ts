@@ -1,3 +1,4 @@
+import { FOOD_ITEMS } from './gameConfig';
 export type ShopItemCategory = 'food' | 'toy' | 'medicine' | 'cosmetic' | 'care_tool';
 
 export interface ItemEffect {
@@ -81,12 +82,12 @@ export const describeUnlockRule = (item: ShopItem): string => {
   return 'Locked';
 };
 
-export const SHOP_ITEMS: ShopItem[] = [
+const BASE_SHOP_ITEMS: ShopItem[] = [
   // ── Food (always available / early unlocks) ───────────────────────────────
   { id: 'apple', name: 'Apple', description: 'A crisp apple. +15 hunger.', icon: '/assets/generated/final/item_apple.png', cost: { tokens: 5 }, category: 'food', stackable: true, effect: { type: 'feed', value: 15 } },
   { id: 'meat', name: 'Meat', description: 'Juicy protein. +30 hunger.', icon: '🥩', cost: { tokens: 12 }, category: 'food', stackable: true, effect: { type: 'feed', value: 30 } },
   { id: 'cake', name: 'Cake', description: 'Sweet treat. +50 hunger +10 happiness.', icon: '/assets/generated/final/item_cake.png', cost: { tokens: 28 }, category: 'food', stackable: true, effect: { type: 'feed', value: 50 } },
-  { id: 'potion', name: 'Potion', description: 'Max hunger restore.', icon: '/assets/generated/final/item_potion.png', cost: { tokens: 60 }, category: 'food', stackable: true, effect: { type: 'feed', value: 100 }, unlockRule: { kind: 'level', threshold: 3 } },
+  { id: 'potion', name: 'Potion', description: 'Full health restore.', icon: '/assets/generated/final/item_potion.png', cost: { tokens: 60 }, category: 'medicine', stackable: true, effect: { type: 'heal', value: 100 }, unlockRule: { kind: 'level', threshold: 3 } },
   { id: 'golden_apple', name: 'Golden Apple', description: 'Premium apple. +40 hunger +10 happiness.', icon: '/assets/generated/final/item_apple.png', cost: { tokens: 120 }, category: 'food', stackable: true, effect: { type: 'feed', value: 40 }, requiredMPTier: 'silver' as const, unlockHint: 'Reach silver MP tier' },
   { id: 'feast_platter', name: 'Feast Platter', description: 'A lavish spread. +80 hunger +20 happiness.', icon: '🍱', cost: { tokens: 180 }, category: 'food', stackable: true, effect: { type: 'feed', value: 80 }, unlockRule: { kind: 'level', threshold: 6 } },
   { id: 'elixir', name: 'Elixir', description: 'Restores all needs to full.', icon: '🧪', cost: { tokens: 500 }, category: 'food', stackable: true, effect: { type: 'feed', value: 100 }, unlockRule: { kind: 'level', threshold: 10 } },
@@ -104,12 +105,12 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'phoenix_tear', name: 'Phoenix Tear', description: 'Legendary restorative.', icon: '💧', cost: { tokens: 800 }, category: 'medicine', stackable: true, effect: { type: 'heal', value: 100 }, unlockRule: { kind: 'level', threshold: 8 } },
 
   // ── Cosmetic ──────────────────────────────────────────────────────────────
-  { id: 'hat', name: 'Party Hat', description: 'Festive head wear.', icon: '🎩', cost: { coins: 5 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 5 } },
-  { id: 'crown', name: 'Royal Crown', description: 'A mark of mastery.', icon: '👑', cost: { coins: 25 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 10 }, unlockRule: { kind: 'battlesWon', threshold: 10 } },
-  { id: 'wings', name: 'Ethereal Wings', description: 'Shimmering cosmetic wings.', icon: '🦋', cost: { coins: 50 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 15 }, unlockRule: { kind: 'level', threshold: 7 } },
-  { id: 'silver_halo', name: 'Silver Halo', description: 'A quiet ring of light. Silver scholars only.', icon: '😇', cost: { coins: 40 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 20 }, unlockRule: { kind: 'mpTier', tier: 'silver' }, unlockHint: 'Reach silver math tier' },
-  { id: 'golden_crown', name: 'Golden Crown', description: 'Legendary regalia for gold-tier masters.', icon: '🏅', cost: { coins: 120 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 30 }, unlockRule: { kind: 'mpTier', tier: 'gold' }, unlockHint: 'Reach gold math tier' },
-  { id: 'prism_aura', name: 'Prism Aura', description: 'Shimmering field only gold minds can sustain.', icon: '🌈', cost: { coins: 200 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 40 }, unlockRule: { kind: 'mpTier', tier: 'gold' }, unlockHint: 'Reach gold math tier' },
+  { id: 'hat', name: 'Party Hat', description: 'Festive head wear.', icon: '🎩', cost: { tokens: 50 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 5 } },
+  { id: 'crown', name: 'Royal Crown', description: 'A mark of mastery.', icon: '👑', cost: { tokens: 250 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 10 }, unlockRule: { kind: 'battlesWon', threshold: 10 } },
+  { id: 'wings', name: 'Ethereal Wings', description: 'Shimmering cosmetic wings.', icon: '🦋', cost: { tokens: 500 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 15 }, unlockRule: { kind: 'level', threshold: 7 } },
+  { id: 'silver_halo', name: 'Silver Halo', description: 'A quiet ring of light. Silver scholars only.', icon: '😇', cost: { tokens: 400 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 20 }, unlockRule: { kind: 'mpTier', tier: 'silver' }, unlockHint: 'Reach silver math tier' },
+  { id: 'golden_crown', name: 'Golden Crown', description: 'Legendary regalia for gold-tier masters.', icon: '🏅', cost: { tokens: 1200 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 30 }, unlockRule: { kind: 'mpTier', tier: 'gold' }, unlockHint: 'Reach gold math tier' },
+  { id: 'prism_aura', name: 'Prism Aura', description: 'Shimmering field only gold minds can sustain.', icon: '🌈', cost: { tokens: 2000 }, category: 'cosmetic', stackable: false, effect: { type: 'buff', value: 40 }, unlockRule: { kind: 'mpTier', tier: 'gold' }, unlockHint: 'Reach gold math tier' },
 
   // ── Care Tools (unlock / upgrade pet interactions) ──────────────────────────
   { id: 'soap_kit', name: 'Soap Kit', description: 'Unlocks the Wash interaction.', icon: '/assets/generated/final/icon_clean.png', cost: { tokens: 25 }, category: 'care_tool', stackable: false, effect: { type: 'clean', value: 0 }, unlockRule: { kind: 'level', threshold: 2 }, unlockHint: 'Reach level 2' },
@@ -123,3 +124,12 @@ export const SHOP_ITEMS: ShopItem[] = [
 ];
 
 export const STREAK_THRESHOLDS: { streak: number; label: string }[] = [];
+
+// One catalog defines shared food prices and restoration amounts in both shops.
+export const SHOP_ITEMS: ShopItem[] = BASE_SHOP_ITEMS.map(item => {
+  const food = FOOD_ITEMS.find(f => f.id === item.id);
+  if (!food) return item;
+  return { ...item, cost: { tokens: food.cost }, effect: { ...item.effect, value: food.nutrition },
+    ...(food.rarity === 'medicine' ? { unlockRule: undefined } : {}),
+    description: food.rarity === 'medicine' ? `Restores ${food.nutrition} health.` : `Restores ${food.nutrition} hunger.` };
+});

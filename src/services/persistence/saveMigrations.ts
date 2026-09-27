@@ -1,5 +1,10 @@
+import { consolidateWallet } from '../game/wallet';
+import { rebalanceEconomy } from '../game/economy';
+import { upgradeDiscoveryActivities } from '../game/discoveryActivity';
 import type { EngineState } from '../../types/engine';
 import type { SaveData } from './saveValidation';
+import { normalizeLearning } from '../game/curriculum';
+import { getGrowth } from '../game/petGrowth';
 
 // Each migration takes the raw state from the previous version and returns the next shape.
 // Use `any` here intentionally — migrations deal with unknown historical shapes.
@@ -7,6 +12,12 @@ import type { SaveData } from './saveValidation';
 type Migration = (state: any) => any;
 
 const migrations: Record<number, Migration> = {
+  17: (state) => rebalanceEconomy(state),
+  16: (state) => upgradeDiscoveryActivities(state),
+  15: (state) => ({ ...state, eggDiscovery: null }),
+  14: (state) => ({ ...state, companionRoster: [], growthTrial: null,
+    pet: state.pet ? { ...state.pet, growth: getGrowth(state.pet) } : null }),
+  13: (state) => ({ ...state, learning: normalizeLearning(state.learning) }),
   // v0 → v1: add inventory, room, events, achievements, notifications
   0: (state) => ({
     ...state,
@@ -182,7 +193,7 @@ const migrations: Record<number, Migration> = {
   }),
 };
 
-export const CURRENT_SAVE_VERSION = 13;
+export const CURRENT_SAVE_VERSION = 18;
 
 export const migrate = (data: SaveData): EngineState => {
   let { state, version } = data;
@@ -191,5 +202,5 @@ export const migrate = (data: SaveData): EngineState => {
     if (migration) state = migration(state);
     version++;
   }
-  return state as EngineState;
+  return consolidateWallet(state as EngineState);
 };

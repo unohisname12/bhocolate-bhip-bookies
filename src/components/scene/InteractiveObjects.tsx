@@ -27,7 +27,7 @@ const HOTSPOTS: SceneHotspot[] = [
   {
     id: 'outside-house-door',
     roomId: 'outside',
-    x: 260, y: 48, w: 40, h: 76,
+    x: 309, y: 73, w: 40, h: 58,
     label: 'Enter House',
     icon: '🏠',
     type: 'navigation',
@@ -37,7 +37,7 @@ const HOTSPOTS: SceneHotspot[] = [
   {
     id: 'outside-mailbox',
     roomId: 'outside',
-    x: 42, y: 48, w: 28, h: 48,
+    x: 3, y: 65, w: 30, h: 43,
     label: 'Mailbox',
     icon: '📬',
     type: 'interactive',
@@ -48,7 +48,7 @@ const HOTSPOTS: SceneHotspot[] = [
   {
     id: 'inside-door',
     roomId: 'inside',
-    x: 302, y: 48, w: 40, h: 80,
+    x: 0, y: 65, w: 24, h: 115,
     label: 'Go Outside',
     icon: '🚪',
     type: 'navigation',
@@ -58,7 +58,7 @@ const HOTSPOTS: SceneHotspot[] = [
   {
     id: 'inside-fireplace',
     roomId: 'inside',
-    x: 16, y: 48, w: 80, h: 96,
+    x: 302, y: 64, w: 78, h: 73,
     label: 'Fireplace',
     icon: '🔥',
     type: 'interactive',
@@ -68,8 +68,8 @@ const HOTSPOTS: SceneHotspot[] = [
   {
     id: 'inside-bookshelf',
     roomId: 'inside',
-    x: 122, y: 48, w: 56, h: 96,
-    label: 'Bookshelf',
+    x: 46, y: 63, w: 89, h: 61,
+    label: 'Study desk — Math Practice',
     icon: '📚',
     type: 'interactive',
     action: 'bookshelf',
@@ -78,7 +78,7 @@ const HOTSPOTS: SceneHotspot[] = [
   {
     id: 'inside-window',
     roomId: 'inside',
-    x: 202, y: 100, w: 56, h: 64,
+    x: 151, y: 94, w: 113, h: 99,
     label: 'Window',
     icon: '🪟',
     type: 'interactive',
@@ -130,10 +130,15 @@ export const InteractiveObjects: React.FC<InteractiveObjectsProps> = ({
           onMailboxClick();
           break;
         case 'fireplace':
-          onFireplaceClick?.();
+          if (onFireplaceClick) onFireplaceClick();
+          else dispatch({ type: 'SET_SCREEN', screen: 'pet_care' });
           break;
         case 'bookshelf':
-          onBookshelfClick?.();
+          if (onBookshelfClick) onBookshelfClick();
+          else dispatch({ type: 'SET_SCREEN', screen: 'math' });
+          break;
+        case 'window':
+          dispatch({ type: 'CHANGE_ROOM', roomId: 'outside' });
           break;
         default:
           break;
@@ -165,6 +170,8 @@ export const InteractiveObjects: React.FC<InteractiveObjectsProps> = ({
             }}
             onMouseEnter={() => setHoveredId(hotspot.id)}
             onMouseLeave={() => setHoveredId(null)}
+            onFocus={() => setHoveredId(hotspot.id)}
+            onBlur={() => setHoveredId(null)}
             onClick={() => handleClick(hotspot)}
             aria-label={hotspot.label}
           >

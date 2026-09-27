@@ -1,0 +1,56 @@
+/* Keep the arena visible: one scoreboard, one objective, one action row. */
+.hunt-immersive>.hunt-quiet-top{top:12px;right:12px;left:auto;width:auto;padding:0;z-index:6;background:none;border:0;pointer-events:auto}
+.hunt-immersive>.hunt-quiet-top button{min-height:40px;padding:8px 14px;font-size:12px;background:#142b30ed;border:1px solid #c5d4b44d;border-radius:7px;box-shadow:none}
+.hunt-immersive>.hunt-hud{top:12px;left:12px;right:auto;gap:14px;width:auto;max-width:calc(100% - 118px);height:40px;padding:0 12px;background:#142b30ed;border:1px solid #c5d4b44d;border-radius:7px;box-shadow:none;align-items:center}
+.hunt-role-label{font-size:11px!important;font-weight:700;color:#cce1c2;letter-spacing:.3px}
+.hunt-immersive .hunt-objectives{padding:0;gap:14px;flex-direction:row!important;background:none;border:0;border-radius:0;box-shadow:none;backdrop-filter:none}
+.hunt-immersive .hunt-objectives>div{gap:4px}
+.hunt-immersive .hunt-objectives span{font-size:10px!important}
+.hunt-immersive .hunt-objectives b{font-size:13px}
+.hunt-immersive .hunt-lantern-icon,.hunt-immersive .hunt-portal-icon{width:22px;height:22px;background-size:88px 22px}
+.hunt-immersive .hunt-portal-icon{background-position:-22px 0}
+.hunt-immersive .hunt-objective-pips,.hunt-immersive .hunt-timer small{display:none}
+.hunt-immersive .hunt-timer{min-width:48px;padding:0 0 0 10px;background:none;border:0;border-left:1px solid #c5d4b433;border-radius:0;box-shadow:none;backdrop-filter:none}
+.hunt-immersive .hunt-timer strong{font-size:18px!important}
+.hunt-immersive>.hunt-next-objective{top:59px;left:14px;margin:0;padding:4px 7px;max-width:calc(100% - 28px);font-size:11px;background:#142b30bd;border:0;border-radius:4px;line-height:1.5;color:#f0e9cd}
+.hunt-immersive>.hunt-hotbar{bottom:max(12px,env(safe-area-inset-bottom));width:auto;max-width:calc(100% - 24px);gap:5px;padding:5px;background:#142b30d9;border:1px solid #c5d4b433;border-radius:9px;box-shadow:none}
+.hunt-immersive>.hunt-hotbar>button{min-height:42px;min-width:105px;flex:0 1 auto;padding:6px 10px;gap:7px;border:0;box-shadow:none;background:#284349c9;border-radius:5px;backdrop-filter:none}
+.hunt-immersive .hunt-hotbar strong{font-size:11px;white-space:nowrap}
+.hunt-immersive .hunt-hotbar small{display:none}
+.hunt-immersive .hunt-hotbar kbd{display:block;font-size:9px;min-width:22px;padding:4px;border:1px solid #adc9b944;background:#152c30}
+.hunt-immersive .hunt-charges{gap:3px}.hunt-immersive .hunt-charges i{width:14px;height:3px}
+.hunt-immersive>.hunt-event-toast{position:absolute;z-index:3;bottom:78px;left:50%;transform:translateX(-50%);margin:0;padding:5px 10px;max-width:70%;width:max-content;font-size:11px;line-height:1.4;text-align:center;background:#142b30c9;border-radius:4px;color:#e1e8d5;pointer-events:none;opacity:0;transition:opacity .2s}
+.hunt-immersive>.hunt-event-toast.is-visible{opacity:1}
+.hunt-immersive.hunt-modal-open>.hunt-event-toast{visibility:hidden}
+.hunt-immersive>.hunt-touch{bottom:max(12px,env(safe-area-inset-bottom));left:12px;right:12px;gap:8px}
+.hunt-immersive .hunt-stick{width:74px;height:74px;flex-basis:74px;border:1px solid #b2ceb266;box-shadow:none;background:#18393b88;font-size:9px;padding-top:51px}
+.hunt-immersive .hunt-stick span{width:28px;height:28px;top:22px;left:22px}
+.hunt-immersive .hunt-touch-buttons{max-width:220px;gap:4px}
+.hunt-immersive .hunt-touch-buttons button{min-height:40px;padding:6px 9px;font-size:10px;background:#1c3b41c9;box-shadow:none}
+.hunt-immersive.hunt-touch-mode>.hunt-event-toast{bottom:156px}
+.hunt-menu{width:min(480px,calc(100vw - 28px));max-height:85dvh;overflow:auto;color:#eef0db;background:#172f35;border:1px solid #9bae8b;border-radius:14px;padding:22px;box-shadow:0 22px 80px #0008;font-family:Inter,system-ui,sans-serif}
+.hunt-menu::backdrop{background:#091b24a8}
+.hunt-menu header{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:24px}
+.hunt-menu h2{font-size:24px}.hunt-menu p{font-size:12px;color:#b9cecb}
+.hunt-menu button{min-height:44px;padding:9px 14px;font:inherit;font-size:13px;color:#edf6eb;background:#28484c;border:1px solid #92ad8766;border-radius:7px;cursor:pointer}
+.hunt-menu button:focus-visible{outline:3px solid #e6cd8b;outline-offset:2px}
+.hunt-menu-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hunt-menu-controls label{display:flex;align-items:center;gap:9px;min-height:44px;font-size:13px}
+.hunt-menu-controls input{width:18px;height:18px;accent-color:#d6cb8b}
+.hunt-menu-keys{margin-top:22px!important;line-height:1.9!important}
+.hunt-companion-preview>.hunt-detailed-portrait{background-size:768px auto;animation:hunt-pet-idle 2.4s steps(8) infinite}
+@media(max-width:600px){
+ .hunt-immersive>.hunt-hud{gap:6px;left:8px;top:8px;padding:0 7px;max-width:calc(100% - 88px)}
+ .hunt-immersive .hunt-role-label{display:none}
+ .hunt-immersive .hunt-objectives{gap:5px}
+ .hunt-immersive .hunt-objectives span{font-size:8px!important}.hunt-immersive .hunt-objectives b{font-size:11px}
+ .hunt-immersive .hunt-lantern-icon,.hunt-immersive .hunt-portal-icon{display:none}
+ .hunt-immersive .hunt-timer{min-width:43px;padding-left:7px}.hunt-immersive .hunt-timer strong{font-size:16px!important}
+ .hunt-immersive>.hunt-quiet-top{top:8px;right:8px}.hunt-immersive>.hunt-quiet-top button{padding:8px 10px;font-size:11px}
+ .hunt-immersive>.hunt-next-objective{top:54px;left:9px;font-size:10px;max-width:calc(100% - 18px)}
+ .hunt-immersive .hunt-touch-buttons{flex:1;display:grid;grid-template-columns:1fr 1fr}
+ .hunt-immersive .hunt-touch-buttons button{font-size:9px;padding:4px;min-width:0}
+ .hunt-immersive>.hunt-event-toast{max-width:90%;font-size:10px}
+ .hunt-immersive>.hunt-hotbar>button{min-width:0;padding:5px;gap:4px}.hunt-immersive .hunt-hotbar strong{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.hunt-event-toast{transition:none!important}.hunt-companion-preview>.hunt-detailed-portrait{animation:none}}

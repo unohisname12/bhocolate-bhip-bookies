@@ -1,35 +1,43 @@
-import { useEffect, useState } from 'react';
+import { unlockedFeatures } from './features/student-navigation/unlocks';
+import { StudentShell } from './features/student-navigation/StudentShell';
+import { demoLearners, selectDemoLearner, createDemoLearner } from './demo/demoClassroom';
+import { FirstAdventureScreen, NextAdventure } from './features/first-adventure/FirstAdventure';
+import { createHomeBase } from './features/home-base/model';
+const HomeBaseScreen = lazy(() => import('./features/home-base/HomeBaseScreen').then(m => ({ default: m.HomeBaseScreen })));
+import { PrizeStudio } from './features/clash/PrizeStudio';
+import { DEMO_MODE, createDemoState, connectDemoPersistence } from './demo/demoMode';
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useGameEngine } from './engine/hooks/useGameEngine';
 import { createInitialEngineState } from './engine/state/createInitialEngineState';
 import { IncubationScreen } from './screens/IncubationScreen';
 import { GameSceneShell } from './components/scene/GameSceneShell';
-import { MathScreen } from './screens/MathScreen';
-import { CatchNumberScreen } from './features/catch-math/CatchNumberScreen';
-import { FeedingScreen } from './screens/FeedingScreen';
-import { ShopScreen } from './screens/ShopScreen';
-import { BattleScreen } from './screens/BattleScreen';
-import { MomentumScreen } from './screens/MomentumScreen';
-import { NumberMergeScreen } from './screens/NumberMergeScreen';
-import { ClassRosterScreen } from './screens/ClassRosterScreen';
-import { ChallengerPreviewScreen } from './screens/ChallengerPreviewScreen';
-import { MatchResultScreen } from './screens/MatchResultScreen';
-import { AssetReviewScreen } from './screens/AssetReviewScreen';
-import { AnimationReviewScreen } from './screens/AnimationReviewScreen';
-import { RunStartScreen } from './screens/RunStartScreen';
-import { RunEncounterScreen } from './screens/RunEncounterScreen';
-import { RunRewardScreen } from './screens/RunRewardScreen';
-import { RunOverScreen } from './screens/RunOverScreen';
-import { RunMapScreen } from './screens/RunMapScreen';
-import { RunRestScreen } from './screens/RunRestScreen';
-import { RunEventScreen } from './screens/RunEventScreen';
-import { TestModeScreen } from './screens/TestModeScreen';
-import { PetCareScreen } from './screens/PetCareScreen';
-import { QuestLogScreen } from './screens/QuestLogScreen';
-import { SeasonPassScreen } from './screens/SeasonPassScreen';
-import { GachaScreen } from './screens/GachaScreen';
-import { PowerForgeScreen } from './screens/PowerForgeScreen';
-import { ComingSoonScreen } from './screens/ComingSoonScreen';
-import { WarmHomeSceneReview } from './screens/WarmHomeSceneReview';
+const MathScreen = lazy(() => import('./screens/MathScreen').then(module => ({ default: module.MathScreen })));
+const CatchNumberScreen = lazy(() => import('./features/catch-math/CatchNumberScreen').then(module => ({ default: module.CatchNumberScreen })));
+const FeedingScreen = lazy(() => import('./screens/FeedingScreen').then(module => ({ default: module.FeedingScreen })));
+const ShopScreen = lazy(() => import('./screens/ShopScreen').then(module => ({ default: module.ShopScreen })));
+const BattleScreen = lazy(() => import('./screens/BattleScreen').then(module => ({ default: module.BattleScreen })));
+const MomentumScreen = lazy(() => import('./screens/MomentumScreen').then(module => ({ default: module.MomentumScreen })));
+const NumberMergeScreen = lazy(() => import('./screens/NumberMergeScreen').then(module => ({ default: module.NumberMergeScreen })));
+const ClassRosterScreen = lazy(() => import('./screens/ClassRosterScreen').then(module => ({ default: module.ClassRosterScreen })));
+const ChallengerPreviewScreen = lazy(() => import('./screens/ChallengerPreviewScreen').then(module => ({ default: module.ChallengerPreviewScreen })));
+const MatchResultScreen = lazy(() => import('./screens/MatchResultScreen').then(module => ({ default: module.MatchResultScreen })));
+const AssetReviewScreen = lazy(() => import('./screens/AssetReviewScreen').then(module => ({ default: module.AssetReviewScreen })));
+const AnimationReviewScreen = lazy(() => import('./screens/AnimationReviewScreen').then(module => ({ default: module.AnimationReviewScreen })));
+const RunStartScreen = lazy(() => import('./screens/RunStartScreen').then(module => ({ default: module.RunStartScreen })));
+const RunEncounterScreen = lazy(() => import('./screens/RunEncounterScreen').then(module => ({ default: module.RunEncounterScreen })));
+const RunRewardScreen = lazy(() => import('./screens/RunRewardScreen').then(module => ({ default: module.RunRewardScreen })));
+const RunOverScreen = lazy(() => import('./screens/RunOverScreen').then(module => ({ default: module.RunOverScreen })));
+const RunMapScreen = lazy(() => import('./screens/RunMapScreen').then(module => ({ default: module.RunMapScreen })));
+const RunRestScreen = lazy(() => import('./screens/RunRestScreen').then(module => ({ default: module.RunRestScreen })));
+const RunEventScreen = lazy(() => import('./screens/RunEventScreen').then(module => ({ default: module.RunEventScreen })));
+const TestModeScreen = lazy(() => import('./screens/TestModeScreen').then(module => ({ default: module.TestModeScreen })));
+const PetCareScreen = lazy(() => import('./screens/PetCareScreen').then(module => ({ default: module.PetCareScreen })));
+const QuestLogScreen = lazy(() => import('./screens/QuestLogScreen').then(module => ({ default: module.QuestLogScreen })));
+const SeasonPassScreen = lazy(() => import('./screens/SeasonPassScreen').then(module => ({ default: module.SeasonPassScreen })));
+const GachaScreen = lazy(() => import('./screens/GachaScreen').then(module => ({ default: module.GachaScreen })));
+const PowerForgeScreen = lazy(() => import('./screens/PowerForgeScreen').then(module => ({ default: module.PowerForgeScreen })));
+const ComingSoonScreen = lazy(() => import('./screens/ComingSoonScreen').then(module => ({ default: module.ComingSoonScreen })));
+const WarmHomeSceneReview = lazy(() => import('./screens/WarmHomeSceneReview').then(module => ({ default: module.WarmHomeSceneReview })));
 import { FeatureHUD } from './components/scene/FeatureHUD';
 import { DevCombatPicker } from './components/battle/DevCombatPicker';
 import { FOOD_ITEMS } from './config/gameConfig';
@@ -37,6 +45,9 @@ import { validateConfigs } from './config';
 import { DevToolsOverlay } from './devtools';
 import { isDevModeEnabled } from './utils/featureFlags';
 import * as SaveManager from './services/persistence/SaveManager';
+import { saveTeacherSettings } from './services/persistence/saveTeacherSettings';
+import { readLearnerIndex } from './services/persistence/learnerIndex';
+import { createLearner, selectLearner } from './services/persistence/learnerProfiles';
 import { AchievementPopup } from './components/ui/AchievementPopup';
 import { HelpProvider } from './components/help/HelpProvider';
 import { OnboardingGate } from './components/help/OnboardingGate';
@@ -44,6 +55,18 @@ import { PreBattleWarmup } from './components/battle/PreBattleWarmup';
 import { registerAllHelp } from './config/help';
 import type { EngineState } from './engine/core/EngineTypes';
 import type { PetState } from './types';
+import './screens/woodland.css';
+const WoodlandScreen = lazy(() => import('./screens/WoodlandScreen').then(module => ({ default: module.WoodlandScreen })));
+import { LearningActionContext, LearningContext, SkillReviewContext } from './components/LearningContext';
+import { ActivePetContext } from './components/ActivePetContext';
+import { petVisualKey } from './config/companionConfig';
+import './growth.css';
+const GrowthScreen = lazy(() => import('./screens/GrowthScreen').then(module => ({ default: module.GrowthScreen })));
+const DiscoveryScreen = lazy(() => import('./screens/DiscoveryScreen').then(module => ({ default: module.DiscoveryScreen })));
+import { DeveloperMenu } from './devtools/DeveloperMenu';
+const TeacherDashboard = lazy(() => import('./screens/TeacherDashboard').then(module => ({ default: module.TeacherDashboard })));
+const ArcadeScreen = lazy(() => import('./features/arcade/ArcadeScreen').then(module => ({ default: module.ArcadeScreen })));
+const PlayScreen = lazy(() => import('./screens/PlayScreen').then(module => ({ default: module.PlayScreen })));
 
 // Register all help configs once at module load
 registerAllHelp();
@@ -53,10 +76,18 @@ const LEGACY_SAVE_KEY = 'vpet_gamestate_v1';
 
 function loadInitialState(): EngineState {
   const base = createInitialEngineState();
+  const learners = readLearnerIndex();
+  const selected = learners.profiles.find(p => p.id === learners.activeId);
+  if (selected && selected.id !== 'default') {
+    base.learnerProfileId = selected.id;
+    base.player = { ...base.player, id: selected.id, displayName: selected.label };
+  }
   try {
     // Try new SaveManager format first
     const saved = SaveManager.load();
-    if (saved) return { ...saved, initialized: false };
+    if (saved) return { ...saved, learnerProfileId: learners.activeId, initialized: false };
+    // Never import the original legacy user's data into a different learner.
+    if (learners.activeId !== 'default') return base;
 
     // Migrate legacy GameState format (pre-Step-14 saves)
     const legacySave = localStorage.getItem(LEGACY_SAVE_KEY);
@@ -82,8 +113,9 @@ function loadInitialState(): EngineState {
         : null;
       return {
         ...base,
+        eggDiscovery: null,
         pet: migratedPet,
-        egg: legacy.egg ?? base.egg,
+        egg: legacy.egg ?? (migratedPet ? null : { id: `legacy_egg_${Date.now()}`, type: 'koala', state: 'incubating', progress: 0, createdAt: new Date().toISOString() }),
         player: {
           ...base.player,
           ...(legacy.player as Partial<typeof base.player>),
@@ -106,43 +138,20 @@ function loadInitialState(): EngineState {
   return base;
 }
 
-const TestModeButton = ({ dispatch }: { dispatch: (a: import('./engine/core/ActionTypes').GameEngineAction) => void }) => (
-  <div className="fixed top-4 right-4 z-50 flex gap-2">
-    {isDevModeEnabled() && (
-      <>
-        <button
-          className="px-3 py-1 bg-purple-500 hover:bg-purple-400 text-white font-bold rounded text-sm"
-          onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'asset_review' })}
-        >
-          Review Assets
-        </button>
-        <button
-          className="px-3 py-1 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded text-sm"
-          onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'animation_review' })}
-        >
-          Review Animations
-        </button>
-        <button
-          className="px-3 py-1 bg-cyan-500 hover:bg-cyan-400 text-white font-bold rounded text-sm"
-          onClick={() => dispatch({ type: 'START_MOMENTUM' })}
-        >
-          Momentum
-        </button>
-      </>
-    )}
-    <button
-      className="px-3 py-1 bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold rounded"
-      onClick={() => dispatch({ type: 'ENTER_TEST_MODE' })}
-    >
-      Test Mode
-    </button>
-  </div>
-);
 
-function App() {
-  const [initialState] = useState<EngineState>(() => loadInitialState());
-  const { state, engine, dispatch } = useGameEngine(initialState);
+function App({ initialStateOverride, persistence, studentPilot = false, studentFlush, studentAssignment, studentTools }: { initialStateOverride?: EngineState; persistence?: typeof import('./services/persistence/enginePersistence').connectPersistence; studentPilot?: boolean; studentFlush?:()=>Promise<boolean>; studentAssignment?:()=>string; studentTools?:ReactNode } = {}) {
+  const [initialState] = useState<EngineState>(() => initialStateOverride ?? (DEMO_MODE ? createDemoState() : loadInitialState()));
+  const { state, engine, dispatch } = useGameEngine(initialState, DEMO_MODE ? connectDemoPersistence : persistence);
+  const learnerFacts = useMemo(() => ({ skillReviews: state.skillReviews, matchHistory: state.matchHistory }), [state.skillReviews, state.matchHistory]);
+  const [studentActive, setStudentActive] = useState(false);
   const [isFeeding, setIsFeeding] = useState(false);
+  const [showTeacher, setShowTeacher] = useState(false);
+  const [saveError, setSaveError] = useState(SaveManager.getSaveError);
+  useEffect(() => {
+    const update = () => setSaveError(SaveManager.getSaveError());
+    window.addEventListener('vpet-save-status', update);
+    return () => window.removeEventListener('vpet-save-status', update);
+  }, []);
   const [lastFoodIcon, setLastFoodIcon] = useState<string | null>(null);
 
   // Pre-combat character picker — intercepts practice-battle start so the
@@ -155,7 +164,7 @@ function App() {
   // before committing to a battle. PvP (START_PVP_BATTLE) uses the player's
   // own pet by design and is not intercepted here.
   const devDispatch: typeof dispatch = (action) => {
-    if (action.type === 'START_BATTLE') {
+    if (action.type === 'START_BATTLE' && !studentPilot && isDevModeEnabled()) {
       setShowCombatPicker(true);
       return;
     }
@@ -171,21 +180,30 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const bridgeActive = state.woodland?.phase === 'route' && ((state.woodland.route === 'catch' && state.screen === 'catch_math') || (state.woodland.route === 'merge' && state.screen === 'number_merge'));
   const renderScreen = () => {
+    if (state.screen === 'first_adventure') return <FirstAdventureScreen state={state} dispatch={dispatch}/>;
+    if (state.screen === 'woodland') return <WoodlandScreen state={state} dispatch={dispatch} />;
+    if (state.screen === 'discovery' || (!state.pet && !state.egg && state.eggDiscovery && ['home', 'incubation', 'growth'].includes(state.screen))) return <DiscoveryScreen state={state} dispatch={dispatch} />;
+    if (state.screen === 'growth') return <GrowthScreen state={state} dispatch={dispatch} />;
+    if (state.screen === 'feeding') return <div className="min-h-dvh bg-slate-950"><FeedingScreen isOpen onClose={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })} currentTokens={state.player.currencies.tokens} mpLifetime={state.player.currencies.mpLifetime} onFeed={foodId => { const food = FOOD_ITEMS.find(item => item.id === foodId); if (food) dispatch({ type: 'FEED_PET', food }); }} /></div>;
+    if (state.screen === 'home_builder' || import.meta.env.MODE === 'offline' && state.screen === 'home' && state.pet) return <HomeBaseScreen state={state} dispatch={dispatch}/>;
+    if (state.screen === 'arcade') return <ArcadeScreen state={state} dispatch={dispatch}/>;
+    if (state.screen === 'play') return <PlayScreen dispatch={devDispatch} hasPet={!!state.pet} arcade={state.arcade} reviews={state.skillReviews} />;
     if (state.mode === 'test') {
       return <TestModeScreen onExit={() => dispatch({ type: 'EXIT_TEST_MODE' })} />;
     }
     if (state.screen === 'asset_review') {
-      return <AssetReviewScreen onExit={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })} />;
+      return <AssetReviewScreen onExit={() => dispatch({ type: 'SET_SCREEN', screen: bridgeActive ? 'woodland' : 'home' })} />;
     }
     if (state.screen === 'animation_review') {
-      return <AnimationReviewScreen onExit={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })} />;
+      return <AnimationReviewScreen onExit={() => dispatch({ type: 'SET_SCREEN', screen: bridgeActive ? 'woodland' : 'home' })} />;
     }
     if (state.screen === 'momentum' && state.momentum.active) {
       return (
         <MomentumScreen
           state={state.momentum}
-          petSpeciesId={state.pet?.speciesId ?? null}
+          petSpeciesId={state.pet ? petVisualKey(state.pet) : null}
           dispatch={dispatch}
         />
       );
@@ -193,9 +211,10 @@ function App() {
     if (state.screen === 'number_merge') {
       return (
         <NumberMergeScreen
-          petSpeciesId={state.pet?.speciesId ?? null}
-          onExit={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
-          onWin={(tokens) => dispatch({ type: 'AWARD_TOKENS', amount: tokens })}
+          onComplete={() => dispatch({ type: 'COMPLETE_CLASSROOM_ACTIVITY', game: 'merge' })}
+          petSpeciesId={state.pet ? petVisualKey(state.pet) : null}
+          onExit={() => dispatch({ type: 'SET_SCREEN', screen: bridgeActive ? 'woodland' : 'home' })}
+          onWin={(tokens) => { dispatch({ type: 'AWARD_TOKENS', amount: tokens }); if (bridgeActive) dispatch({ type: 'BRIDGE_MERGE_COMPLETE' }); }}
         />
       );
     }
@@ -221,7 +240,7 @@ function App() {
       return <RunOverScreen run={state.run} pet={state.pet} dispatch={dispatch} />;
     }
     if (state.screen === 'battle' && state.battle.active) {
-      return <BattleScreen battle={state.battle} dispatch={dispatch} matchHistory={state.matchHistory} trophyCase={state.trophyCase} />;
+      return <BattleScreen prizeWins={state.prizes?.wins ?? 0} key={state.battle.playerPet.speciesId} battle={state.battle} dispatch={dispatch} matchHistory={state.matchHistory} trophyCase={state.trophyCase} />;
     }
     if (state.screen === 'match_result') {
       const lastResult = state.matchHistory[state.matchHistory.length - 1];
@@ -270,7 +289,7 @@ function App() {
           coins={state.player.currencies.coins}
           mpLifetime={state.player.currencies.mpLifetime}
           level={state.pet?.progression.level ?? 1}
-          battlesWon={state.player.pvpRecord?.totalWins ?? 0}
+          battlesWon={Math.max(state.prizes?.wins ?? 0, state.player.pvpRecord?.totalWins ?? 0)}
           bond={state.pet?.bond ?? 0}
           dispatch={dispatch}
           onClose={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
@@ -351,10 +370,16 @@ function App() {
     if (state.screen === 'math') {
       return (
         <>
-          <TestModeButton dispatch={dispatch} />
           <MathScreen
+            receipts={state.economy?.receipts}
+            tokens={state.player.currencies.tokens}
+            mathReward={Math.round(10 * (1 + (state.player.powerForge?.forge_math_reward ?? 0) / 10))}
+            pendingXP={state.economy?.pendingXP}
+            checkpoint={state.practiceCheckpoint}
+            reviews={state.skillReviews}
+            adventure={state.firstAdventure}
             dispatch={dispatch}
-            onExit={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
+            onExit={() => dispatch({ type: 'SET_SCREEN', screen: bridgeActive ? 'woodland' : 'home' })}
             initialStreak={state.player.streaks.correctAnswers}
             speciesId={state.pet?.speciesId ?? 'koala_sprite'}
           />
@@ -364,12 +389,11 @@ function App() {
     if (state.screen === 'catch_math') {
       return (
         <>
-          <TestModeButton dispatch={dispatch} />
           <CatchNumberScreen
             dispatch={dispatch}
             pet={state.pet}
             initialStreak={state.player.streaks.correctAnswers}
-            onExit={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}
+            onExit={() => dispatch({ type: 'SET_SCREEN', screen: bridgeActive ? 'woodland' : 'home' })}
           />
         </>
       );
@@ -377,16 +401,20 @@ function App() {
     if (state.pet && state.screen === 'home') {
       return (
         <>
-          <TestModeButton dispatch={dispatch} />
-          <FeatureHUD state={state} dispatch={dispatch} />
+          {!studentPilot && <FeatureHUD state={state} dispatch={dispatch} />}
           <GameSceneShell
+            nextGoal={<NextAdventure state={state} dispatch={dispatch}/>}
             pet={state.pet}
+            learner={learnerFacts}
             currentRoom={state.currentRoom}
+            homeBase={state.homeBase ?? createHomeBase(state)}
             playerTokens={state.player.currencies.tokens}
             mp={state.player.currencies.mp}
             mpLifetime={state.player.currencies.mpLifetime}
             mathBuffs={state.player.mathBuffs}
+            showPower={unlockedFeatures(state).has('forge')}
             dailyGoals={state.dailyGoals}
+            lifetimeMathCorrect={state.player.lifetimeMathCorrect}
             ticketCount={state.battleTickets.tickets.length}
             mailbox={state.mailbox}
             interaction={state.interaction}
@@ -400,6 +428,7 @@ function App() {
           />
           <FeedingScreen
             isOpen={isFeeding}
+            home={state.currentRoom === 'inside' ? state.homeBase ?? createHomeBase(state) : undefined}
             onClose={() => setIsFeeding(false)}
             currentTokens={state.player.currencies.tokens}
             mpLifetime={state.player.currencies.mpLifetime}
@@ -416,11 +445,14 @@ function App() {
     if (state.egg) {
       return (
         <>
-          <TestModeButton dispatch={dispatch} />
           <IncubationScreen
+            onPlay={() => dispatch({ type: 'SET_SCREEN', screen: 'arcade' })}
+            key={state.egg.id}
             egg={state.egg}
             onTap={() => dispatch({ type: 'TAP_EGG' })}
             onHatch={() => dispatch({ type: 'HATCH_EGG' })}
+            onChoose={!studentPilot && (state.devPreview || !state.eggDiscovery) ? speciesId => dispatch({ type: 'CHOOSE_COMPANION_EGG', speciesId }) : undefined}
+            ownedSpecies={(state.companionRoster ?? []).map(p => p.speciesId)}
           />
         </>
       );
@@ -436,11 +468,27 @@ function App() {
   };
 
   return (
-    <>
-      <div className="anim-screen-enter">
-        {renderScreen()}
+    <LearningContext.Provider value={state.learning}>
+    <LearningActionContext.Provider value={dispatch}>
+    <SkillReviewContext.Provider value={state.skillReviews ?? []}>
+    <ActivePetContext.Provider value={state.pet}>
+      {studentPilot ? <StudentShell state={state} engine={engine} flush={studentFlush} assignment={studentAssignment} tools={studentTools} onActivity={setStudentActive}>
+      <div key={`${state.learnerProfileId ?? 'default'}-${state.screen}-${state.activityRoute ?? ''}-${state.devPreview ? 'preview' : 'player'}`} className={`screen-reveal ${bridgeActive && state.woodland?.route === 'catch' ? 'bridge-session' : ''}`}>
+        <Suspense fallback={<div role="status" className="min-h-dvh bg-slate-950 text-white grid place-items-center">Loading your activity…</div>}>
+          {bridgeActive && <div className="woodland-return"><span role="status">Bridge mission · {state.woodland?.route === 'catch' ? `${state.woodland.deliveries.length}/3 supply deliveries` : 'Build a winning board'}</span><button onClick={() => dispatch({ type: 'OPEN_WOODLAND' })}>Back to bridge</button></div>}
+          {renderScreen()}
+        </Suspense>
       </div>
+      </StudentShell> : <>
+      <div key={`${state.learnerProfileId ?? 'default'}-${state.screen}-${state.activityRoute ?? ''}-${state.devPreview ? 'preview' : 'player'}`} className={`screen-reveal ${bridgeActive && state.woodland?.route === 'catch' ? 'bridge-session' : ''}`}>
+        <Suspense fallback={<div role="status" className="min-h-dvh bg-slate-950 text-white grid place-items-center">Loading your activity…</div>}>
+          {bridgeActive && <div className="woodland-return"><span role="status">Bridge mission · {state.woodland?.route === 'catch' ? `${state.woodland.deliveries.length}/3 supply deliveries` : 'Build a winning board'}</span><button onClick={() => dispatch({ type: 'OPEN_WOODLAND' })}>Back to bridge</button></div>}
+          {renderScreen()}
+        </Suspense>
+      </div>
+      </>}
       <HelpProvider
+        showButton={(!studentPilot || studentActive) && !showTeacher && state.screen !== 'home_builder' && state.screen !== 'battle' && state.screen !== 'run_encounter'}
         helpState={state.help}
         dispatch={dispatch}
       >
@@ -448,20 +496,25 @@ function App() {
         <></>
       </HelpProvider>
       {/* Intro tutorial — only fires when explicitly requested via SHOW_ONBOARDING (dev tools / help panel) */}
-      {state.pet && (
+      {(!studentPilot || studentActive) && state.pet && (
         <OnboardingGate
           showOnboarding={state.showOnboarding === true}
           dispatch={dispatch}
         />
       )}
       {/* Pre-battle warmup — math question before every wild battle */}
-      {state.pendingBattleWarmup && (
+      {(!studentPilot || studentActive) && state.pendingBattleWarmup && (
         <PreBattleWarmup
           difficulty={Math.min(3, Math.max(1, Math.floor((state.pet?.progression.level ?? 1) / 5) + 1))}
           dispatch={dispatch}
         />
       )}
-      <AchievementPopup notifications={state.notifications} dispatch={dispatch} />
+      <AchievementPopup notifications={state.notifications} dispatch={dispatch} muted={(studentPilot && !studentActive) || showTeacher || state.screen === 'home_builder' || state.learning.schoolSafe !== false && (state.screen === 'woodland' || bridgeActive)} />
+      {!studentPilot && !(import.meta.env.MODE === 'offline' && state.screen === 'home') && ['home', 'incubation', 'play', 'discovery', 'growth', 'woodland', 'pet_care'].includes(state.screen) && <button className="fixed right-3 top-3 z-[70] min-h-11 rounded-xl border border-teal-500/50 bg-slate-950/95 text-teal-200 px-4 text-sm font-bold" onClick={() => setShowTeacher(true)}>Teacher dashboard</button>}
+      {!studentPilot && state.pet && state.mode === 'normal' && ['home', 'play'].includes(state.screen) && !state.interaction.careGameActive && !state.interaction.isInteracting && <PrizeStudio state={state} dispatch={dispatch}/>}
+      {!studentPilot && showTeacher && <Suspense fallback={<div role="status" className="fixed inset-0 z-[150] bg-slate-950 text-white grid place-items-center">Opening teacher dashboard…</div>}><TeacherDashboard key={`${state.learnerProfileId ?? state.player.id}-${state.devPreview || state.mode === 'test' ? 'preview' : 'learner'}`} state={state} dispatch={dispatch} learners={{ ...(DEMO_MODE ? demoLearners(state) : readLearnerIndex()), activeId: state.learnerProfileId ?? 'default' }} onSelectLearner={id => DEMO_MODE ? selectDemoLearner(engine, id) : selectLearner(engine, id)} onCreateLearner={label => DEMO_MODE ? createDemoLearner(engine, label) : createLearner(engine, label)} onSave={settings => { if (DEMO_MODE) { dispatch({ type: 'SET_LEARNING_SETTINGS', settings }); return { status: 'saved' }; } return saveTeacherSettings(engine, settings); }} onClose={() => setShowTeacher(false)} /></Suspense>}
+      {!studentPilot && saveError && <div role="alert" className="fixed bottom-0 inset-x-0 z-[200] bg-amber-100 text-amber-950 p-3 text-center">{saveError}</div>}
+      {!studentPilot && !showTeacher && <DeveloperMenu state={state} dispatch={action => { setShowTeacher(false); setIsFeeding(false); setShowCombatPicker(false); dispatch(DEMO_MODE && action.type === 'DEV_PREVIEW_STATE' ? { ...action, state: { ...action.state, learnerProfileId: state.learnerProfileId } } : action); }} onTeacher={() => setShowTeacher(true)} />}
       {/* Pre-combat character picker modal (always available) */}
       {showCombatPicker && (
         <DevCombatPicker
@@ -472,8 +525,11 @@ function App() {
           onCancel={() => setShowCombatPicker(false)}
         />
       )}
-      {isDevModeEnabled() && <DevToolsOverlay engine={engine} state={state} dispatch={dispatch} />}
-    </>
+      {!studentPilot && isDevModeEnabled() && <DevToolsOverlay engine={engine} state={state} dispatch={action => { if (action.type === 'DEV_JUMP_SCREEN') { setShowTeacher(false); setIsFeeding(false); setShowCombatPicker(false); } dispatch(action); }} />}
+    </ActivePetContext.Provider>
+    </SkillReviewContext.Provider>
+    </LearningActionContext.Provider>
+    </LearningContext.Provider>
   );
 }
 

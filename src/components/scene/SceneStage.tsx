@@ -12,6 +12,7 @@ interface SceneStageProps {
   petX?: number;
   /** Whether the pet is facing left. */
   facingLeft?: boolean;
+  movementMs?: number;
   /** Pixel-art ground shadow config from scene. */
   shadow?: ShadowConfig;
   /** Subtle scene-aware color tint. */
@@ -38,6 +39,7 @@ export const SceneStage: React.FC<SceneStageProps> = ({
   scale,
   petX,
   facingLeft,
+  movementMs,
   shadow,
   ambientTint: _ambientTint, // kept for future use — overlay approach caused white outline
   footEmbed = 0,
@@ -49,8 +51,9 @@ export const SceneStage: React.FC<SceneStageProps> = ({
       className={`absolute pointer-events-none ${useCentered ? 'inset-x-0 flex justify-center' : ''}`}
       style={{
         zIndex: Z.PET,
+        transition: movementMs ? `left ${movementMs}ms linear, bottom ${movementMs}ms linear` : undefined,
         bottom: (groundY - footEmbed) * scale,
-        ...(!useCentered && { left: petX * scale }),
+        ...(!useCentered && { left: petX * scale, transform: 'translateX(-50%)' }),
       }}
     >
       <div className="relative pointer-events-auto" style={{ transformOrigin: 'bottom center' }}>

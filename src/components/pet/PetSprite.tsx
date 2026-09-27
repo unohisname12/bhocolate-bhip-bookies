@@ -1,6 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { usePersonalityIdle } from '../../features/pet-identity/usePersonalityIdle';
+import { ActivePetContext } from '../ActivePetContext';
+import { petVisualKey } from '../../config/companionConfig';
 import { ASSETS } from '../../config/assetManifest';
-import { ANIMATION_CONFIG } from '../../config/animationConfig';
+import { usePageVisible } from '../../hooks/usePageVisible';
+import './pet-life.css';
 import { ANIMATION_DEFAULTS } from '../../config/gameConfig';
 import { AnimationController } from '../../engine/animation/AnimationController';
 import { computeSpriteStyle } from '../../engine/animation/SpriteRenderer';
@@ -8,16 +12,13 @@ import type { AnimationName, SpriteSheetConfig } from '../../engine/animation/ty
 import type { PetIntent } from '../../engine/systems/PetIntentSystem';
 import type { PetNeeds } from '../../types';
 import { usePetMotion } from '../../hooks/usePetMotion';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { AccessoryLayer } from './AccessoryLayer';
 import type { CosmeticSlot } from '../../types/cosmetic';
 
-// Proof-of-concept motion layer targets Blue Koala only. If pet.type
-// maps to this species, we wire the motion hook; otherwise the pet
-// renders unchanged.
-const BLUE_KOALA_IDS = new Set(['koala_sprite', 'blue_koala']);
-
 interface PetSpriteProps {
   speciesId: string;
+  stage?: import('../../types').PetStage;
   animationName: string;
   /** Optional intent override — when set, shown in debug overlay */
   intent?: PetIntent;
@@ -50,7 +51,7 @@ const HeldItem: React.FC<{ icon: string; scale: number }> = ({ icon, scale }) =>
   // ~24px native (fits in pet's paws). Scale with sprite scale so it
   // tracks the pet at any zoom level.
   const size = 26 * scale;
-  const isImageUrl = /^[\/\.]|^https?:/.test(icon);
+  const isImageUrl = /^[/.]|^https?:/.test(icon);
   return (
     <div
       className="absolute pointer-events-none anim-chomp"
@@ -173,8 +174,9 @@ const DebugOverlay: React.FC<{
 );
 
 export const PetSprite: React.FC<PetSpriteProps> = ({
-  speciesId,
-  animationName,
+  speciesId: originalSpeciesId,
+  stage,
+  animationName: requestedAnimation,
   intent,
   needs,
   scale = ANIMATION_DEFAULTS.scale,
@@ -188,6 +190,13 @@ export const PetSprite: React.FC<PetSpriteProps> = ({
   equippedCosmetics,
 }) => {
   // Check for a mood-specific override sheet (e.g. koala_sprite__idle)
+  const activePet = useContext(ActivePetContext);
+  const speciesId = petVisualKey({ speciesId: originalSpeciesId, stage: stage ?? (activePet?.speciesId === originalSpeciesId ? activePet.stage : 'baby') });
+  const reducedMotion = useReducedMotion();
+  const pageVisible = usePageVisible();
+  const personality = activePet?.speciesId === originalSpeciesId ? activePet.identity?.personality : undefined;
+  const animationName = usePersonalityIdle(requestedAnimation, personality, !paused && !reducedMotion && pageVisible);
+  const animationPaused = paused || reducedMotion || !pageVisible || animationName === 'dead';
   const overrideKey = `${speciesId}__${animationName}`;
   const petAsset = ASSETS.pets[overrideKey] ?? ASSETS.pets[speciesId] ?? null;
   const hasSpriteSheet = petAsset !== null;
@@ -222,10 +231,10 @@ export const PetSprite: React.FC<PetSpriteProps> = ({
     return 'idle';
   }, [animationName, hasAnimation]);
 
-  // Gate the proof motion layer to Blue Koala. Other species render as before.
-  const motionEnabled = !paused && BLUE_KOALA_IDS.has(speciesId);
+  const motionEnabled = !animationPaused && hasSpriteSheet && animationName !== 'dead';
   usePetMotion(motionTargetRef, {
-    animationName: safeAnimationName,
+    animationName,
+    speciesId,
     petX,
     reactionPhase,
     enabled: motionEnabled,
@@ -241,7 +250,7 @@ export const PetSprite: React.FC<PetSpriteProps> = ({
   }, [spriteConfig, safeAnimationName, onFrameChange]);
 
   useEffect(() => {
-    if (paused) {
+    if (animationPaused) {
       if (rafRef.current !== null) {
         window.cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
@@ -271,16 +280,16 @@ export const PetSprite: React.FC<PetSpriteProps> = ({
       rafRef.current = null;
       lastFrameTimeRef.current = null;
     };
-  }, [paused, onFrameChange]);
+  }, [animationPaused, onFrameChange]);
 
-  const currentAnimClass = (ANIMATION_CONFIG.petStates as Record<string, string>)[safeAnimationName] || 'anim-sprite-idle';
+  const currentAnimClass = animationName === 'dead' ? 'filter grayscale rotate-180 opacity-50' : animationName === 'sick' ? 'filter grayscale opacity-80' : '';
 
   // Show fallback for EITHER: no sprite sheet OR animation missing from existing sheet
   // This ensures artists always see what needs to be created
-  const showFallback = !hasSpriteSheet || !hasAnimation;
+  const showFallback = !hasSpriteSheet || (debug && !hasAnimation);
 
   return (
-    <div className={`relative flex flex-col items-center justify-center ${currentAnimClass} ${className}`}
+    <div data-pet-species={speciesId} data-pet-animation={animationName} data-motion-paused={animationPaused} className={`pet-sprite relative flex flex-col items-center justify-center ${currentAnimClass} ${className}`}
          style={{ transformOrigin: 'bottom center' }}>
 
       {/* Debug overlay */}
@@ -305,11 +314,10 @@ export const PetSprite: React.FC<PetSpriteProps> = ({
       )}
 
       {/* Motion target — inner div owns the fake-physics transform.
-          Transforms on this inner element compose cleanly with the CSS
-          class-based breathing on the outer wrapper. */}
+          Cosmetics and held items share its motion and stay attached. */}
       <div
         ref={motionTargetRef}
-        className="relative z-10"
+        className="pet-body-motion relative z-10"
         style={{ transformOrigin: 'bottom center', willChange: 'transform' }}
       >
         {showFallback ? (
@@ -327,7 +335,7 @@ export const PetSprite: React.FC<PetSpriteProps> = ({
             )}
             <div
               className="cursor-pointer"
-              style={computeSpriteStyle(spriteConfig, frame, scale)}
+              style={computeSpriteStyle(spriteConfig, frame >= spriteConfig.animations[safeAnimationName].startFrame && frame <= spriteConfig.animations[safeAnimationName].endFrame ? frame : spriteConfig.animations[safeAnimationName].startFrame, scale)}
             />
             {/* Front cosmetics (collar/eyewear/hat) render on top of pet */}
             {equippedCosmetics && (

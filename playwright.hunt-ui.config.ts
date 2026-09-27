@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'./e2e',testMatch:'pet-hunt.spec.ts',grep:/solo hunter and runner|earned pet is automatic|browser fullscreen/,outputDir:'test-results-hunt-clean',workers:1,timeout:90000,use:{baseURL:'http://127.0.0.1:5196',channel:'chrome',headless:true,screenshot:'only-on-failure'},webServer:{command:'npx vite --host 127.0.0.1 --port 5196 --strictPort',url:'http://127.0.0.1:5196',reuseExistingServer:false,timeout:30000}});

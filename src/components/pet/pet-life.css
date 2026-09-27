@@ -1,0 +1,5 @@
+.pet-body-motion{transform-origin:bottom center;backface-visibility:hidden}
+.pet-sprite[data-motion-paused=true] *{animation-play-state:paused!important}
+/* The shared sprite motion now supplies footfalls in Home Base as well. */
+.hb-resident.is-walking .hb-pet-touch{animation:none}
+@media(prefers-reduced-motion:reduce){.pet-sprite,.pet-sprite *{animation:none!important;transition:none!important}}

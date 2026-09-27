@@ -1,0 +1,10 @@
+.pet-invite { display:flex; gap:6px; justify-content:center; align-items:center; flex-wrap:wrap; margin-top:6px; pointer-events:auto; }
+.pet-invite button { min-height:36px; padding:6px 12px; border-radius:999px; border:1px solid #ffffff55; background:#ffffff22; color:inherit; font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+.pet-invite .pet-invite-yes { background:#f7c95c; color:#3a2a07; border-color:transparent; }
+.pet-invite button:focus-visible { outline:3px solid #ffd76a; outline-offset:2px; }
+/* In the care panel the invitation repeats the question so it reads on its own. */
+.pet-invite-panel { margin:0 0 10px; padding:8px 10px; border-radius:14px; background:#f7c95c1f; border:1px solid #f7c95c66; animation:pet-invite-in .25s ease-out; }
+.pet-invite-panel p { flex:1 1 180px; margin:0; font-size:13px; font-weight:650; color:#f5e6b8; }
+.pet-invite-panel button { min-height:44px; padding:8px 16px; font-size:14px; }
+@keyframes pet-invite-in { from { opacity:0; transform:translateY(4px); } }
+@media(prefers-reduced-motion:reduce) { .pet-invite-panel { animation:none; } }

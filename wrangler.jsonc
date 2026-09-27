@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "auralith-classroom-pilot",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-07",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "dist-pilot",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "auralith-classroom-pilot",
+    "database_id": "22222041-38f1-41ce-8dd0-217751561aad",
+    "migrations_dir": "worker/migrations"
+  }],
+  "durable_objects": { "bindings": [{ "name": "PET_HUNT", "class_name": "PetHuntRoom" }] },
+  "migrations": [{ "tag": "pet-hunt-v1", "new_sqlite_classes": ["PetHuntRoom"] }],
+  "observability": { "enabled": true, "logs": { "invocation_logs": false } },
+  "triggers": { "crons": ["17 4 * * *"] }
+}

@@ -1,0 +1,91 @@
+/* Shared art direction: timber, midnight teal, parchment and warm lamplight. */
+.home-base{
+  color:#e4dfc6;background:#101f27;
+  background-image:radial-gradient(ellipse at 45% 30%,#365344 0,#182d30 45%,#0b151e 100%);
+  font-family:Inter,system-ui,sans-serif;
+}
+.home-base .hb-header{padding:13px 24px;background:#101e27eb;border-bottom:1px solid #59705a;box-shadow:0 5px 24px #0004}
+.home-base .hb-title h1{font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:-1px;color:#fff0c4;text-shadow:2px 3px #172020}
+.home-base .hb-title>span{font-size:9px;letter-spacing:2px;color:#a4b995}
+.home-base .hb-title-leaf{color:#d1ad67}.home-base .hb-wallet{color:#f7d487}
+.home-base .hb-back,.home-base .hb-view-controls button,.home-base .hb-room-tools button,.home-base .hb-mode,.home-base .hb-selected button,.home-base .hb-life-footer button{
+  background:#223a3d;color:#ece3bc;border:1px solid #708368;border-radius:7px;box-shadow:inset 0 1px #96aa7033,0 3px #07191d;font-weight:700;
+}
+.home-base .hb-mode button{color:#a3b7ac;border-radius:5px;min-height:40px}
+.home-base .hb-mode button[aria-pressed=true]{background:#d4b775;color:#172c2c;box-shadow:inset 0 1px #fff2c9}
+.home-base .hb-house-map{max-width:1540px;margin:12px auto;gap:10px;padding:0 24px}
+.home-base .hb-house-map>button{grid-template-columns:64px 1fr;background:#172c33;border:1px solid #4b6357;border-radius:8px;color:#bbcab7;padding:7px 10px;box-shadow:0 4px #08191f}
+.home-base .hb-house-map>button[aria-pressed=true]{background:#34483c;border-color:#d2b776;outline:1px solid #d2b776;color:#fff0c4}
+.home-base .hb-house-map>button:disabled{opacity:.5}.home-base .hb-house-map small{color:#9caf9e;font-size:10px}
+.home-base .hb-room-mini{width:64px;height:42px;border-width:3px;box-shadow:inset 0 4px 6px #0005}
+.home-base .hb-view-controls{padding:0 26px}.home-base .hb-view-controls button{padding:7px 11px;font-size:10px}
+.home-base .hb-workspace{padding:15px 24px 50px;gap:22px;max-width:1700px}
+.home-base .hb-room-heading{margin-bottom:4px}.home-base .hb-room-heading h2{color:#fff0c8;font-family:'JetBrains Mono',monospace;font-size:23px;letter-spacing:-1px}
+.home-base .hb-room-heading p{color:#9caf9c;font-size:10px}
+/* The room remains empty until player-owned objects are drawn into it. */
+.hb-dollhouse{filter:drop-shadow(0 24px 20px #030f1699);margin:10px 0 16px}
+.hb-back-wall{height:30%;border-color:var(--trim);border-width:10px;border-bottom-width:12px;box-shadow:inset 0 14px 24px #071a1a88,inset 0 -3px #fff2;background-color:var(--wall);background-image:linear-gradient(90deg,#11262955,#ffffff10 48%,#11262955),repeating-linear-gradient(90deg,#0000 0 79px,#092b2433 80px 83px,#d0d5b211 84px 86px)}
+.hb-back-wall:after{background:repeating-linear-gradient(0deg,#0000 0 3px,#153b2910 3px 4px);opacity:.5}
+.hb-wall-rail{border-top:2px solid #f4d29133;box-shadow:0 3px #13342766}
+.hb-roofline{height:15px;background:linear-gradient(#75816b 0 3px,#3a594d 3px 9px,#182d29 9px);border-radius:3px;box-shadow:0 5px 0 #112826,0 8px 10px #001b2088}
+.hb-room-floor,.hb-foreground-floor{top:34%;bottom:10%}
+.hb-room-floor{background-color:var(--wood);background-image:linear-gradient(#1029214d,#0000 45%,#f4ce8133),url('/assets/home-premium/honey-planks-v1.png');background-size:100% 100%,384px 256px;background-blend-mode:multiply,luminosity;image-rendering:pixelated;box-shadow:inset 0 14px 22px #14272070,inset 7px 0 12px #16292455,inset -7px 0 12px #16292455;border-color:#573d24}
+.hb-room-floor.floor-tile{background-image:linear-gradient(#17382f55,#0000),repeating-linear-gradient(0deg,#0000 0 46px,#354f4655 46px 48px),repeating-linear-gradient(90deg,#d6e1b811 0 46px,#354f4666 46px 48px);background-size:100% 100%,48px 48px,48px 48px;background-blend-mode:normal}
+.hb-front-edge{border-top:4px solid #d7b57a;background:linear-gradient(#755938,#443a2b);box-shadow:0 6px #101f1e,0 9px 12px #00141c66;border-radius:0 0 4px 4px}
+.hb-doormat{background:#c0a56e;border:2px solid #6b603b;color:#3c452e;font-family:'JetBrains Mono',monospace;font-size:9px;box-shadow:0 3px #101f1e88;letter-spacing:2px}
+.hb-sunbeam{opacity:.65;background:linear-gradient(135deg,#fff4bc55,#fff2be08);mix-blend-mode:screen}
+.hb-room-atmosphere{position:absolute;inset:20% 8% 13%;pointer-events:none;z-index:150;overflow:hidden}
+.hb-room-atmosphere i{position:absolute;width:3px;height:3px;background:#ffebb0;box-shadow:0 0 8px #ffefb080;opacity:0;animation:hb-dust-drift 13s linear infinite}
+.hb-room-atmosphere i:nth-child(1){left:17%;top:45%;animation-delay:-2s}.hb-room-atmosphere i:nth-child(2){left:32%;top:68%;animation-delay:-5s}.hb-room-atmosphere i:nth-child(3){left:71%;top:39%;animation-delay:-8s}.hb-room-atmosphere i:nth-child(4){left:56%;top:79%;animation-delay:-11s}.hb-room-atmosphere i:nth-child(5){left:89%;top:54%;animation-delay:-3s}
+@keyframes hb-dust-drift{0%,100%{opacity:0;transform:translate(0,0)}30%,70%{opacity:.5}99%{transform:translate(-18px,-35px)}}
+.hb-placed img{filter:var(--finish,brightness(1)) drop-shadow(2px 5px 1px #17231966)}
+.hb-placed.is-rug img{filter:var(--finish,brightness(1)) drop-shadow(0 2px 0 #533f3377)}
+.hb-placed.is-lit:before{filter:blur(3px);animation:hb-lamp-breathe 5s ease-in-out infinite}
+@keyframes hb-lamp-breathe{50%{opacity:.78}}
+/* CSS interpolation runs at display refresh rate; the simulation clock is stable. */
+.hb-resident{transition:left var(--step,340ms) linear,top var(--step,340ms) linear,z-index var(--step,340ms) linear;will-change:left,top}
+.hb-ground-shadow{position:absolute;left:23%;right:23%;height:10%;bottom:0;background:#192b2677;border-radius:50%;filter:blur(1px);transform:scaleY(.65);pointer-events:none}
+.hb-resident.is-walking .hb-ground-shadow{animation:hb-step-shadow .52s linear infinite}
+@keyframes hb-step-shadow{50%{opacity:.65;transform:scale(.86,.55)}}
+.hb-facing-left>.pet-body-motion{scale:-1 1}
+.hb-pose-lying{transform:scale(1,.85)}.hb-pose-sitting{transform:scale(.96,.9)}
+.hb-pet-bubble,.dashboard-pet-thought{color:#eee4c2;background:#183030f2;border:1px solid #a3a67b;border-radius:8px;box-shadow:0 3px #07171977;font-size:11px;line-height:1.55;padding:8px 11px}
+.hb-pet-bubble:after{content:'';position:absolute;left:48%;bottom:-5px;width:7px;height:7px;background:#183030;border-right:1px solid #a3a67b;border-bottom:1px solid #a3a67b;transform:rotate(45deg)}
+.hb-resident.is-pushing .hb-pet-touch{animation:hb-premium-push .6s ease-in-out infinite}
+@keyframes hb-premium-push{50%{transform:translateX(3px) rotate(2deg)}}
+.hb-furniture-delivery{transition-timing-function:linear}.hb-furniture-delivery span{font-size:13px;color:#8c6741}
+.hb-placed[data-pet-work=push] img{animation:hb-place-settle .35s ease-out}
+@keyframes hb-place-settle{0%{transform:translateY(-7px)}65%{transform:translateY(1px)}100%{transform:translateY(0)}}
+.home-base .hb-helper-status,.home-base .hb-guidance{color:#bad0b0;border-color:#71845f;background:#182f32;border-radius:6px;font-size:11px;padding:10px 13px}
+.home-base .hb-together,.home-base .hb-home-guide,.home-base .hb-design-desk,.home-base .hb-comfort{background:linear-gradient(135deg,#233b3e,#172d34);border:1px solid #65765c;border-radius:10px;box-shadow:0 5px #06171c88,inset 0 1px #bed39018;color:#eee3bd}
+.home-base .hb-together{padding:18px;margin-top:16px}.home-base .hb-together h3{font-size:20px;letter-spacing:-.5px;color:#fff0c4}.home-base .hb-eyebrow{color:#9ab693;letter-spacing:2px;font-size:9px}
+.home-base .hb-activity{background:#385243;color:#dfd9ae;border:1px solid #788a62;border-radius:5px;font-size:10px}
+.home-base .hb-play-actions button{background:#294347;border:1px solid #526e61;border-radius:7px;color:#f1e7bf;min-height:74px;padding:9px 5px;box-shadow:0 3px #10272b}
+.home-base .hb-play-actions button:hover{background:#3c574c;transform:translateY(-2px);border-color:#b4b57c}.home-base .hb-play-actions small{color:#a2baa9}.home-base .hb-play-actions button>span{color:#e9ca82}
+.home-base .hb-life-footer p,.home-base .hb-home-guide p,.home-base .hb-moment,.home-base .hb-comfort p,.home-base .hb-design-desk p{color:#acc1b0}
+.home-base .hb-home-guide{padding:22px}.home-base .hb-home-guide h2{font-size:26px;color:#eee3b9}.home-base .hb-guide-art{color:#b6bd84}.home-base .hb-guide-art span{color:#e0b766}
+.home-base .hb-decorate,.home-base .hb-catalog article>button,.home-base .hb-rooms button{background:#c6ab6d;color:#1b3030;border:1px solid #e5ca8c;border-radius:5px;box-shadow:0 3px #0a2228;font-weight:800}
+.home-base .hb-room-links button,.home-base .hb-collection-note{background:#1d3639;border:1px solid #557158;color:#d5ddbb;border-radius:7px}.home-base .hb-room-links h3,.home-base .hb-room-links button span{color:#afc299}
+.home-base .hb-collection-note button,.home-base .hb-collection-note strong{color:#e3c887}
+.home-base .hb-desk-heading h2{color:#f6e5b3;font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:-1px}.home-base .hb-desk-heading{padding:19px 18px 14px}.home-base .hb-desk-heading>span{color:#a3b990}
+.home-base .hb-tabs{border-color:#465f54}.home-base .hb-tabs button{color:#adc0ac}.home-base .hb-tabs button[aria-pressed=true]{background:#3a5144;color:#ffe6a3;border-bottom-color:#d6bd7c}
+.home-base .hb-search,.home-base .hb-collection-select,.home-base .hb-owned-filter,.home-base .hb-result-count{color:#b7c9b2}
+.home-base .hb-search input,.home-base .hb-collection-select select{color:#e8dfbb;background:#142b31;border:1px solid #5a7462;border-radius:5px}.home-base input::placeholder{color:#849f96}
+.home-base .hb-categories button{background:#203c3d;border-color:#55755e;color:#bacab1}.home-base .hb-categories button[aria-pressed=true]{background:#d1b775;color:#1e302c;border-color:#e9d39d}
+.home-base .hb-catalog article{background:#1d343a;border:1px solid #456254;border-radius:6px;box-shadow:0 3px #0b2129;padding:9px}.home-base .hb-catalog article.is-picked{outline:2px solid #ddbe7c;background:#354c42}
+.home-base .hb-catalog-art{background:radial-gradient(ellipse at 50% 80%,#63806455,#163039 75%);border-radius:4px;border:1px solid #64755955}.home-base .hb-catalog-art span{color:#f4d99c;background:#13292ac9}
+.home-base .hb-catalog h3{font-size:12px;color:#edddb1}.home-base .hb-catalog p{color:#9fb9a9}.home-base .hb-catalog{scrollbar-color:#748667 #172d34;max-height:55vh}
+.home-base .hb-selected{background:#25403f;border-color:#77906b;color:#f2e5b7;border-radius:8px}.home-base .hb-selected small,.home-base .hb-nudge span{color:#b2c49f}
+.home-base .hb-surfaces h3,.home-base .hb-rooms h3{color:#f1deb1}.home-base .hb-surfaces p,.home-base .hb-rooms p{color:#b0c4ad}.home-base .hb-swatches button,.home-base .hb-rooms article,.home-base .hb-expansion{background:#223b3e;color:#dae0bc;border-color:#60785c}.home-base .hb-swatches button[aria-pressed=true]{background:#3d5446;outline-color:#c1b77d}
+.home-base .pet-mind-inspector{background:#152c32;border-color:#4c6b58;color:#b6c9ae}.home-base .hb-autosave{color:#9bb59c}
+@media(min-width:1051px){.home-base .hb-live-mode .hb-dollhouse{max-height:650px}.hb-live-mode .hb-dollhouse{max-height:650px;aspect-ratio:1.55}.home-base .hb-wide-view .hb-dollhouse{max-height:800px}}
+@media(max-width:650px){.home-base .hb-header{padding:10px 12px}.home-base .hb-title h1{font-size:18px}.home-base .hb-title>span{font-size:7px;letter-spacing:1px}.home-base .hb-house-map{padding:0 12px;margin:10px auto;gap:6px}.home-base .hb-house-map>button{grid-template-columns:42px 1fr;padding:6px;gap:4px}.home-base .hb-room-mini{width:42px;height:32px}.home-base .hb-house-map strong{font-size:10px}.home-base .hb-house-map small{font-size:8px}.home-base .hb-workspace{padding:10px 12px 40px}.home-base .hb-room-heading h2{font-size:18px}.home-base .hb-room-heading p{font-size:9px}.home-base .hb-mode button{font-size:10px;padding:8px}.home-base .hb-pet-bubble{font-size:9px;max-width:130px}.home-base .hb-back-wall{border-width:6px}.home-base .hb-room-floor{background-size:100% 100%,256px 192px}.home-base .hb-view-controls{padding:0 12px}.home-base .hb-play-actions button{min-height:76px}}
+@media(prefers-reduced-motion:reduce){.hb-room-atmosphere{display:none}.hb-resident,.hb-ground-shadow,.hb-furniture-delivery,.hb-placed img,.hb-pet-touch{animation:none!important;transition:none!important}.hb-placed.is-lit:before{animation:none}}
+/* Tools stay outside the world so selecting a piece never covers its drag target. */
+.home-base .hb-selected{position:static;bottom:auto;inset:auto}
+
+/* Keep dialogue inside the room when its speaker reaches either edge. */
+.hb-resident[data-edge=left] .hb-pet-bubble{left:0;transform:none}
+.hb-resident[data-edge=right] .hb-pet-bubble{left:auto;right:0;transform:none}
+.hb-resident[data-edge=left] .hb-pet-bubble:after{left:20%}
+.hb-resident[data-edge=right] .hb-pet-bubble:after{left:80%}

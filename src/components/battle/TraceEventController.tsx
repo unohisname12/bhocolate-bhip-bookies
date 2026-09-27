@@ -1,3 +1,4 @@
+import { Modal } from '../ui/Modal';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { ActiveBattleState, BattleLogEntry } from '../../types/battle';
 import type { TraceEventType, TraceResult, TracePathDef, TraceShapeId } from '../../types/trace';
@@ -9,8 +10,13 @@ import {
   SHIELD_DAMAGE_THRESHOLD,
   TRACE_SHIELD_REDUCTION,
 } from '../../config/traceConfig';
-import { answerToShapeIds, generateMissingDigitProblem } from '../../services/game/traceEngine';
-import { generateMathProblem } from '../../services/game/mathEngine';
+import { answerToShapeIds } from '../../services/game/traceEngine';
+import { generateLearningProblem } from '../../services/game/curriculum';
+import { checkAnswer } from '../../services/game/mathEngine';
+import { useLearningSettings } from '../LearningContext';
+import { LearningHelp } from '../math/LearningHelp';
+import { MathAnswerInput } from '../math/MathAnswerInput';
+import type { MathProblem } from '../../types';
 
 interface TraceEventControllerProps {
   battle: ActiveBattleState;
@@ -48,6 +54,9 @@ export const TraceEventController: React.FC<TraceEventControllerProps> = ({
   onStartHandled,
 }) => {
   const [activeTrace, setActiveTrace] = useState<ActiveTrace | null>(null);
+  const learning = useLearningSettings();
+  const [mathGate, setMathGate] = useState<{ problem: MathProblem; eventType: TraceEventType } | null>(null);
+  const [wrongAnswer, setWrongAnswer] = useState(false);
   const [shieldAvailable, setShieldAvailable] = useState(false);
   const [shieldDamage, setShieldDamage] = useState(0);
   const shieldTimerRef = useRef<number | null>(null);
@@ -83,7 +92,7 @@ export const TraceEventController: React.FC<TraceEventControllerProps> = ({
 
   // Handle external start requests
   useEffect(() => {
-    if (!startRequest || activeTrace) return;
+    if (!startRequest || activeTrace || mathGate) return;
     onStartHandled();
 
     if (startRequest === 'trace_shield') {
@@ -103,27 +112,11 @@ export const TraceEventController: React.FC<TraceEventControllerProps> = ({
         paths: [pathDef],
         promptText: `Draw the ${pathDef.displayLabel ?? 'Rune'}!`,
       });
-    } else if (startRequest === 'trace_missing_digit') {
-      const problem = generateMissingDigitProblem(1);
-      const pathDef = TRACE_PATHS[problem.shapeId];
-      setActiveTrace({
-        eventType: 'trace_missing_digit',
-        paths: [pathDef],
-        promptText: `${problem.question} — Trace the ${problem.answer}!`,
-      });
-    } else if (startRequest === 'trace_answer') {
-      const problem = generateMathProblem(1);
-      const shapeIds = answerToShapeIds(problem.answer);
-      const paths = shapeIds.map((id) => TRACE_PATHS[id as TraceShapeId]).filter(Boolean);
-      if (paths.length > 0) {
-        setActiveTrace({
-          eventType: 'trace_answer',
-          paths,
-          promptText: `${problem.question} = ? — Trace the answer!`,
-        });
-      }
+    } else if (startRequest === 'trace_missing_digit' || startRequest === 'trace_answer') {
+      setWrongAnswer(false);
+      setMathGate({ problem: generateLearningProblem(learning), eventType: startRequest });
     }
-  }, [startRequest, activeTrace, onStartHandled]);
+  }, [startRequest, activeTrace, mathGate, onStartHandled, learning]);
 
   const handleComplete = useCallback((result: TraceResult) => {
     if (result.eventType === 'trace_shield') {
@@ -156,6 +149,17 @@ export const TraceEventController: React.FC<TraceEventControllerProps> = ({
     });
   }, []);
 
+  if (mathGate) {
+    return <Modal isOpen title="Solve before tracing" onClose={() => setMathGate(null)}><div className="max-w-sm mx-auto py-4 text-white"><button className="min-h-11 underline" onClick={() => setMathGate(null)}>Cancel</button><h2 className="text-xl font-bold my-3">Solve first, then trace</h2><p className="text-lg mb-4">{mathGate.problem.question}</p><MathAnswerInput key={mathGate.problem.id} isCorrect={wrongAnswer ? false : null} onSubmit={answer => {
+      const correct = checkAnswer(mathGate.problem, answer);
+      dispatch({ type: 'RECORD_LEARNING_ATTEMPT', problem: mathGate.problem, source: 'trace', correct });
+      if (!correct) { setWrongAnswer(true); return; }
+      const numericTrace = Number.isInteger(answer) && answer >= 0 && answer < 1000;
+      const paths = numericTrace ? answerToShapeIds(answer).map(id => TRACE_PATHS[id as TraceShapeId]).filter(Boolean) : [TRACE_PATHS.shield_circle];
+      setActiveTrace({ eventType: mathGate.eventType, paths, promptText: `Correct! ${answer}. ${numericTrace ? 'Trace your answer' : 'Trace a victory circle'} to power up.` });
+      setMathGate(null);
+    }}/>{wrongAnswer && <><p role="status" className="text-amber-200 mt-3">Not quite yet. Take your time and try again.</p><LearningHelp key={mathGate.problem.id} problem={mathGate.problem} onRetry={() => { setWrongAnswer(false); document.querySelector<HTMLInputElement>('[aria-label="Your answer"]')?.select(); }} /></>}</div></Modal>;
+  }
   if (activeTrace) {
     return (
       <TraceOverlay

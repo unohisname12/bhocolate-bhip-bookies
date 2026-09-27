@@ -695,7 +695,7 @@ describe('calculateRewards', () => {
     const state = makeState({ turnCount: 10 });
     const rewards = calculateRewards(state);
     const expectedTurnBonus = (DIFFICULTY_SETTINGS.medium.maxTurns - 10) * MOMENTUM_REWARDS.perTurnBonus;
-    expect(rewards.tokens).toBe(MOMENTUM_REWARDS.baseTokens + expectedTurnBonus);
+    expect(rewards.tokens).toBe(Math.min(60, MOMENTUM_REWARDS.baseTokens + expectedTurnBonus));
     expect(rewards.xp).toBe(MOMENTUM_REWARDS.baseXP);
   });
 });
@@ -912,12 +912,12 @@ describe('applyFlashChoice', () => {
     expect(upgraded.rank4TurnsRemaining).toBe(2);
   });
 
-  it('fusion: removes two rank-2 pieces and creates a rank-3 at chosen position', () => {
+  it('fusion: removes two rank-2 pieces and creates a rank-3 at one of their positions', () => {
     const attacker = mockPiece('p1', 'player', { x: 2, y: 2 }, 1, 2);
     const other = mockPiece('p2', 'player', { x: 0, y: 4 }, 1, 2);
     const state = makeFlashState(attacker, [other]);
 
-    const resultPos = { x: 1, y: 3 };
+    const resultPos = { x: 2, y: 2 };
     const result = applyFlashChoice(state, 'fusion', {
       pieceId1: 'p1',
       pieceId2: 'p2',

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Modal } from '../ui/Modal';
 
 interface MailboxReward {
   tokens: number;
@@ -25,34 +26,7 @@ export const MailboxPopup: React.FC<MailboxPopupProps> = ({ reward, onClaim, onC
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      {/* Dimmed backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-
-      {/* Card */}
-      <div
-        className="relative anim-scene-popup rounded-2xl px-6 py-5 max-w-[320px] w-full mx-4"
-        style={{
-          background: 'linear-gradient(180deg, rgba(30,35,55,0.97) 0%, rgba(15,18,30,0.99) 100%)',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.6), 0 0 1px rgba(255,255,255,0.1) inset, 0 1px 0 rgba(255,255,255,0.06) inset',
-          border: '1px solid rgba(100,120,180,0.2)',
-        }}
-      >
-        {/* Header */}
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-2xl">📬</span>
-          <h3 className="text-white font-bold text-base">Mailbox</h3>
-          <button
-            onClick={onClose}
-            className="ml-auto w-6 h-6 rounded-full flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/10 transition-all text-sm"
-          >
-            &times;
-          </button>
-        </div>
-
+    <Modal isOpen onClose={onClose} title="Mailbox">
         {reward && !claimed ? (
           <>
             {/* Reward message */}
@@ -109,7 +83,6 @@ export const MailboxPopup: React.FC<MailboxPopupProps> = ({ reward, onClaim, onC
             </p>
           </div>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 };

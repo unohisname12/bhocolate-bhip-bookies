@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { GameCard } from '../ui/GameCard';
-import { GameButton } from '../ui/GameButton';
+import { Modal } from '../ui/Modal';
 import { getAllHelpConfigs } from '../../services/help/helpRegistry';
 import type { HelpConfig, QuickRefEntry } from '../../types/help';
 
@@ -72,23 +71,7 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
-      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="relative z-10 w-full max-w-md max-h-[80vh] flex flex-col anim-pop">
-        <GameCard className="border-4 border-slate-600 bg-slate-800 shadow-2xl flex flex-col overflow-hidden">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-4 pb-3 border-b-2 border-slate-700">
-            <h2 className="text-xl font-black text-slate-100 uppercase tracking-widest">
-              Help
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-white transition-colors bg-slate-700 hover:bg-slate-600 rounded-full w-8 h-8 flex items-center justify-center font-bold"
-            >
-              ×
-            </button>
-          </div>
-
+    <Modal isOpen onClose={onClose} title="Help">
           {/* Replay Intro — always available so players can re-watch the 5-beat tour */}
           <button
             onClick={onReplayIntro}
@@ -115,14 +98,6 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({
             )}
           </div>
 
-          {/* Footer */}
-          <div className="pt-3 mt-3 border-t-2 border-slate-700 flex justify-end">
-            <GameButton variant="secondary" onClick={onClose}>
-              Close
-            </GameButton>
-          </div>
-        </GameCard>
-      </div>
-    </div>
+    </Modal>
   );
 };

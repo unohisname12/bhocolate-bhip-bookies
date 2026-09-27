@@ -1,0 +1,9 @@
+export function TeacherShortcuts({ learner, onEgg, onLearning, onGifts, onTools }: { learner?: string; onEgg: () => void; onLearning: () => void; onGifts: () => void; onTools: () => void }) {
+  const actions = [
+    { title: 'Give an early egg pass', text: 'Save one discovery day. A little encouragement goes a long way.', icon: 'egg', run: onEgg },
+    { title: 'Adjust learning', text: 'Choose the right grade, practice topic, and amount of help.', icon: 'learning', run: onLearning },
+    { title: 'Give a gift', text: 'Celebrate effort with tokens, decorations, and pet accessories.', icon: 'gift', run: onGifts },
+    { title: 'Manage your class', text: 'Find login cards, names, class settings, and backups.', icon: 'class', run: onTools },
+  ];
+  return <section className="teacher-shortcuts" aria-label="Teacher quick actions"><div className="teacher-section-heading"><div><p className="teacher-kicker">A little help. A big difference.</p><h2>What would you like to do?</h2></div>{learner && <p>For <strong>{learner}</strong></p>}</div><div className="teacher-shortcut-grid">{actions.map(a => <button key={a.icon} onClick={a.run} className={`teacher-shortcut shortcut-${a.icon}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">{a.icon === 'egg' ? <><path d="M19 14c0 5-3 7-7 7s-7-2-7-7S9 3 12 3s7 6 7 11Z"/><path d="m10 10 3 3-3 3"/></> : a.icon === 'learning' ? <><path d="M3 5c4-1 7 0 9 2 2-2 5-3 9-2v14c-4-1-7 0-9 2-2-2-5-3-9-2Z"/><path d="M12 7v14"/></> : a.icon === 'gift' ? <><path d="M3 8h18v4H3zM5 12v9h14v-9M12 8v13"/><path d="M12 8C3 8 5 0 9 3l3 5Zm0 0c9 0 7-8 3-5l-3 5Z"/></> : <><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 4v3"/></>}</svg><strong>{a.title}</strong><span>{a.text}</span><small>Open <span aria-hidden="true">↗</span></small></button>)}</div></section>;
+}

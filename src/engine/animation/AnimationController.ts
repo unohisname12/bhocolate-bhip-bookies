@@ -11,7 +11,7 @@ export class AnimationController {
     this.config = config;
     this.currentAnimation = 'idle';
     this.previousAnimation = 'idle';
-    this.currentFrame = 0;
+    this.currentFrame = config.animations.idle.startFrame;
     this.elapsedSinceLastFrame = 0;
 
     this.validateAllAnimations();

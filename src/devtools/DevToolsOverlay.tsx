@@ -38,8 +38,9 @@ export const DevToolsOverlay: React.FC<DevToolsOverlayProps> = ({ engine, state,
     return (
       <button
         type="button"
+        data-game-screen={state.screen}
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 z-[9999] rounded bg-slate-800/95 px-3 py-2 text-xs text-slate-100 shadow-lg hover:bg-slate-700"
+        className="dev-tools-launcher fixed bottom-4 right-4 z-[9999] rounded bg-slate-800/95 px-3 py-2 text-xs text-slate-100 shadow-lg hover:bg-slate-700"
       >
         DevTools (Ctrl+Shift+D)
       </button>
@@ -47,7 +48,7 @@ export const DevToolsOverlay: React.FC<DevToolsOverlayProps> = ({ engine, state,
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-[9999] w-[360px] rounded-lg border border-slate-700 bg-slate-900/95 p-3 text-slate-100 shadow-2xl backdrop-blur">
+    <div className="fixed bottom-4 right-4 z-[9999] w-[360px] max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-lg border border-slate-700 bg-slate-900/95 p-3 text-slate-100 shadow-2xl backdrop-blur">
       <div className="mb-2 flex items-center justify-between">
         <strong className="text-sm">Dev Tools</strong>
         <button type="button" onClick={() => setOpen(false)} className="rounded bg-slate-700 px-2 py-1 text-xs hover:bg-slate-600">
@@ -68,7 +69,7 @@ export const DevToolsOverlay: React.FC<DevToolsOverlayProps> = ({ engine, state,
         ))}
       </div>
 
-      {tab === 'State' && <StateInspector state={state} dispatch={dispatch} />}
+      {tab === 'State' && <StateInspector state={state} dispatch={action => { if (action.type === 'DEV_JUMP_SCREEN') setOpen(false); dispatch(action); }} />}
       {tab === 'Time' && <TimeControl engine={engine} state={state} dispatch={dispatch} />}
       {tab === 'Sprite' && <SpriteDebugger state={state} />}
       {tab === 'Actions' && <ActionLog engine={engine} />}

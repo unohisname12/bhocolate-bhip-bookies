@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'./e2e',testMatch:'ui-audit.spec.ts',globalSetup:'./e2e/pilot-setup.ts',outputDir:'test-results-ui-audit',workers:1,timeout:240000,use:{actionTimeout:12000,baseURL:'http://127.0.0.1:8798',channel:'chrome',headless:true,screenshot:'only-on-failure'},webServer:{command:'npx wrangler dev --ip 127.0.0.1 --port 8798 --persist-to .wrangler/pilot-test-state',url:'http://127.0.0.1:8798',reuseExistingServer:false,timeout:90000}});

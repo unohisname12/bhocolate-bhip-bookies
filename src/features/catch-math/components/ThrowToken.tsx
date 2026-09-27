@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { CatchChoice } from '../types';
+import { singleSprite } from '../mathSprites';
 
 export type ThrowFlight = {
   choice: CatchChoice;
@@ -53,6 +54,9 @@ export const ThrowToken: React.FC<Props> = ({ flight, onArrive }) => {
   const x = phase === 'flying' ? to.x : from.x;
   const y = phase === 'flying' ? to.y : from.y;
 
+  const label = choice.kind === 'number' ? String(choice.value) : `${choice.op}${choice.amount}`;
+  const sprite = singleSprite(label);
+
   return (
     <div
       aria-hidden
@@ -71,18 +75,30 @@ export const ThrowToken: React.FC<Props> = ({ flight, onArrive }) => {
         opacity: phase === 'gone' ? 0 : 1,
       }}
     >
-      <div
-        className="w-full h-full rounded-full flex items-center justify-center font-black text-[18px]"
-        style={{
-          background: 'radial-gradient(circle at 35% 35%, #fde68a, #fbbf24 55%, #f97316 90%)',
-          color: '#0a0604',
-          border: '2px solid rgba(0,0,0,0.6)',
-          boxShadow: '0 0 18px rgba(251,191,36,0.7), inset 0 2px 0 rgba(255,255,255,0.35)',
-          textShadow: '0 1px 0 rgba(255,255,255,0.25)',
-        }}
-      >
-        {choice.kind === 'number' ? choice.value : `${choice.op}${choice.amount}`}
-      </div>
+      {sprite ? (
+        <img
+          src={sprite}
+          alt=""
+          className="w-full h-full"
+          style={{
+            imageRendering: 'pixelated',
+            filter: 'drop-shadow(0 0 12px rgba(251,191,36,0.6))',
+          }}
+        />
+      ) : (
+        <div
+          className="w-full h-full rounded-full flex items-center justify-center font-black text-[18px]"
+          style={{
+            background: 'radial-gradient(circle at 35% 35%, #fde68a, #fbbf24 55%, #f97316 90%)',
+            color: '#0a0604',
+            border: '2px solid rgba(0,0,0,0.6)',
+            boxShadow: '0 0 18px rgba(251,191,36,0.7), inset 0 2px 0 rgba(255,255,255,0.35)',
+            textShadow: '0 1px 0 rgba(255,255,255,0.25)',
+          }}
+        >
+          {label}
+        </div>
+      )}
     </div>
   );
 };

@@ -22,7 +22,7 @@ export const PromptCard: React.FC<Props> = ({ round }) => {
         style={{ color: '#fde68a', letterSpacing: '0.25em' }}
       >
         {round.mode === 'missing_number'
-          ? 'Missing Number'
+          ? 'Choose the answer'
           : round.mode === 'solve_for_x'
           ? 'Solve for X'
           : 'Equation Step'}
@@ -31,7 +31,7 @@ export const PromptCard: React.FC<Props> = ({ round }) => {
       <div
         className="font-black text-white mt-2"
         style={{
-          fontSize: 36,
+          fontSize: round.prompt.length > 35 ? 22 : 32,
           lineHeight: 1.05,
           letterSpacing: '0.03em',
           textShadow: '0 2px 0 rgba(0,0,0,0.8), 0 0 16px rgba(59,130,246,0.35)',

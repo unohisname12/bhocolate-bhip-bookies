@@ -1,0 +1,30 @@
+.growth-screen { min-height:100dvh; padding:80px 18px 200px; color:#ecf2e9; background:radial-gradient(ellipse at top,#25443e,#101c29 65%); }
+.growth-container { max-width:960px; margin:auto; }
+.growth-heading { margin:28px 0; }
+.growth-heading h1 { font-size:clamp(30px,5vw,44px); font-weight:900; letter-spacing:-.035em; }
+.growth-heading > p:last-child,.growth-panel > p,.growth-hero p { color:#b9cec6; line-height:1.6; }
+.growth-panel,.growth-hero { border:1px solid #bc985649; background:#142b2dcf; border-radius:20px; padding:24px; margin-bottom:18px; box-shadow:0 8px 30px #0002; }
+.growth-panel h2,.growth-hero h2 { font-size:23px; font-weight:850; margin-bottom:10px; }
+.growth-hero { display:flex; gap:26px; align-items:center; background:linear-gradient(100deg,#173332f0,#173332d9),url('/assets/woodland-v1/home.png') center/cover; }
+.growth-pet { flex-shrink:0; }.growth-care-count { font-weight:800; margin:12px 0; color:#ffe0a3!important; }
+.growth-button,.growth-care-actions button { min-height:44px; padding:10px 16px; border:1px solid #71978a88; background:#23433e; border-radius:11px; font-weight:750; color:#ecf5ea; }
+.growth-button.primary { background:#d6ad62; color:#17252c; border-color:#ffe0a3; margin-top:14px; }
+.growth-button:disabled,.growth-care-actions button:disabled { opacity:.5; cursor:not-allowed; }
+.growth-care-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+.care-week { display:flex; gap:8px; margin:18px 0; }.care-week span { display:grid; place-items:center; width:40px; height:40px; border-radius:10px; border:1px solid #648178; color:#91aba1; }.care-week span.done { color:#ffc7a0; background:#486651; border-color:#bfdb9b; }
+.care-week { flex-wrap:wrap; }
+.growth-path { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.growth-path article,.nursery-grid article { border:1px solid #75968b44; border-radius:14px; padding:16px; background:#0c1e25aa; }.growth-path article.unlocked { border-color:#d8b165; }
+.growth-path img { width:128px; height:128px; image-rendering:pixelated; margin:auto; }.growth-path h3,.nursery-grid h3 { font-size:18px; font-weight:800; }.growth-path strong { display:block; color:#f2cd8f; margin-top:10px; font-size:13px; }.growth-path p { font-size:12px; color:#b9cec6; margin-top:5px; }
+.nursery-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:18px; }.nursery-grid img { width:120px; height:120px; image-rendering:pixelated; margin:auto; }.nursery-grid p { font-size:13px; color:#b9cec6; min-height:40px; margin:8px 0; }.nursery-grid button { width:100%; font-size:12px; }
+.growth-trial { border-color:#e5bd6b; scroll-margin-top:80px; }.growth-lanterns { display:flex; gap:15px; margin:20px 0; font-size:38px; color:#526b77; }.growth-lanterns .lit { color:#ffdb81; text-shadow:0 0 20px #ffca66aa; animation:icon-hop 600ms ease-out; }
+.growth-question { display:block; font-weight:800; font-size:22px; margin-bottom:15px; }.growth-trial input { display:block; width:100%; border:1px solid #84b5a2; background:#071b24; padding:14px; border-radius:10px; color:white; font-size:20px; }.growth-complete { animation:grow-celebrate 900ms ease-out; }
+@keyframes grow-celebrate { 35% { box-shadow:0 0 55px #c8ff9d55; border-color:#dcffb0; } }
+.hatch-nursery { padding:80px 18px 180px; min-height:100dvh; background:radial-gradient(ellipse at 50% 40%,#29473a,#101b29 70%); color:#f0ecdf; }.hatch-inner { max-width:680px; margin:auto; text-align:center; }.hatch-inner h1 { font-size:32px; font-weight:900; }
+.egg-choices { display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin:24px 0; }.egg-choices button { border:1px solid #6b8a7d; background:#162e32; padding:10px 4px; border-radius:13px; min-height:85px; }.egg-choices button[aria-pressed=true] { border-color:#f4d28b; background:#39524a; box-shadow:0 0 18px #edc26e22; }.egg-choices img { width:52px; height:52px; image-rendering:pixelated; margin:auto; }.egg-choices strong { font-size:13px; }
+.hatch-stage { position:relative; display:grid; place-items:center; height:280px; border-radius:24px; border:1px solid #ab976144; overflow:hidden; background:linear-gradient(#1b3a3599,#0a2027a8),url('/assets/woodland-v1/home.png') center/cover; margin-bottom:18px; }.hatch-stage::before { content:''; position:absolute; width:220px; height:220px; border-radius:50%; background:radial-gradient(#ffe7a833,transparent 70%); }
+.hatch-egg { width:192px; height:192px; background-size:768px 192px; image-rendering:pixelated; position:relative; z-index:1; }.hatch-running .hatch-egg { animation:hatch-rock 450ms ease-in-out infinite; filter:drop-shadow(0 0 12px #ffd67988); }
+@keyframes hatch-rock { 25% { transform:rotate(-7deg) translateY(-3px); } 75% { transform:rotate(7deg) translateY(-6px); } }.hatch-reveal { animation:hatch-arrive 700ms cubic-bezier(.2,.8,.3,1) both; }@keyframes hatch-arrive { from { opacity:0; transform:scale(.5) translateY(20px); filter:brightness(2); } to { opacity:1; transform:scale(1); filter:brightness(1); } }
+.hatch-spark { position:absolute; left:50%; top:50%; color:#ffe093; font-size:22px; animation:hatch-spark 1800ms ease-out infinite; transform:rotate(var(--angle)) translateY(-95px); }@keyframes hatch-spark { from { opacity:0; scale:.4; } 35% { opacity:1; } to { opacity:0; scale:1.6; } }
+@media(max-width:640px) { .growth-hero { flex-direction:column; padding:18px; gap:12px; }.growth-panel { padding:18px; }.growth-path { grid-template-columns:1fr; }.growth-path article { display:grid; grid-template-columns:100px 1fr; column-gap:12px; }.growth-path img { grid-row:span 4; width:100px; height:100px; }.nursery-grid { grid-template-columns:repeat(2,1fr); }.nursery-grid article { padding:10px; }.care-week { gap:5px; }.care-week span { width:34px; height:34px; } }
+@media(prefers-reduced-motion:reduce) { .hatch-running .hatch-egg,.hatch-reveal,.hatch-spark,.growth-complete,.growth-lanterns .lit { animation:none; }.hatch-spark { display:none; } }

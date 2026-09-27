@@ -71,8 +71,8 @@ export const EnvironmentalLife: React.FC<EnvironmentalLifeProps> = ({ currentRoo
       <div
         className="absolute anim-env-fireplace"
         style={{
-          left: 16 * scale,
-          bottom: 48 * scale,
+          left: 302 * scale,
+          bottom: 65 * scale,
           width: 80 * scale,
           height: 96 * scale,
           background: 'radial-gradient(ellipse at 50% 80%, rgba(255,120,30,0.25) 0%, rgba(255,80,10,0.1) 40%, transparent 70%)',
@@ -84,26 +84,14 @@ export const EnvironmentalLife: React.FC<EnvironmentalLifeProps> = ({ currentRoo
       <div
         className="absolute anim-env-window"
         style={{
-          left: 200 * scale,
-          bottom: 100 * scale,
-          width: 80 * scale,
-          height: 80 * scale,
+          left: 145 * scale,
+          bottom: 90 * scale,
+          width: 120 * scale,
+          height: 110 * scale,
           background: 'radial-gradient(ellipse, rgba(180,200,255,0.15) 0%, transparent 70%)',
         }}
       />
 
-      {/* Clock pendulum hint — aligned with clock prop at x=380 */}
-      <div
-        className="absolute anim-env-pendulum"
-        style={{
-          left: 388 * scale,
-          bottom: 110 * scale,
-          width: 4,
-          height: 16,
-          background: 'linear-gradient(180deg, rgba(200,180,120,0.3) 0%, rgba(200,180,120,0.1) 100%)',
-          borderRadius: 2,
-        }}
-      />
     </div>
   );
 };

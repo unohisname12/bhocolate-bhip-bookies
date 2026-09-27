@@ -69,11 +69,19 @@ export interface CareLog {
 }
 
 export interface MathProblem {
+  practiceSettings?: import('../services/game/curriculum').LearningSettings;
+  skillId?: string;
+  templateId?: string;
+  context?: string;
   id: string;
   question: string;
   answer: number;
   difficulty: number;
   reward: number;
   hint?: string;
+  topic?: string;
+  grade?: number;
+  /** Worked steps generated from the same operands as the question. */
+  explanation?: string[];
   type?: string;
 }

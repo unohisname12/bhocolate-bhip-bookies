@@ -88,6 +88,8 @@ export const ChallengerPreviewScreen: React.FC<ChallengerPreviewScreenProps> = (
         <p className="text-xs text-slate-400 mt-1">{diff.flavor}</p>
       </div>
 
+      <p className="text-sm text-slate-300 text-center">Practice match against a computer-controlled rival.</p>
+
       {/* Your record vs this opponent */}
       <div className="text-sm text-slate-400">
         Your record vs {opponent.displayName}: <span className="font-bold text-slate-200">{wins}W {losses}L</span>

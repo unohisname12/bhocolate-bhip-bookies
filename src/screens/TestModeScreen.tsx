@@ -4,6 +4,7 @@ import { PetNeedsPanel } from '../components/pet/PetNeedsPanel';
 import { PetChamber } from '../components/pet/PetChamber';
 import { SpriteAutoAssist } from '../utils/spriteAutoAssist';
 import type { Pet, PetState } from '../types';
+import { WoodlandArtPreview } from '../devtools/WoodlandArtPreview';
 
 interface TestModeScreenProps {
   onExit: () => void;
@@ -99,6 +100,9 @@ export const TestModeScreen: React.FC<TestModeScreenProps> = ({ onExit }) => {
         </button>
       </div>
 
+      <WoodlandArtPreview />
+      <details className="rounded-xl border border-slate-700 p-3">
+      <summary className="cursor-pointer min-h-11 font-bold text-slate-300">Legacy art archive & sprite analysis</summary>
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="bg-slate-800/80 rounded-xl p-3 border border-slate-700 shadow-sm">
           <h2 className="font-bold text-lg mb-1">Pet Preview - {animationNames[currentAnimationId as keyof typeof animationNames]}</h2>
@@ -138,6 +142,7 @@ export const TestModeScreen: React.FC<TestModeScreenProps> = ({ onExit }) => {
           />
         </div>
       </div>
+      </details>
     </div>
   );
 };

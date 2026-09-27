@@ -64,3 +64,10 @@ export const MOMENTUM_ANIMATION = {
     resolveMs: 500,
   },
 } as const;
+
+/** Advanced adds space and tactical actions without changing school math level. */
+export const ADVANCED_COLUMNS = [0, 1, 3, 5, 6];
+export const ADVANCED_RANKS: PieceRank[] = [1, 2, 3, 2, 1];
+export const ENERGY_STATIONS = [{ x: 1, y: 3 }, { x: 3, y: 3 }, { x: 5, y: 3 }];
+export const momentumSize = (mode?: string) => mode === 'advanced' || mode === 'powers' ? 7 : 5;
+export const momentumTurnLimit = (difficulty: MomentumDifficulty, mode?: string) => mode === 'powers' ? 60 : DIFFICULTY_SETTINGS[difficulty].maxTurns + (mode === 'advanced' ? 30 : 0);

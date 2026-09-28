@@ -1,3 +1,5 @@
+import {evolutionArena} from './evolution/world';
+import {evolutionScenery,evolutionContact} from './evolution/render';
 import { BEACONS_NEEDED, HEIGHT, WIDTH, SPECIES, arenaOf, distance, type View, type Arena } from './model';
 import { art, companionArt, landmark, propSprite, propTiles } from './art';
 import type { Piece } from './mapgen';
@@ -15,24 +17,25 @@ function ring(c:CanvasRenderingContext2D,x:number,y:number,r:number,color:string
 function star(c:CanvasRenderingContext2D,x:number,y:number,color:string,size=3){box(c,x-size,y,size*3,size,color);box(c,x,y-size,size,size*3,color);}
 // Pixel blaster is an accessory. Aimed away from the camera it goes behind the pet, so it never covers the face.
 function blaster(c:CanvasRenderingContext2D,p:PetView,hunter:boolean){
- if(p.captured||p.escaped)return;c.save();c.translate(q(p.x),q(p.y-8));c.rotate(p.aim);const recoil=p.shot>0?-4:0;
+ if(p.captured||p.escaped||p.evo&&(p.evo.echo||['burrower','grappler','breaker','duelist'].includes(p.evo.mutation)))return;c.save();c.translate(q(p.x),q(p.y-8));c.rotate(p.aim);const recoil=p.shot>0?-4:0;
  box(c,17+recoil,-6,24,12,'#233843');box(c,19+recoil,-4,18,6,hunter?'#df8c65':'#79d5c8');box(c,35+recoil,-3,10,6,'#f0dfb2');box(c,22+recoil,5,6,7,'#39495c');
  if(p.shot>0){star(c,50,0,hunter?'#ffce83':'#b6fff0',4);box(c,57,-2,7,4,'#fffad4');}c.restore();}
 // V-Pet sheets are 128 px frames whose feet sit 12 px above the bottom edge.
 const GROUND=12;
-const petSize=(p:PetView)=>p.role==='hunter'?112:100;
+const petSize=(p:PetView)=>p.role==='hunter'?(p.evo?170:112):100;
 function pet(c:CanvasRenderingContext2D,p:PetView,t:number,reduced:boolean,you:boolean){
+ if(p.evo?.underground)return;
  const hunter=p.role==='hunter',moving=p.moving&&!p.captured&&!p.escaped;
  const time=reduced?0:t,phase=Math.floor(time*(moving?10:4))%8;
  const state=p.stun>0||p.captured?3:p.shot>0?2:p.escaped||p.action==='rescue'||p.action==='interact'?4:moving?1:0;
  const bob=moving&&!reduced?[0,-2,-4,-2,0,-2,-4,-2][phase]:0;
- const size=hunter?86:76;const feet=p.y+12;
+ const size=hunter?(p.evo?135:86):76;const feet=p.y+12;
  if(moving&&!reduced&&!p.quiet)for(let i=0;i<3;i++){const age=(t*5+i*.33)%1;box(c,p.x-Math.cos(p.aim)*(12+age*18)+(i-1)*6,p.y-Math.sin(p.aim)*(12+age*18)+10,4-age*2,4-age*2,'#d6d5ad55');}
  c.fillStyle='#10203255';c.beginPath();c.ellipse(q(p.x+3),q(p.y+10),hunter?23:19,7,0,0,Math.PI*2);c.fill();
  if(hunter)ring(c,p.x,p.y+10,25,'#e9a96a');
  if(you)ring(c,p.x,p.y+10,26,'#f3efb0');
  const behind=Math.sin(p.aim)<-.35;if(behind)blaster(c,p,hunter);
- c.save();if(p.hidden)c.globalAlpha=.7;if(p.escaped)c.globalAlpha=.65;
+ c.save();if(p.evo?.echo)c.globalAlpha=.4;if(p.evo?.dig)c.globalAlpha=.5;if(p.hidden)c.globalAlpha=.7;if(p.escaped)c.globalAlpha=.65;
  c.translate(q(p.x),q(feet+bob));if(moving&&!reduced)c.rotate(Math.sin(t*10)*.025);if(Math.cos(p.aim)<0)c.scale(-1,1);
  // The learner's own detailed V-Pet sheet when it has loaded; the small arena sheet covers the first moments.
  const detailed=companionArt(p.species,p.stage);
@@ -43,7 +46,7 @@ function pet(c:CanvasRenderingContext2D,p:PetView,t:number,reduced:boolean,you:b
  c.restore();
  if(!behind)blaster(c,p,hunter);
  if(p.shield>0||p.immune>0)ring(c,p.x,p.y-14,37,p.shield>0?'#ffe4a0':'#b4eaf5');
- if(p.captured){
+ if(p.captured&&!p.evo){
   ring(c,p.x,p.y+8,32,'#c8a4ed');box(c,p.x-33,p.y-58,4,66,'#c3b4f0aa');box(c,p.x+29,p.y-58,4,66,'#c3b4f0aa');
   for(let i=0;i<6;i++)star(c,p.x-25+i*10,p.y-58+Math.sin(time*3+i)*4,'#d3bcf5',2);
   text(c,'RESCUE ME',p.x,p.y-74,10,'#e4c7ff');box(c,p.x-23,p.y+22,46,5,'#302c49');box(c,p.x-23,p.y+22,46*Math.max(p.rescue,p.captureTime/24),5,'#d5b5f8');
@@ -110,7 +113,7 @@ function cage(c:CanvasRenderingContext2D,x:number,y:number,full:boolean){
 function tools(c:CanvasRenderingContext2D,v:View,arena:Arena,me:PetView|undefined,t:number,layers:{y:number;draw:()=>void}[]){
  (arena.lockers??[]).forEach((l,i)=>layers.push({y:l.y,draw:()=>locker(c,l.x,l.y,!!me&&v.lockers[i]===me.id)}));
  (arena.vents??[]).forEach(([a,b],i)=>{layers.push({y:a.y-20,draw:()=>vent(c,a.x,a.y,i)});layers.push({y:b.y-20,draw:()=>vent(c,b.x,b.y,i)});});
- (arena.cages??[]).forEach(g=>layers.push({y:g.y+12,draw:()=>cage(c,g.x,g.y,v.players.some(p=>p.caged>0&&distance(p,g)<10))}));
+ (v.evolution?[]:arena.cages??[]).forEach(g=>layers.push({y:g.y+12,draw:()=>cage(c,g.x,g.y,v.players.some(p=>p.caged>0&&distance(p,g)<10))}));
  if(arena.door&&!v.doorOpen){const d=arena.door;layers.push({y:d.y+d.h,draw:()=>{box(c,d.x,d.y,d.w,d.h,'#7a4a2c');box(c,d.x+2,d.y+2,d.w-4,d.h-4,'#a86a3c');text(c,'🔒 LOCKED',d.x+d.w/2,d.y+d.h/2+4,10,'#ffe3b0');}});}
  if(v.key&&!v.key.holder){const k=v.key;layers.push({y:k.y,draw:()=>{glow(c,k.x,k.y,26,'#ffe27a',.35);if(art.props){propSprite(c,'key',k.x,k.y+14,1.3);text(c,'KEY',k.x,k.y+24,9,'#ffe7a0');return;}box(c,k.x-10,k.y-4,14,8,'#f5c542');box(c,k.x+4,k.y-2,10,4,'#f5c542');box(c,k.x+10,k.y+2,3,4,'#f5c542');text(c,'KEY',k.x,k.y+20,9,'#ffe7a0');}});}
  for(const tr of v.traps)layers.push({y:tr.y-10,draw:()=>{if(art.props){propSprite(c,'trap',tr.x,tr.y+12,1.2);return;}ring(c,tr.x,tr.y,16,'#d98a5a');box(c,tr.x-10,tr.y-2,20,4,'#6b4a3a');text(c,'TRAP',tr.x,tr.y+18,8,'#f0b48a');}});
@@ -119,11 +122,12 @@ function tools(c:CanvasRenderingContext2D,v:View,arena:Arena,me:PetView|undefine
 function petLabel(c:CanvasRenderingContext2D,p:PetView,you:boolean){
  const hunter=p.role==='hunter',size=companionArt(p.species,p.stage)?petSize(p)-14:hunter?86:76;
  text(c,p.name+(you?' · YOU':''),p.x,p.y+35,11,you?'#fff4be':'#f1ebd6');
- if(hunter)text(c,'HUNTER',p.x,p.y-size-4,10,'#ffc58c');
- else if(!p.captured&&!p.escaped)for(let i=0;i<2;i++){const x=p.x-10+i*13;box(c,x,p.y-size,9,6,i<p.hp?'#c8eeb8':'#38514c');box(c,x+2,p.y-size+6,5,3,i<p.hp?'#c8eeb8':'#38514c');}
+ if(p.evo){box(c,p.x-30,p.y-size,60,6,'#253b45');box(c,p.x-30,p.y-size,60*(hunter?p.evo.guard/100:p.evo.hp/(p.evo.powers.includes('vital')?120:100)),6,hunter?'#eab08c':'#a3e8b7');if(p.evo.echo)text(c,'ECHO',p.x,p.y-75,11,'#aee3ff');}
+ if(hunter)text(c,p.evo?'MONSTER':'HUNTER',p.x,p.y-size-4,10,'#ffc58c');
+ else if(!p.evo&&!p.captured&&!p.escaped)for(let i=0;i<2;i++){const x=p.x-10+i*13;box(c,x,p.y-size,9,6,i<p.hp?'#c8eeb8':'#38514c');box(c,x+2,p.y-size+6,5,3,i<p.hp?'#c8eeb8':'#38514c');}
  if(p.hidden&&you)text(c,'HIDDEN',p.x,p.y-77,10,'#c7ecaa');
  if(p.locker>=0)text(c,'IN LOCKER',p.x,p.y-60,10,'#c7ecaa');else if(p.vent>0)text(c,'CRAWLING…',p.x,p.y-60,10,'#9fd8ff');
- if(p.out)text(c,'OUT THIS ROUND',p.x,p.y-60,10,'#c8b8d8');else if(p.caged>0)text(c,`CAGED · ${Math.ceil(p.caged)}s · RESCUE!`,p.x,p.y-74,10,'#e4c7ff');
+ if(p.out&&!p.evo?.echo)text(c,'OUT THIS ROUND',p.x,p.y-60,10,'#c8b8d8');else if(p.caged>0)text(c,`CAGED · ${Math.ceil(p.caged)}s · RESCUE!`,p.x,p.y-74,10,'#e4c7ff');
 }
 function beacon(c:CanvasRenderingContext2D,b:View['beacons'][number],i:number,t:number,reduced:boolean,near:boolean){
  const lit=b.progress>=1;
@@ -143,33 +147,35 @@ function portal(c:CanvasRenderingContext2D,arena:Arena,gate:View['gate'],lit:num
 export interface DrawOptions {reduced:boolean;aimAssist:boolean;minimap?:boolean;hud?:{top:number;bottom:number;scale:number};}
 export function draw(c:CanvasRenderingContext2D,v:View,t:number,options:DrawOptions){
  if(options.reduced)t=0;else if(v.paused)t=v.time;
- const arena=arenaOf(v),me=v.players.find(p=>p.id===v.you),lit=v.beacons.filter(b=>b.progress>=1).length;
- const cw=c.canvas.width,ch=c.canvas.height,{x:cx,y:cy}=arenaCamera(me,cw,ch,options.hud?.top??0,options.hud?.bottom);
+ const arena=v.evolution?evolutionArena(v):arenaOf(v),me=v.players.find(p=>p.id===v.you),lit=v.beacons.filter(b=>b.progress>=1).length;
+ const cw=c.canvas.width,ch=c.canvas.height,{x:cx,y:cy}=arenaCamera(me,cw,ch,options.hud?.top??0,options.hud?.bottom,v.evolution);
  c.imageSmoothingEnabled=false;c.clearRect(0,0,cw,ch);c.fillStyle=v.map==='workshop'?'#493f37':v.map==='moonhouse'?'#263a4b':'#2b443c';c.fillRect(0,0,cw,ch);
  if(art.meadow&&v.map==='garden'){c.save();c.globalAlpha=.18;for(let y=-512;y<ch;y+=512)for(let x=0;x<cw;x+=512)c.drawImage(art.meadow,x,y,512,512);c.restore();}
  c.save();c.translate(-cx,-cy);
- c.drawImage(ground(arena),0,0,WIDTH,HEIGHT);
- if(me&&!me.captured&&!me.escaped&&v.phase==='playing')for(let d=50;d<(options.aimAssist?200:110);d+=14)box(c,me.x+Math.cos(me.aim)*d,me.y+Math.sin(me.aim)*d,2,2,'#f2eeb365');
+ c.drawImage(ground(arenaOf(v)),0,0,arena.width??WIDTH,arena.height??HEIGHT);
+ if(me&&!me.evo?.echo&&!me.captured&&!me.escaped&&v.phase==='playing')for(let d=50;d<(options.aimAssist?200:110);d+=14)box(c,me.x+Math.cos(me.aim)*d,me.y+Math.sin(me.aim)*d,2,2,'#f2eeb365');
  const layers:{y:number;draw:()=>void}[]=[];
+ evolutionScenery(c,v,t,layers);
  // Generated maps draw each typed piece with its own art; the fixed legacy arenas keep the old wall skins.
  if(arena.pieces)arena.pieces.forEach(p=>layers.push({y:p.y+p.h,draw:()=>drawPiece(c,p,arena.id)}));
  else arena.walls.forEach(r=>layers.push({y:r.y+r.h,draw:()=>obstacle(c,r,arena)}));
  arena.bushes.forEach(r=>layers.push({y:r.y+r.h,draw:()=>cover(c,r,arena,me)}));
 tools(c,v,arena,me,t,layers);
- v.beacons.forEach((b,i)=>layers.push({y:b.y+12,draw:()=>beacon(c,b,i,t,options.reduced,!!me&&distance(me,b)<85)}));
- layers.push({y:arena.portal.y+12,draw:()=>portal(c,arena,v.gate,lit,t,options.reduced)});
- v.players.forEach(p=>layers.push({y:p.y+12,draw:()=>pet(c,p,t,options.reduced,p.id===v.you)}));
+ if(!v.evolution)v.beacons.forEach((b,i)=>layers.push({y:b.y+12,draw:()=>beacon(c,b,i,t,options.reduced,!!me&&distance(me,b)<85)}));
+ layers.push({y:arena.portal.y+12,draw:()=>{if(!v.evolution)portal(c,arena,v.gate,lit,t,options.reduced);}});
+ v.players.forEach(p=>layers.push({y:p.evo?.grabbedBy?(v.players.find(h=>h.id===p.evo!.grabbedBy)?.y??p.y)+25:p.y+12,draw:()=>pet(c,p,t,options.reduced,p.id===v.you)}));
  layers.sort((a,b)=>a.y-b.y).forEach(l=>l.draw());
+ evolutionContact(c,options.reduced?{...v,tick:0}:v);
 
  for(const b of v.bullets){for(let j=1;j<=4;j++)box(c,b.x-b.vx*.008*j,b.y-b.vy*.008*j,6-j,6-j,b.role==='hunter'?'#e9a66e':'#b3e1c0');star(c,b.x,b.y,'#fff7c7',3);}
  for(const e of v.effects){c.save();c.globalAlpha=Math.min(1,e.life);
   if(e.kind==='smoke'){for(let j=0;j<18;j++){const a=j*2.4,r=15+j*3;box(c,e.x+Math.cos(a)*r-18,e.y+Math.sin(a)*r-18,36,36,'#bdb3d077');}text(c,'SMOKE',e.x,e.y,10,'#f1dfef');}
   else if(e.kind==='decoy')ring(c,e.x,e.y,36+(options.reduced?0:Math.sin(t*5)*12),'#ffcf9b');
   // A charging beacon's hum: an expanding gold ring everyone can see, so the hunter has a lead to chase.
-  else if(e.kind==='beacon')ring(c,e.x,e.y-20,(1.4-e.life)*170,'#ffd76a');
+  else if(e.kind==='beacon')ring(c,e.x,e.y-20,Math.max(0,(1.4-e.life)*170),'#ffd76a');
   // Hunter-only clue from a trap or the sensor: a red ring where a pet was, roughly.
   else if(e.kind==='ping'){ring(c,e.x,e.y,20+(2-e.life)*40,'#ff6b6b');text(c,'!',e.x,e.y-8,16,'#ffb3b3');}
-  else {const radius=e.kind==='pulse'?(1.2-e.life)*200:16+(1-e.life)*30;ring(c,e.x,e.y,radius,e.kind==='hit'?'#ffdeb0':'#c7eab1');for(let j=0;j<8;j++){const a=j*Math.PI/4;star(c,e.x+Math.cos(a)*radius,e.y+Math.sin(a)*radius,'#ffedba',2);}}
+  else {const radius=e.kind==='pulse'?Math.max(0,(1.2-e.life)*200):16+(1-e.life)*30;ring(c,e.x,e.y,radius,e.kind==='hit'?'#ffdeb0':'#c7eab1');for(let j=0;j<8;j++){const a=j*Math.PI/4;star(c,e.x+Math.cos(a)*radius,e.y+Math.sin(a)*radius,'#ffedba',2);}}
   c.restore();
  }
  lighting(c,v,t);
@@ -179,7 +185,7 @@ tools(c,v,arena,me,t,layers);
  c.restore();
  const uiScale=options.hud?.scale??1,uiWidth=cw/uiScale,uiTop=(options.hud?.top??0)/uiScale;
  c.save();c.scale(uiScale,uiScale);c.translate(0,uiTop);
- if(options.minimap){const k=120/WIDTH,mh=Math.round(HEIGHT*k)+8,mx=(x:number)=>uiWidth-126+x*k,my=(y:number)=>14+y*k;box(c,uiWidth-130,10,128,mh,'#162e35e8');c.strokeStyle='#a4b78c';c.lineWidth=2;c.strokeRect(uiWidth-130,10,128,mh);for(const r of arena.walls)box(c,mx(r.x),my(r.y),Math.max(1,r.w*k),Math.max(1,r.h*k),'#667e6d');box(c,mx(arena.portal.x)-4,my(arena.portal.y)-2,8,5,v.gate.state==='open'?'#b2eec7':v.gate.state==='opening'?'#ffe7a0':'#8aa0a3');for(const b of v.beacons)box(c,mx(b.x)-2,my(b.y)-2,4,4,b.progress>=1?'#c7edae':'#bba77a');for(const p of v.players)if(!p.escaped)box(c,mx(p.x)-2,my(p.y)-2,4,4,p.id===v.you?'#ffffff':p.role==='hunter'?'#fca77a':'#a4e6c9');}
+ if(options.minimap){const k=120/(arena.width??WIDTH),mh=Math.round((arena.height??HEIGHT)*k)+8,mx=(x:number)=>uiWidth-126+x*k,my=(y:number)=>14+y*k;box(c,uiWidth-130,10,128,mh,'#162e35e8');c.strokeStyle='#a4b78c';c.lineWidth=2;c.strokeRect(uiWidth-130,10,128,mh);for(const r of arena.walls)box(c,mx(r.x),my(r.y),Math.max(1,r.w*k),Math.max(1,r.h*k),'#667e6d');box(c,mx(arena.portal.x)-4,my(arena.portal.y)-2,8,5,v.gate.state==='open'?'#b2eec7':v.gate.state==='opening'?'#ffe7a0':'#8aa0a3');for(const b of v.beacons)box(c,mx(b.x)-2,my(b.y)-2,4,4,b.progress>=1?'#c7edae':'#bba77a');if(v.evolution){for(const r of v.evolution.echoStations)box(c,mx(r.x)-2,my(r.y)-2,4,4,'#8cdcff');for(const s of v.evolution.core.stations)box(c,mx(s.x)-3,my(s.y)-3,6,6,'#dda7ff');for(const s of v.evolution.core.parts)if(!s.installed&&!s.carrier)box(c,mx(s.x)-2,my(s.y)-2,4,4,'#f6cfff');const exit=v.evolution.exits[1];box(c,mx(exit.x)-4,my(exit.y)-2,8,4,'#b2eec7');}for(const p of v.players)if(!p.escaped)box(c,mx(p.x)-2,my(p.y)-2,4,4,p.id===v.you?'#ffffff':p.role==='hunter'?'#fca77a':'#a4e6c9');}
  c.restore();
  if(me){const hunter=v.players.find(p=>p.role==='hunter'&&p.id!==me.id);if(hunter&&distance(me,hunter)<230){c.strokeStyle='#ec986d99';c.lineWidth=8;c.strokeRect(4,4,cw-8,ch-8);text(c,'THE HUNTER IS CLOSE',cw/2,(options.hud?.top??0)+30*uiScale,12*uiScale,'#ffd4a7');}
 }

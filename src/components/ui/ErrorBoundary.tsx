@@ -23,12 +23,8 @@ export class ErrorBoundary extends React.Component<Props, State> {
     console.error('[ErrorBoundary]', error, info);
   }
 
-  handleReset = () => {
-    try {
-      localStorage.clear();
-    } catch {
-      // ignore
-    }
+  handleReload = () => {
+    // Loading failures must not erase local saves or unsent classroom progress.
     window.location.reload();
   };
 
@@ -42,10 +38,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
           </p>
           <button
             type="button"
-            onClick={this.handleReset}
+            onClick={this.handleReload}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold"
           >
-            Reset Game
+            Reload game
           </button>
         </div>
       );

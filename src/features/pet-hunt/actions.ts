@@ -4,6 +4,7 @@ export interface Action { title: string; hint: string; urgent?: boolean }
 /** What the action button (E) will do right now, so the label always matches the result of pressing it. */
 export function currentAction(view: View): Action {
   const me = view.players.find(p => p.id === view.you), arena = arenaOf(view);
+  if(view.evolution&&me){if(me.evo?.grabbedBy)return {title:'Struggle free',hint:'Hold to break the grip',urgent:true};if(me.evo?.echo)return {title:'Earn second life',hint:'Five familiar math questions'};return {title:'Interact',hint:'Rifts · supplies · core parts'};}
   if (!me || me.escaped || me.out) return { title: 'Help / use', hint: 'Light · rescue · escape' };
   const near = (p: { x: number; y: number }, r = USE_RANGE) => distance(me, p) < r;
   if (me.role === 'hunter') {

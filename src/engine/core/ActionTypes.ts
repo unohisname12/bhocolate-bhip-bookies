@@ -10,7 +10,7 @@ import type { CosmeticSlot } from '../../types/cosmetic';
 export type GameEngineAction =
   | {type:'ARENA_COMMAND';command:import('../../features/pet-arena/model').ArenaCommand}
   | { type: 'SET_ACTIVITY_ROUTE'; route: NonNullable<import('../../types/engine').EngineState['activityRoute']> }
-  | { type: 'SAVE_PRACTICE_CHECKPOINT'; checkpoint: NonNullable<import('../../types/engine').EngineState['practiceCheckpoint']> }
+  | { type: 'SAVE_PRACTICE_CHECKPOINT'; checkpoint: import('../../types/engine').EngineState['practiceCheckpoint'] }
 
   | { type: 'COMPLETE_CLASSROOM_ACTIVITY'; game: 'merge' | 'delivery' | 'dash' | 'guard' | 'cafe' }
   | { type: 'ARCADE_START'; learningMode?: boolean; game: import('../../features/arcade/model').ArcadeGame; level: number }
@@ -31,6 +31,7 @@ export type GameEngineAction =
   | { type: 'PET_VISIT' }
   | { type: 'PET_PREFERENCE'; choice: 'plants' | 'books' | 'toys' }
   | { type: 'PET_NOTICE_OBJECT'; roomId: import('../../features/home-base/catalog').HomeRoomId; id: string }
+  | { type: 'MATH_POP_COMMAND'; command: import('../../features/math-pop/model').PopCommand }
   | { type: 'MATH_STACK_COMMAND'; command: import('../../features/math-stack/model').StackCommand }
   | { type: 'HOME_OPEN' }
   | { type: 'HOME_RESIDENT'; resident: import('../../features/living-house/world').HouseResident }

@@ -1,4 +1,4 @@
-import {CaptureSequence, CAPTURE_DURATION} from '../components/momentum/effects/CaptureSequence';
+import {CAPTURE_DURATION} from '../components/momentum/effects/CaptureSequence';
 import { Modal } from '../components/ui/Modal';
 import {MomentumPowerVideo,MomentumPowerCards} from '../components/momentum/ui/MomentumPowerGuide';
 import {PetSprite} from '../components/pet/PetSprite';
@@ -166,7 +166,7 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
   useEffect(() => {
     const frame = boardFrame.current;
     if (!frame) return;
-    const observer = new ResizeObserver(([entry]) => setBoardSize(Math.max(200, entry.contentRect.width - 16)));
+    const observer = new ResizeObserver(([entry]) => setBoardSize(Math.max(200, entry.contentRect.width - 20)));
     observer.observe(frame);
     return () => observer.disconnect();
   }, []);
@@ -445,8 +445,8 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
         {/* Board shake + AI-thinking + entrance wrapper */}
         <div
           className={[
-            aiThinking ? 'momentum-ai-thinking' : '',
-            boardEntered ? '' : 'momentum-board-entrance',
+            aiThinking && !attack ? 'momentum-ai-thinking' : '',
+            boardEntered || attack ? '' : 'momentum-board-entrance',
           ]
             .filter(Boolean)
             .join(' ')}
@@ -457,6 +457,7 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
             onCellClick={handleCellClick}
             onPieceClick={handlePieceClick}
             promoteFx={promoteFx}
+            capture={attacker && defender ? {attacker,defender,onComplete:handleAnimationDone,sequenceKey:animationKey} : null}
           />
         </div>
 
@@ -479,8 +480,6 @@ export const MomentumScreen: React.FC<MomentumScreenProps> = ({
           )}
         </div>
       </div>
-
-      {attacker && defender && <CaptureSequence key={animationKey} attacker={attacker} defender={defender} onComplete={handleAnimationDone}/> }
 
       {/* ===== Action log — carved stone tablet on the left ===== */}
       <div className="momentum-log-wrap relative z-10">

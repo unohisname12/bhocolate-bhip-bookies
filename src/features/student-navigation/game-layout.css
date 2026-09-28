@@ -1,0 +1,183 @@
+/* Gameplay uses the available viewport, rather than a document-sized content column. */
+.student-shell[data-view=activity] { --game-height:max(360px,calc(100dvh - var(--student-activity-top,140px))); }
+body:has(.student-shell[data-view=activity]) .pilot-savebar { padding:4px 16px; }
+body:has(.student-shell[data-view=activity]) .pilot-savebar>span { display:flex;align-items:center;gap:12px; }
+.student-shell[data-view=activity] .student-nav { padding:4px 12px; }
+.student-shell[data-view=activity] .student-nav button { min-height:38px;padding:6px 18px; }
+.student-shell[data-view=activity] .student-activity-bar { padding:3px 16px;gap:12px; }
+.student-shell[data-view=activity] .student-activity-bar button { min-height:34px; }
+.student-activity :is(.delivery,.arcade,.number-merge,.momentum-screen,.woodland-chapter,.adventure-page,.dungeon-map-screen) { min-height:var(--game-height); }
+.student-activity :is(.delivery-wrap,.arc-wrap,.nm-shell,.woodland-container,.adventure-content,.math-practice-workspace) { width:100%;max-width:none; }
+.student-activity :is(.delivery.simple,.arcade,.number-merge,.woodland-chapter,.adventure-page) { padding:12px clamp(12px,1.5vw,32px) 24px; }
+.student-activity .math-practice-workspace { max-width:none; }
+.student-activity .battle-play-screen { top:var(--student-activity-top,140px);padding-bottom:0; }
+.student-activity .battle-play-screen :is([data-help=action-bar],.max-w-5xl) { max-width:none; }
+/* The city is the main workspace. The planning desk stays readable alongside it. */
+.student-activity .delivery.simple .delivery-wrap { max-width:none; }
+.student-activity .simple .delivery-board { grid-template-columns:minmax(0,1fr) clamp(300px,23vw,430px);gap:16px; }
+.student-activity .simple .delivery-hero { padding:4px 0 8px; }
+.student-activity .simple .delivery-hero h1 { font-size:clamp(24px,2vw,36px); }
+.student-activity .simple .simple-tabs { margin-bottom:8px;padding-bottom:4px; }
+.student-activity .simple .simple-standings { margin-bottom:8px; }
+.student-activity .simple .delivery-event { padding:8px 12px;margin-bottom:8px; }
+.student-activity .simple .delivery-desk .delivery-card { padding:14px; }
+.student-activity .simple .world-viewport:not(.is-zoomed) { max-height:none; }
+.student-activity .simple .world-viewport:not(.is-zoomed) .delivery-world { min-width:0;height:clamp(320px,calc(var(--game-height) - 235px),1100px);aspect-ratio:auto; }
+.student-activity .simple .delivery-desk { max-height:calc(var(--game-height) - 140px);overflow:auto;scrollbar-width:thin; }
+.student-activity .simple .world-controls :is(button,select) { font-size:13px;min-height:40px; }
+.student-activity .simple :is(p,label,select,input[type=number]) { font-size:14px; }
+/* Arcade: compact heading, broad play area and controls beside the action. */
+.student-activity .arcade.has-run .arc-wrap { display:grid;grid-template-columns:auto 1fr;gap:6px 18px; }
+.student-activity .arcade.has-run .arc-top { gap:16px; }
+.student-activity .arcade.has-run .arc-header { padding:0;margin:0;min-height:0;justify-content:flex-end; }
+.student-activity .arcade.has-run .arc-header h1 { font-size:clamp(24px,2.5vw,38px);margin:0;white-space:normal; }
+.student-activity .arcade.has-run .arc-header :is(p,.arc-mascot) { display:none; }
+.student-activity .arcade.has-run .arc-game { grid-column:1/-1;width:100%;max-width:none;margin:0;padding:12px 16px; }
+.student-activity .arcade.has-run footer { grid-column:1/-1;padding:8px; }
+.student-activity .arc-game>.game-rules { margin:4px 0; }
+.student-activity .arc-playfield { display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,26%);column-gap:24px;align-content:start;align-items:start; }
+.student-activity .arc-playfield> :is(.arc-road,.arc-defense,.arc-customers) { grid-column:1;grid-row:1/12;width:100%;max-width:none;margin:0; }
+.student-activity .arc-playfield> :not(.arc-road,.arc-defense,.arc-customers) { grid-column:2;margin-top:0; }
+.student-activity .arc-road { height:clamp(300px,calc(var(--game-height) - 160px),1100px);display:grid;grid-template-rows:repeat(5,1fr) auto; }
+.student-activity .arc-road-row span { height:100%;min-height:36px;font-size:clamp(30px,3vw,54px); }
+.student-activity .arc-lanes button { height:clamp(52px,8vh,90px); }
+.student-activity .arc-defense .arc-path { height:clamp(140px,calc(var(--game-height)*.32),350px); }
+.student-activity .arc-towers { margin:12px 0; }
+.student-activity .arc-towers button { min-height:clamp(110px,18vh,230px); }
+.student-activity .arc-playfield>.arc-customers { min-height:clamp(280px,calc(var(--game-height) - 175px),850px); }
+.student-activity .arc-customers button { justify-content:center; }
+.student-activity .arc-customers button>span:first-child { font-size:clamp(44px,6vw,100px); }
+.student-activity .arc-counter { padding:12px;background:#10252b;border-radius:14px; }
+.student-activity .arc-tray { width:100%;max-width:none;margin:12px 0;padding:12px;min-height:70px; }
+.student-activity .arc-ingredients { flex-wrap:wrap; }
+.student-activity .arc-controls { flex-wrap:wrap; }
+.student-activity .arcade:not(.has-run)[data-game] .arc-cards { grid-template-columns:1fr; }
+.student-activity .arcade:not(.has-run)[data-game] .arc-card { display:grid;grid-template-columns:1fr 1fr; }
+.student-activity .arcade:not(.has-run)[data-game] .arc-cover { height:100%;min-height:320px; }
+/* Square games grow with screen height, with their supporting panels using the width. */
+@media(min-width:901px) {
+ .student-activity .momentum-screen { min-height:var(--game-height);gap:10px 20px;padding:12px 20px 20px;align-content:start; }
+ .student-activity .momentum-screen .momentum-titlebar { grid-column:1/-1;grid-row:1;padding-bottom:8px;margin:0; }
+ .student-activity .momentum-screen .momentum-board-wrap { max-width:none; }
+ .student-activity .momentum-screen :is(.momentum-coach-wrap,.momentum-log-wrap) { max-width:none;width:100%; }
+ .student-activity .number-merge .nm-shell { max-width:none; }
+ .student-activity .number-merge .nm-layout { grid-template-columns:minmax(180px,1fr) minmax(300px,calc(var(--game-height) - 240px)) minmax(180px,1fr);gap:20px; }
+ .student-activity .number-merge .nm-panel { max-width:none;width:100%; }
+ .student-activity .number-merge .nm-footer { margin-top:12px; }
+ .student-activity .number-merge .nm-movebar { margin-top:10px; }
+ .student-activity .catch-play-stage { width:100%;max-width:none;padding-inline:5vw;gap:5vw; }
+ .student-activity .catch-play-stage>[data-testid=catch-prompt] { max-width:none!important;flex:1; }
+ .student-activity .woodland-container { display:grid;grid-template-columns:minmax(0,1.8fr) minmax(300px,1fr);align-items:start; }
+ .student-activity .woodland-container>:is(.woodland-top,.woodland-heading,.bridge-steps) { grid-column:1/-1; }
+ .student-activity .woodland-heading { max-width:none;margin:8px 0; }
+ .student-activity .woodland-heading h1 { font-size:clamp(28px,3vw,42px);margin:8px 0; }
+ .student-activity .bridge-scene { grid-column:1;min-height:clamp(300px,calc(var(--game-height) - 200px),850px); }
+ .student-activity .adventure-content { display:grid;grid-template-columns:minmax(240px,1fr) minmax(0,2fr);gap:16px 30px;align-content:start; }
+ .student-activity .adventure-content>header { grid-column:1; }
+ .student-activity .adventure-content>.adventure-steps { grid-column:1;display:flex;flex-direction:column; }
+ .student-activity .adventure-content>.adventure-panel { grid-column:2;grid-row:2/5;margin:0;min-height:calc(var(--game-height) - 100px); }
+ .student-activity .dungeon-map-path { flex-direction:row;align-items:stretch;gap:24px;padding:24px; }
+ .student-activity .dungeon-map-path>div { flex:1;max-width:none; }
+ .student-activity .dungeon-map-path>div>div:last-child { flex-direction:column;gap:16px; }
+ .student-activity .dungeon-map-path button { max-width:none;width:100%;font-size:16px; }
+}
+@media(max-width:900px) {
+ .student-activity .simple .delivery-board { grid-template-columns:1fr; }
+ .student-activity .simple .delivery-desk { max-height:none;overflow:visible; }
+ .student-activity .arc-playfield { display:block; }
+ .student-activity .arcade:not(.has-run)[data-game] .arc-card { display:block; }
+ .student-activity .arcade.has-run .arc-wrap { display:block; }
+ .student-activity .arcade.has-run .arc-header { padding:12px 0;justify-content:flex-start; }
+ .student-activity .arc-playfield>.arc-customers { min-height:260px; }
+ .student-activity .simple .world-viewport:not(.is-zoomed) .delivery-world { height:auto;aspect-ratio:3/2;min-width:580px; }
+}
+@media(min-width:901px) {
+ body:has(.student-shell[data-view=activity]) .pilot-savebar>span { flex-direction:row; }
+ .student-activity .momentum-screen { grid-template-columns:minmax(180px,1fr) minmax(300px,calc(var(--game-height) - 170px)) minmax(180px,1fr); }
+ .student-activity .momentum-screen .momentum-titlebar { min-height:0;padding:0 0 6px; }
+ .student-activity .momentum-titlebar h1 { margin:0;font-size:28px; }
+ .student-activity .momentum-titlebar h1>span { display:none; }
+ .student-activity .momentum-screen .momentum-hud { grid-column:1;grid-row:2; }
+ .student-activity .momentum-screen .momentum-board-wrap { grid-column:2;grid-row:2/4; }
+ .student-activity .momentum-screen .momentum-coach-wrap { grid-column:1;grid-row:2/4;margin-top:110px; }
+ .student-activity .momentum-screen .momentum-log-wrap { grid-column:3;grid-row:2/4; }
+ .student-activity .momentum-screen .momentum-actions { grid-column:2/4;grid-row:4; }
+ .student-activity .momentum-screen .momentum-planning { grid-column:1;grid-row:4;margin-top:0; }
+ .student-activity .number-merge .nm-objective { grid-column:1;grid-row:1; }
+ .student-activity .number-merge .nm-score { grid-column:1;grid-row:2; }
+ .student-activity .number-merge .nm-board-rim { grid-column:2;grid-row:1/5;align-self:start; }
+ .student-activity .number-merge .nm-movebar { grid-column:2;grid-row:5; }
+ .student-activity .number-merge .nm-feedback { grid-column:2;grid-row:6; }
+ .student-activity .number-merge .nm-pet-stage { height:110px; }
+ .student-activity .arc-game { position:relative; }
+ .student-activity .arc-game>.arc-controls { position:absolute;right:16px;top:60px;z-index:2;gap:6px; }
+ .student-activity .arc-game>.arc-controls button { padding:8px 12px;min-height:44px;font-size:13px; }
+ .student-activity .arc-game>.game-rules { margin-bottom:10px; }
+ .student-activity .arc-playfield> :not(.arc-road,.arc-defense,.arc-customers) { margin:6px 0; }
+ .student-activity .arc-road { height:clamp(280px,calc(var(--game-height) - 180px),1100px); }
+ .student-activity .arc-towers button { min-height:90px;padding:8px; }
+ .student-activity .arc-towers span { font-size:32px; }
+ .student-activity .arc-defense .arc-path { height:clamp(120px,calc(var(--game-height)*.28),320px); }
+ .student-activity .arc-ingredients { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px; }
+ .student-activity .arc-ingredients button { padding:6px 2px;font-size:11px;width:100%; }
+ .student-activity .arc-tray {font-size:20px; }
+ .student-activity .arc-counter>button { padding:8px;font-size:13px;min-height:44px; }
+ .student-activity .dungeon-map-path { justify-content:flex-start;flex:0 0 auto;min-height:calc(var(--game-height) - 180px);padding-block:12px; }
+ .student-activity .dungeon-map-path button { min-height:90px; }
+}
+@media(min-width:901px) and (max-height:750px) {
+ .student-activity .woodland-heading p:last-child { margin:4px 0; }
+ .student-activity .woodland-heading h1 { font-size:28px;margin:4px 0; }
+ .student-activity .bridge-steps { margin:4px 0; }
+ .student-activity .bridge-scene { min-height:260px; }
+ .student-activity .simple .delivery-hero p { margin:3px 0 0; }
+ .student-activity .simple .delivery-scorebar { padding-bottom:6px; }
+ .student-activity .simple .world-viewport:not(.is-zoomed) .delivery-world { height:300px; }
+}
+@media(min-width:901px) {
+ .student-activity .number-merge .nm-layout { grid-template-rows:auto;height:auto;min-height:0; }
+ .student-activity .number-merge .nm-playfield { display:block; }
+ .student-activity .number-merge .nm-companion {overflow:auto; }
+ .student-activity .number-merge .nm-overseer {max-height:calc(var(--game-height) - 100px);overflow:auto; }
+ .student-activity .number-merge .nm-header { margin-bottom:8px; }
+ .student-activity .number-merge .nm-title h1 { font-size:28px; }
+ .student-activity .number-merge .nm-title :is(.nm-brand,h1>span) { display:none; }
+ .student-activity .number-merge .nm-modebar { margin-bottom:8px;padding:4px 0; }
+ .student-activity .number-merge .nm-companion .nm-score { margin-block:12px; }
+ .student-activity .arc-counter { padding:8px; }
+ .student-activity .arc-tray { min-height:48px;margin:4px 0;padding:8px; }
+ .student-activity .simple.in-city:has(.delivery-board) .delivery-wrap { position:relative;display:grid;grid-template-columns:minmax(0,1fr) clamp(300px,23vw,430px);gap:6px 16px;align-items:start; }
+ .student-activity .simple.in-city:has(.delivery-board) .delivery-wrap>nav:not(.simple-tabs) { position:absolute;right:0;top:0;max-width:60%;float:none;justify-content:flex-end; }
+ .student-activity .simple.in-city:has(.delivery-board) .delivery-hero { grid-column:1/-1;grid-row:1;padding-right:min(55%,520px); }
+ .student-activity .simple.in-city:has(.delivery-board) .delivery-scorebar { grid-column:1/-1;grid-row:2;padding:0; }
+ .student-activity .simple.in-city:has(.delivery-board) .simple-tabs { grid-column:1;grid-row:3;margin:0;padding:0; }
+ .student-activity .simple.in-city:has(.delivery-board) .simple-standings { grid-column:2;grid-row:3;margin:0;min-width:0; }
+ .student-activity .simple.in-city:has(.delivery-board) .delivery-board { grid-column:1/-1;grid-row:4; }
+ .student-activity .simple.in-city:has(.delivery-board) .delivery-wrap>details { grid-column:1/-1; }
+ .student-activity .simple .delivery-world-column { display:flex;flex-direction:column; }
+ .student-activity .simple .delivery-map-wrap { order:0; }
+ .student-activity .simple .delivery-event { order:1;margin:8px 0 0; }
+ .student-activity .simple .delivery-map-tools { padding:6px 10px; }
+}
+.student-activity .number-merge .nm-hud { min-width:0; }
+@media(min-width:901px) {
+ .student-activity .number-merge .nm-hud { grid-column:1;grid-row:1; }
+ .student-activity .number-merge .nm-companion { grid-column:1;grid-row:2;max-height:calc(var(--game-height) - 300px); }
+ .student-activity .number-merge .nm-playfield { grid-column:2;grid-row:1/3; }
+ .student-activity .number-merge .nm-overseer { grid-column:3;grid-row:1/3; }
+}
+@media(max-width:900px) {
+ .student-activity .number-merge .nm-hud { grid-column:1/-1;order:-2; }
+}
+
+@media(min-width:901px) {
+ .student-activity .woodland-container { gap:12px 24px; }
+ .student-activity .woodland-container>.bridge-scene { grid-column:1;grid-row:3/5;height:clamp(260px,calc(var(--game-height) - 210px),1000px);min-height:0; }
+ .student-activity .bridge-scene svg { height:100%;min-height:0; }
+ .student-activity .woodland-container>.bridge-steps { grid-column:2;grid-row:3;margin:0; }
+ .student-activity .woodland-container>.woodland-panel { grid-column:2;grid-row:4;margin:0;padding:16px; }
+ .student-activity .woodland-container>.woodland-small { grid-column:1/-1;grid-row:5; }
+ .student-activity .woodland-panel h2 { font-size:22px; }
+ .student-activity .woodland-panel p { margin:8px 0; }
+ .student-activity .arc-defense .arc-towers { margin:8px 0; }
+}

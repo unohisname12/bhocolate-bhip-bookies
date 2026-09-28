@@ -1,3 +1,5 @@
+import {popCommand,parsePop} from '../src/features/math-pop/model';
+import {arenaMathProblem} from './arena-math';
 import {stackCommand,parseStack} from '../src/features/math-stack/model';
 import {arenaRoomsAPI} from './arena-rooms';
 import {command as arenaCommand,parseCommand} from '../src/features/pet-arena/model';
@@ -162,7 +164,7 @@ async function api(request: Request, env: Env): Promise<Response> {
     if(row.revision!==expected)throw new ApiError(409,'A newer save exists. Reload before your next battle action.','conflict');
     const previous=parseStored(row.state_json);
     let state:EngineState;
-    try{state=arenaCommand(previous,c);if(state.petArena)state.petArena.lastRequest={id,command:JSON.stringify(c)};}catch(e){throw new ApiError(409,e instanceof Error?e.message:'Battle action unavailable.');}
+    try{const problem=await arenaMathProblem(db,row.id,previous,c,learningOf(row));state=arenaCommand(previous,c,problem);if(state.petArena)state.petArena.lastRequest={id,command:JSON.stringify(c)};}catch(e){throw new ApiError(409,e instanceof Error?e.message:'Battle action unavailable.');}
     return json(await commit(db,row,privateGame(state,row.id,row.alias,names),expected,id,row.assignment,true,names));
   }
   if (path === '/api/pilot/math-stack-command' && request.method === 'POST') {
@@ -177,6 +179,20 @@ async function api(request: Request, env: Env): Promise<Response> {
     const previous=parseStored(row.state_json);
     let state:EngineState;
     try{state=stackCommand(previous,c);if(state.mathStack)state.mathStack.lastRequest={id,command:JSON.stringify(c)};}catch(e){throw new ApiError(409,e instanceof Error?e.message:'Math Stack action unavailable.');}
+    return json(await commit(db,row,privateGame(state,row.id,row.alias,names),expected,id,row.assignment,true,names));
+  }
+  if (path === '/api/pilot/math-pop-command' && request.method === 'POST') {
+    if(session.role!=='student')throw new ApiError(403,'Student access required.');
+    const row=await student(db,session.actor_id),body=await readBody(request),expected=revision(body.revision),id=requestID(body.requestId);
+    const names=await approvedPetNames(db,row.id);
+    let c:ReturnType<typeof parsePop>;
+    try{c=parsePop(body.command);}catch(e){throw new ApiError(400,e instanceof Error?e.message:'Invalid Math Pop command.');}
+    const stored=parseStored(row.state_json);
+    if(stored.mathPop?.lastRequest?.id===id){if(stored.mathPop.lastRequest.command!==JSON.stringify(c))throw new ApiError(409,'This action receipt was already used.');return json(snapshot(row,names));}
+    if(row.revision!==expected)throw new ApiError(409,'A newer save exists. Reload before your next Math Pop action.','conflict');
+    const previous=parseStored(row.state_json);
+    let state:EngineState;
+    try{state=popCommand(previous,c);if(state.mathPop)state.mathPop.lastRequest={id,command:JSON.stringify(c)};}catch(e){throw new ApiError(409,e instanceof Error?e.message:'Math Pop action unavailable.');}
     return json(await commit(db,row,privateGame(state,row.id,row.alias,names),expected,id,row.assignment,true,names));
   }
   if (path === '/api/pilot/save') {
@@ -381,6 +397,7 @@ export default {
       env.DB.prepare('DELETE FROM insight_interventions WHERE created_at<?').bind(Date.now()-365*86400000),
       env.DB.prepare('DELETE FROM insight_settings_history WHERE changed_at<? AND version < (SELECT settings_version FROM students WHERE id=student_id)').bind(Date.now()-365*86400000),
       env.DB.prepare('DELETE FROM insight_presence WHERE last_seen<?').bind(Date.now()-86400000),
+      env.DB.prepare("DELETE FROM arena_math_questions WHERE created_at<? AND challenge_id != COALESCE((SELECT json_extract(state_json,'$.state.petArena.fight.mathPower.challenge.id') FROM students WHERE id=student_id),'')").bind(Date.now()-30*86400000),
       env.DB.prepare('DELETE FROM sessions WHERE expires_at<?').bind(Date.now()),
       env.DB.prepare('DELETE FROM rate_limits WHERE expires_at<?').bind(Date.now()),
       env.DB.prepare('DELETE FROM audit_events WHERE created_at<?').bind(Date.now() - 90 * 86400000),

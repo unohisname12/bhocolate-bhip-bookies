@@ -1,3 +1,4 @@
+import {freshMathPower,type MathPowerState,type MathPower} from './mathPower';
 import type {Pet} from '../../types';
 import {petVisualKey} from '../../config/companionConfig';
 import {moveName} from '../pet-identity/model';
@@ -5,9 +6,9 @@ import {type Branch,type Move,type Style,type Encounter,type Perk,PRESETS} from 
 export interface Build {talents:Record<Branch,number>;charm:string|null;badge:string|null;tool:string}
 export const emptyBuild=():Build=>({talents:{guardian:0,striker:0,tactician:0},charm:null,badge:null,tool:'snack'});
 export function preset(branch:Branch,points=6):Build{const p=PRESETS[branch],b=emptyBuild();b.talents[branch]=Math.min(4,points);b.talents[p.secondary]=Math.max(0,points-4);return {...b,charm:p.charm,badge:p.badge,tool:p.tool};}
-export interface Fighter {id:string;name:string;species:string;signature:string;trait:'resilient'|'spirited'|'nimble';level:number;maxHP:number;hp:number;attack:number;energy:number;shield:number;guard:boolean;weaken:boolean;focused:boolean;counter:boolean;combo:number;lastAttack:string;plans:number;strikes:number;used:string[];build:Build;blocked:number;dealt:number;healed:number}
-export interface CombatEvent {actor:0|1;kind:'damage'|'shield'|'heal'|'energy'|'status';amount?:number;text:string}
-export interface Fight {version:1;id:string;round:number;phase:'active'|'won'|'lost'|'draw'|'retreated';fighters:[Fighter,Fighter];intent:Move;style:Style;boss:boolean;seed:number;events:CombatEvent[];history:CombatEvent[];rewarded:boolean;mode:'campaign'|'practice'|'expedition'|'challenge';encounter:number;startLevel:number;challenge?:number;result?:{xp:number;mp:number;levelBefore:number;levelAfter:number;first:boolean}}
+export interface Fighter {mathStrike?:boolean;id:string;name:string;species:string;signature:string;trait:'resilient'|'spirited'|'nimble';level:number;maxHP:number;hp:number;attack:number;energy:number;shield:number;guard:boolean;weaken:boolean;focused:boolean;counter:boolean;combo:number;lastAttack:string;plans:number;strikes:number;used:string[];build:Build;blocked:number;dealt:number;healed:number}
+export interface CombatEvent {power?:MathPower;actor:0|1;kind:'damage'|'shield'|'heal'|'energy'|'status';amount?:number;text:string}
+export interface Fight {mathPower?:MathPowerState;version:1;id:string;round:number;phase:'active'|'won'|'lost'|'draw'|'retreated';fighters:[Fighter,Fighter];intent:Move;style:Style;boss:boolean;seed:number;events:CombatEvent[];history:CombatEvent[];rewarded:boolean;mode:'campaign'|'practice'|'expedition'|'challenge';encounter:number;startLevel:number;challenge?:number;result?:{xp:number;mp:number;levelBefore:number;levelAfter:number;first:boolean}}
 export function traitFor(species:string):Fighter['trait']{let n=0;for(const c of species)n+=c.charCodeAt(0);return (['resilient','spirited','nimble'] as const)[n%3];}
 export const TRAITS={resilient:'Resilient · start with 5 shield',spirited:'Spirited · start with 5 extra energy',nimble:'Nimble · your first Strike gains 10% damage'};
 export function fighter(pet:Pet,build:Build,options:{fair?:boolean;perks?:Perk[];training?:number}={}):Fighter{
@@ -24,7 +25,7 @@ export function intentFor(f:Fight):Move{
 }
 export function createFight(pet:Pet,build:Build,e:Encounter,id:string,mode:Fight['mode'],perks:Perk[]=[],training=0):Fight{
  let seed=0;for(const c of id)seed=(seed*31+c.charCodeAt(0))>>>0;
- const f:Fight={version:1,id,round:1,phase:'active',fighters:[fighter(pet,build,{fair:mode==='practice',perks,training}),enemy(e)],intent:'strike',style:e.style,boss:e.boss,seed,events:[],history:[],rewarded:false,mode,encounter:e.id,startLevel:pet.progression.level};f.intent=intentFor(f);return f;
+ const f:Fight={mathPower:freshMathPower(),version:1,id,round:1,phase:'active',fighters:[fighter(pet,build,{fair:mode==='practice',perks,training}),enemy(e)],intent:'strike',style:e.style,boss:e.boss,seed,events:[],history:[],rewarded:false,mode,encounter:e.id,startLevel:pet.progression.level};f.intent=intentFor(f);return f;
 }
 export const signatureCost=(f:Fighter)=>f.focused&&f.build.talents.tactician>=2?15:20;
 export function canMove(f:Fighter,m:Move){return m==='signature'?f.energy>=signatureCost(f):m==='item'?!f.used.includes('tool'):true;}
@@ -54,6 +55,7 @@ export function perform(fighters:[Fighter,Fighter],actor:0|1,move:Move,events:Co
   if(move==='signature'&&a.build.charm==='moon'&&a.hp<a.maxHP/2&&once('moon'))heal(10);
   if(s>=1&&a.lastAttack&&a.lastAttack!==move&&!breakthrough){a.combo=Math.min(3,a.combo+1);emit('status',`Combo ${a.combo}/3`);if(a.combo===3&&a.build.badge==='rhythm'&&once('rhythm'))shield(10);}
   a.lastAttack=move;a.weaken=false;
+  if(a.mathStrike){const bonus=Math.min(8,Math.round(damage*.25));damage+=bonus;a.mathStrike=false;emit('status',`Power Strike added ${bonus} damage before protection`);}
   const raw=Math.max(1,Math.round(damage)),guarded=b.guard&&!breakthrough;let hit=guarded?Math.ceil(raw/2):raw;const absorbed=Math.min(b.shield,hit);b.shield-=absorbed;hit-=absorbed;b.blocked+=raw-hit;
   hit=Math.min(b.hp,hit);b.hp-=hit;a.dealt+=hit;emit('damage',`${move==='signature'?a.signature:'Strike'} dealt ${hit}${raw-hit>0?` (${raw-hit} blocked)`:''}`,hit);
   if(guarded){if(b.build.talents.guardian>=2)b.energy=Math.min(60,b.energy+5);if(b.build.talents.guardian>=4)b.counter=true;if(b.build.badge==='thorn'){const reflected=Math.min(3,a.hp);a.hp-=reflected;b.dealt+=reflected;events.push({actor:actor===0?1:0,kind:'damage',amount:reflected,text:`${b.name}: Thorn Badge returned ${reflected} damage`});}}
@@ -69,5 +71,6 @@ export function turn(old:Fight,move:Move):Fight{
   if(f.style==='disruptor'&&m==='signature'&&f.fighters[0].hp>0){f.fighters[0].weaken=true;f.events.push({actor:1,kind:'status',text:'The disruptor applied Weaken to your next attack.'});}
  }
  f.phase=f.fighters.every(p=>p.hp<=0)?'draw':f.fighters[1].hp<=0?'won':f.fighters[0].hp<=0?'lost':f.round>=20?'draw':'active';
+ if(f.phase!=='active'){f.fighters.forEach(p=>{p.mathStrike=false;});if(f.mathPower)f.mathPower.challenge=null;}
  f.history=[...f.history,...f.events].slice(-100);if(f.phase==='active'){f.round++;f.intent=intentFor(f);}return f;
 }

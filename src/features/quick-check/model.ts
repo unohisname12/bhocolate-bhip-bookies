@@ -17,7 +17,7 @@ export interface CheckState { round: CheckRound | null; history: CheckRound[]; w
 export const emptyCheck = (): CheckState => ({ round: null, history: [], waivedUntil: 0, required: false, gaps: [] });
 export const CHECK_SIZE = 3;
 export const DAY = 86400000;
-export const CHECK_ACTIVITIES = ['math_stack', 'math', 'catch_math', 'number_merge', 'dash', 'guard', 'cafe', 'momentum', 'battle', 'dungeon', 'delivery', 'woodland', 'first_adventure', 'classroom'] as const;
+export const CHECK_ACTIVITIES = ['math_pop','math_stack', 'math', 'catch_math', 'number_merge', 'dash', 'guard', 'cafe', 'momentum', 'battle', 'dungeon', 'delivery', 'woodland', 'first_adventure', 'classroom'] as const;
 export const learningKey = (s: LearningSettings) => `${s.grade}:${s.topic}:${s.challenge}`;
 export const eligibleSkills = (s: LearningSettings) => skillsForGrade(s.grade).filter(skill => s.topic === 'mixed' || skill.topic === s.topic);
 

@@ -184,6 +184,14 @@ export const NumberMergeScreen: React.FC<NumberMergeScreenProps> = ({
         </div>
 
         <div className="nm-layout">
+          <div className="nm-hud">
+            <div className="nm-objective">
+              <div className="nm-target"><span className="nm-target-gem">{state.searchTarget}</span><div><span className="nm-eyebrow">Your next target</span><h2>Make exactly {state.searchTarget}</h2><p>{state.turnsRemaining === null ? 'Add neighboring numbers.' : `${state.turnsRemaining} moves left in this search window.`}</p></div></div>
+              <div className={`nm-hearts ${state.turnsRemaining !== null && state.turnsRemaining <= 1 ? 'nm-urgent' : ''}`}><span>{difficulty === 'easy' ? 'NO PRESSURE' : 'HEARTS'}</span><strong aria-label={`${state.lives} of ${state.maxLives} hearts`}>♥ <b>{state.lives}</b><small> / {state.maxLives}</small></strong></div>
+            </div>
+            <div className="nm-score"><div><span>Run score <strong data-testid="merge-score">{state.score}</strong></span><span>{preset.winScore} to win <i>✦</i></span></div><div className="nm-track" role="progressbar" aria-label="Score toward victory" aria-valuenow={state.score} aria-valuemax={Math.max(preset.winScore,state.score)} aria-valuemin={0}><span style={{width:`${scorePercent}%`}}/></div></div>
+
+          </div>
           <aside className="nm-companion nm-panel" aria-label="Your companion">
             <span className="nm-eyebrow">Your companion</span>
             <div className="nm-pet-stage"><div className="nm-pedestal"/>{petSpeciesId ? <PetSprite speciesId={petSpeciesId} animationName={lastMove?.petBonus ? 'happy' : 'idle'} scale={0.85}/> : <span className="nm-empty-companion">✦</span>}</div>
@@ -194,11 +202,6 @@ export const NumberMergeScreen: React.FC<NumberMergeScreenProps> = ({
           </aside>
 
           <section className="nm-playfield" aria-label="Puzzle board">
-            <div className="nm-objective">
-              <div className="nm-target"><span className="nm-target-gem">{state.searchTarget}</span><div><span className="nm-eyebrow">Your next target</span><h2>Make exactly {state.searchTarget}</h2><p>{state.turnsRemaining === null ? 'Add neighboring numbers.' : `${state.turnsRemaining} moves left in this search window.`}</p></div></div>
-              <div className={`nm-hearts ${state.turnsRemaining !== null && state.turnsRemaining <= 1 ? 'nm-urgent' : ''}`}><span>{difficulty === 'easy' ? 'NO PRESSURE' : 'HEARTS'}</span><strong aria-label={`${state.lives} of ${state.maxLives} hearts`}>♥ <b>{state.lives}</b><small> / {state.maxLives}</small></strong></div>
-            </div>
-            <div className="nm-score"><div><span>Run score <strong data-testid="merge-score">{state.score}</strong></span><span>{preset.winScore} to win <i>✦</i></span></div><div className="nm-track" role="progressbar" aria-label="Score toward victory" aria-valuenow={state.score} aria-valuemax={Math.max(preset.winScore,state.score)} aria-valuemin={0}><span style={{width:`${scorePercent}%`}}/></div></div>
             <NumberMergeBoard board={state.board} selected={state.selected} unstableCells={preset.enableChainWindow ? state.unstableCells : []} lastCreatedTileId={lastMove?.createdTileId ?? null} petBonusTileId={lastMove?.petBonus?.affectedTileId ?? null} lastOverseerPositions={state.lastOverseerEvent?.positions ?? []} onTileActivate={tryActivate} onArrowMerge={handleArrowMerge}/>
             <div className={`nm-feedback nm-feedback-${state.feedback?.tone ?? 'neutral'}`} role="status"><span aria-hidden="true">{state.feedback?.tone === 'success' ? '✦' : state.feedback?.tone === 'danger' ? '!' : '→'}</span><p>{state.turns === 0 && state.phase === 'playing' ? 'Tap a number, then a neighbor. Their sum becomes your new tile.' : moveSummary}</p></div>
           </section>

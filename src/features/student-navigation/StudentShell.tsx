@@ -25,6 +25,7 @@ import {GoalCompanion} from './GoalCompanion';
 import {HomeWorld,HomeDestinations} from './HomeWorld';
 import {activityNames,checkActivity,exclusiveActivity,isNavigation,navLabel,nextEgg,type Destination,type Intent} from './model';
 import './student-navigation.css';
+import './game-layout.css';
 const tabs:[Destination,string,string][]=[['today','Home','⌂'],['pet','My Pet','♡'],['games','Games','▦'],['together','Together','♧'],['rewards','Rewards','☆']];
 export function StudentShell({state,engine,children,flush,assignment,tools,onActivity}:{state:EngineState;engine:GameEngine;children:ReactNode;flush?:()=>Promise<boolean>;assignment?:()=>string;tools?:ReactNode;onActivity?:(active:boolean)=>void}){
  const [view,setView]=useState<Destination>('today'),[filter,setFilter]=useState('All'),[search,setSearch]=useState('');
@@ -74,7 +75,7 @@ export function StudentShell({state,engine,children,flush,assignment,tools,onAct
    if(end&&flush&&!await flush())throw new Error('The activity has ended locally. Retry saving before switching.');
    if(i.hash!==undefined)window.history.replaceState(window.history.state,'',window.location.pathname+window.location.search+(i.hash?'#'+i.hash:''));
    else if(!i.resume)window.history.replaceState(window.history.state,'',window.location.pathname+window.location.search);
-   if(i.view&&i.view!=='activity'){changeView(i.view,i.history!==false);}
+   if(i.view&&i.view!=='activity'){if(i.action)engine.dispatchDirect(i.action);changeView(i.view,i.history!==false);}
    else if(i.callback){if(viewRef.current==='activity')changeView('together');i.callback();}
    else {
     changeView('activity',false);
@@ -112,7 +113,7 @@ export function StudentShell({state,engine,children,flush,assignment,tools,onAct
    if(a.type==='SET_SCREEN'&&a.screen==='home'&&engine.getState().screen==='pet_care'&&engine.getState().interaction.careGameActive)return false;
    if(a.type==='SET_SCREEN'&&a.screen==='play'){requestRef.current({label:'Games',view:'games'});return true;}
    if(a.type==='SET_SCREEN'&&a.screen==='home'&&engine.getState().screen==='home_builder'){requestRef.current({label:'My companion',action:a,resume:true});return true;}
-   if(a.type==='SET_SCREEN'&&a.screen==='home'){requestRef.current({label:'Home',view:'today'});return true;}
+   if(a.type==='SET_SCREEN'&&a.screen==='home'){requestRef.current({label:'Home',view:'today',action:engine.getState().screen==='math'?a:undefined});return true;}
    const s=engine.getState(),active=exclusiveActivity(s);
    const insideRun=a.type==='SET_SCREEN'&&s.run.active&&['run_map','run_encounter','run_reward','run_rest','run_event','run_over','battle'].includes(a.screen);
    const resume=a.type==='SET_SCREEN'&&(a.screen===active?.screen||insideRun);

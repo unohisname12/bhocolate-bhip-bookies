@@ -1,3 +1,5 @@
+import {applyMathPower,validMathPower,type MathPowerCommand} from './mathPower';
+import type {MathProblem} from '../../types';
 import {observeFirstAdventure} from '../first-adventure/model';
 import {awardTransitions} from '../clash/rewards';
 import type {EngineState} from '../../types/engine';
@@ -5,12 +7,12 @@ import {addXP} from '../../services/game/evolutionEngine';
 import {GEAR,gear,BRANCHES,pointsAt,slotsAt,ENCOUNTERS,PERKS,type Branch,type Move,type Perk} from './catalog';
 import {emptyBuild,preset,createFight,turn,type Build,type Fight} from './combat';
 export interface ArenaProgress {version:1;owned:string[];pets:{[petId:string]:{build:Build;presets:(Build|null)[]}};cleared:number[];wins:number;expeditions:number;challenges:number[];fight:Fight|null;expedition:{stage:number;perks:Perk[];choosing:boolean;route:number}|null;sequence:number;notice:string;seenLevel:{[petId:string]:number};lastRequest?:{id:string;command:string}}
-export type ArenaCommand = {kind:'init'}|{kind:'buy';id:string}|{kind:'equip';id:string}|{kind:'talent';branch:Branch}|{kind:'reset'}|{kind:'preset';branch:Branch}|{kind:'saveBuild'|'loadBuild';slot:number}|{kind:'start';mode:Fight['mode'];encounter:number;branch?:Branch}|{kind:'move';move:Move;fightId:string;round:number}|{kind:'close'}|{kind:'retreat'}|{kind:'perk';perk:Perk;route:number}|{kind:'acknowledge'};
+export type ArenaCommand = MathPowerCommand | {kind:'init'}|{kind:'buy';id:string}|{kind:'equip';id:string}|{kind:'talent';branch:Branch}|{kind:'reset'}|{kind:'preset';branch:Branch}|{kind:'saveBuild'|'loadBuild';slot:number}|{kind:'start';mode:Fight['mode'];encounter:number;branch?:Branch}|{kind:'move';move:Move;fightId:string;round:number}|{kind:'close'}|{kind:'retreat'}|{kind:'perk';perk:Perk;route:number}|{kind:'acknowledge'};
 export const freshArena=():ArenaProgress=>({version:1,owned:['snack'],pets:{},cleared:[],wins:0,expeditions:0,challenges:[],fight:null,expedition:null,sequence:0,notice:'Welcome! Your first battle kit is ready. Earn MP in math practice to unlock equipment.',seenLevel:{}});
 export const arenaOf=(s:EngineState)=>s.petArena??freshArena();
 export const buildOf=(s:EngineState)=>s.pet?arenaOf(s).pets[s.pet.id]?.build??emptyBuild():emptyBuild();
 const check=(ok:unknown,message:string)=>{if(!ok)throw Error(message);};
-export function command(state:EngineState,c:ArenaCommand):EngineState{
+export function command(state:EngineState,c:ArenaCommand,privateProblem?:MathProblem):EngineState{
  check(state.pet&&state.pet.state!=='dead','Hatch a companion before entering Pet Battle.');
  const pet=state.pet!,a=structuredClone(arenaOf(state));a.pets[pet.id]??={build:emptyBuild(),presets:[]};
  if(a.fight&&a.fight.fighters[0].id!==pet.id&&c.kind!=='retreat')throw Error('Return to the pet that started this battle, or leave the battle first.');
@@ -18,6 +20,7 @@ export function command(state:EngineState,c:ArenaCommand):EngineState{
  const preparing=['buy','equip','talent','reset','preset','saveBuild','loadBuild','start'].includes(c.kind);
  if(preparing)check(!a.fight&&!a.expedition,'Finish or leave your current battle or expedition before changing your build.');
  switch(c.kind){
+ case 'math-open':case 'math-help':case 'math-answer':case 'math-activate':return applyMathPower(next,c,privateProblem);
  case 'init':break;
  case 'acknowledge':a.seenLevel[pet.id]=pet.progression.level;break;
  case 'buy':{const g=gear(c.id);check(g,'Choose an item from the catalog.');check(!a.owned.includes(c.id),'You already own this item.');check(state.player.currencies.mp>=g!.price,'Earn more Math Points in practice first.');a.owned.push(c.id);next={...next,player:{...state.player,currencies:{...state.player.currencies,mp:state.player.currencies.mp-g!.price}}};a.notice=`${g!.name} unlocked permanently! Equip it when its slot is ready.`;break;}
@@ -74,7 +77,7 @@ export function validArena(a:ArenaProgress|undefined):boolean{
  if(![a.wins,a.expeditions,a.sequence].every(nat)||!a.pets||Object.keys(a.pets).length>100||!Array.isArray(a.cleared)||a.cleared.length>15||a.cleared.some(n=>!nat(n)||n>14))return false;
  const validBuild=(b:Build)=>b&&b.talents&&Object.keys(b.talents).length===3&&BRANCHES.every(k=>nat(b.talents[k])&&b.talents[k]<=4)&&Object.values(b.talents).reduce((n,v)=>n+v,0)<=6&&(!b.charm||gear(b.charm)?.slot==='charm')&&(!b.badge||gear(b.badge)?.slot==='badge')&&gear(b.tool)?.slot==='tool';
  if(Object.values(a.pets).some(p=>!validBuild(p.build)||!Array.isArray(p.presets)||p.presets.length>3||p.presets.some(b=>b&&!validBuild(b))))return false;
- if(a.fight&&(a.fight.version!==1||!nat(a.fight.round)||a.fight.round>20||a.fight.fighters.length!==2||a.fight.fighters.some(f=>!validBuild(f.build)||![f.hp,f.maxHP,f.energy,f.shield].every(nat)||f.hp>f.maxHP||f.energy>60)||a.fight.history.length>100))return false;
+ if(a.fight&&(a.fight.version!==1||!nat(a.fight.round)||a.fight.round>20||a.fight.fighters.length!==2||a.fight.fighters.some(f=>!validBuild(f.build)||![f.hp,f.maxHP,f.energy,f.shield].every(nat)||f.hp>f.maxHP||f.energy>60)||a.fight.history.length>100||!validMathPower(a.fight.mathPower)))return false;
  return true;
  }catch{return false;}
 }
@@ -83,6 +86,16 @@ export const CATALOG_SIZE=GEAR.length;
 export function parseCommand(value:unknown):ArenaCommand{
  if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Choose a battle action.');
  const v=value as Record<string,unknown>,k=v.kind;
+ if(typeof v.fightId==='string'&&v.fightId.length<=180&&Number.isInteger(v.round)&&Number(v.round)>=1&&Number(v.round)<=20){
+  const base={fightId:v.fightId,round:v.round as number};
+  if(k==='math-open'&&['strike','shield','energy'].includes(String(v.power)))return {...base,kind:k,power:v.power as 'strike'|'shield'|'energy'};
+  if(typeof v.challengeId==='string'&&v.challengeId.length<=200){
+   const challengeId=v.challengeId;
+   if(k==='math-help')return {...base,kind:k,challengeId};
+   if(k==='math-answer'&&typeof v.answer==='string'&&v.answer.length<=80)return {...base,kind:k,challengeId,answer:v.answer};
+   if(k==='math-activate'&&(v.method==='trace'||v.method==='tap'))return {...base,kind:k,challengeId,method:v.method};
+  }
+ }
  if(k==='init'||k==='reset'||k==='close'||k==='retreat'||k==='acknowledge')return {kind:k};
  if((k==='buy'||k==='equip')&&typeof v.id==='string')return {kind:k,id:v.id};
  if((k==='talent'||k==='preset')&&BRANCHES.includes(v.branch as Branch))return {kind:k,branch:v.branch as Branch};

@@ -1,3 +1,5 @@
+import {returnProfile,type ReturnProfile} from '../src/features/pet-hunt/evolution/returnMath';
+import {chooseEvolution} from '../src/features/pet-hunt/evolution/state';
 import { DurableObject } from 'cloudflare:workers';
 import { ApiError, digest, readBody, readCookie } from './security';
 import { parseStored } from './game-state';
@@ -9,16 +11,16 @@ import { classRivals, masteredTopics, recordRivalMatch, rivalTaunts } from './ri
 import { rivalEdge, rivalTitle, searchPlan, taunt, type Rival } from '../src/features/rivals/model';
 import { ARENAS, DURATIONS, KITS, SPECIES, upgradeMatch, addPlayer, arenaOf, blocked, createMatch, newSeed, idleInput, rivalResult, sanitizeInput, startMatch, step, viewFor, type Difficulty, type Input, type Kit, type Match, type Mode, type Role } from '../src/features/pet-hunt/model';
 
-type Actor = {id:string;name:string;teacher:boolean;species:string;sessionHash:string;grade:number;stage?:PetStage};
-type Config = {id:string;owner:string;classroom:string;name:string;mode:Mode;map:string;difficulty:Difficulty;duration:number;expires:number;relaxed?:boolean};
+type Actor = {id:string;name:string;teacher:boolean;species:string;sessionHash:string;grade:number;returnProfile?:ReturnProfile;stage?:PetStage};
+type Config = {id:string;owner:string;classroom:string;name:string;mode:Mode;map:string;difficulty:Difficulty;duration:number;expires:number;relaxed?:boolean;ruleset?:'classic'|'evolution'};
 type Seat = Actor & {role:Role;ready:boolean};
 type Stored = {config:Config;match:Match;seats:Seat[];queue:Actor[];lastSaved:number;rival?:Rival;rivalRecorded?:boolean;taunts?:boolean};
 type SocketMeta = {actor:Actor;lastInput:number;window:number;count:number};
 type DirectoryRow = {id:string;owner:string;name:string;expires:number;config:string};
 const configFrom=(body:Record<string,unknown>,actor:Actor,classroom:string):Config=>{
-  if(!ARENAS.some(a=>a.id===body.map)||!['versus','coop','teacher'].includes(String(body.mode))||!['gentle','normal','tricky'].includes(String(body.difficulty))||!(DURATIONS as readonly number[]).includes(Number(body.duration)))throw new ApiError(400,'Choose a map, mode, difficulty, and round length.');
+  if(!ARENAS.some(a=>a.id===body.map)||!['versus','coop','teacher'].includes(String(body.mode))||!['gentle','normal','tricky'].includes(String(body.difficulty))||!(body.ruleset==='evolution'?[540]:(DURATIONS as readonly number[])).includes(Number(body.duration)))throw new ApiError(400,'Choose a map, mode, difficulty, and round length.');
   if(body.mode==='teacher'&&!actor.teacher)throw new ApiError(403,'Your teacher opens Beat the Teacher rooms.');
-  return {id:crypto.randomUUID(),owner:actor.id,classroom,name:body.mode==='teacher'?'Beat the Teacher':`${actor.name}’s hunting party`,mode:body.mode as Mode,map:String(body.map),difficulty:body.difficulty as Difficulty,duration:Number(body.duration),expires:Date.now()+90*60_000,relaxed:body.relaxed===true};
+  return {id:crypto.randomUUID(),owner:actor.id,classroom,name:body.mode==='teacher'?'Beat the Teacher':`${actor.name}’s hunting party`,mode:body.mode as Mode,map:String(body.map),difficulty:body.difficulty as Difficulty,duration:Number(body.duration),expires:Date.now()+90*60_000,relaxed:body.relaxed===true,ruleset:body.ruleset==='evolution'?'evolution':'classic'};
 };
 /** One object per arena. The class directory uses a separate object key. */
 export class PetHuntRoom extends DurableObject<Env> {
@@ -39,7 +41,7 @@ export class PetHuntRoom extends DurableObject<Env> {
   reserve(config:Config):Config {
     this.ctx.storage.sql.exec('DELETE FROM hunt_directory WHERE expires<?',Date.now());
     const prior=this.ctx.storage.sql.exec<DirectoryRow>('SELECT * FROM hunt_directory WHERE owner=?',config.owner).toArray()[0];
-    if(prior)return JSON.parse(prior.config) as Config;
+    if(prior){const existing=JSON.parse(prior.config) as Config;if((existing.ruleset??'classic')!==(config.ruleset??'classic'))throw new Error('Close your existing room before switching between Classic Hunt and Rift Hunt.');return existing;}
     const rows=this.ctx.storage.sql.exec<DirectoryRow>('SELECT * FROM hunt_directory').toArray();
     if(rows.length>=8)throw new Error('This class already has eight rooms. Close one before opening another.');
     this.ctx.storage.sql.exec('INSERT INTO hunt_directory VALUES(?,?,?,?,?)',config.id,config.owner,config.name,config.expires,JSON.stringify(config));return config;
@@ -48,20 +50,20 @@ export class PetHuntRoom extends DurableObject<Env> {
   remove(id:string){this.ctx.storage.sql.exec('DELETE FROM hunt_directory WHERE id=?',id);}
   initialize(config:Config,actor:Actor,kit:Kit){
     if(this.data)return;
-    const m=createMatch(config.map,config.difficulty,config.duration,newSeed(),config.relaxed===true),role:Role=config.mode==='teacher'?'hunter':config.mode==='coop'?'runner':'hunter';
-    Object.assign(addPlayer(m,actor.id,actor.name,role,actor.species,kit),{grade:actor.grade??3,stage:actor.stage??'adult'});
+    const m=createMatch(config.map,config.difficulty,config.duration,newSeed(),config.relaxed===true,config.ruleset),role:Role=config.mode==='teacher'?'hunter':config.mode==='coop'?'runner':'hunter';
+    Object.assign(addPlayer(m,actor.id,actor.name,role,actor.species,kit),{grade:actor.grade??3,returnProfile:actor.returnProfile,stage:actor.stage??'adult'});
     this.data={config,match:m,seats:[{...actor,role,ready:false}],queue:[],lastSaved:Date.now()};this.persist();
     this.ctx.waitUntil(this.ctx.storage.setAlarm(config.expires));
   }
-  summary(){if(!this.data)return null;const d=this.data;return {id:d.config.id,name:d.config.name,mode:d.config.mode,map:d.config.map,phase:d.match.phase,count:d.seats.length};}
+  summary(){if(!this.data)return null;const d=this.data;return {id:d.config.id,name:d.config.name,mode:d.config.mode,map:d.config.map,ruleset:d.config.ruleset??'classic',phase:d.match.phase,count:d.seats.length};}
   private connected(id:string){return this.ctx.getWebSockets().some(w=>(w.deserializeAttachment() as SocketMeta).actor.id===id&&w.readyState===1);}
   private ensureSeat(actor:Actor,role?:Role):string|null {
-    const d=this.data!,existing=d.seats.find(s=>s.id===actor.id);if(existing){if(d.match.phase==='lobby'){Object.assign(existing,{species:actor.species,stage:actor.stage??'adult',grade:actor.grade??3});const p=d.match.players.find(p=>p.id===actor.id);if(p)Object.assign(p,{species:existing.species,stage:existing.stage,grade:existing.grade});}return null;}
+    const d=this.data!,existing=d.seats.find(s=>s.id===actor.id);if(existing){if(d.match.phase==='lobby'){Object.assign(existing,{species:actor.species,stage:actor.stage??'adult',grade:actor.grade??3,returnProfile:actor.returnProfile});const p=d.match.players.find(p=>p.id===actor.id);if(p)Object.assign(p,{species:existing.species,stage:existing.stage,grade:existing.grade,returnProfile:existing.returnProfile});}return null;}
     if(d.match.phase!=='lobby')return 'This round is in progress. You are queued for the next round.';
     const desired=role??'runner';
     if(desired==='hunter'&&(d.config.mode==='coop'||d.config.mode==='teacher'&&!actor.teacher))return 'This room reserves the hunter role.';
     if(d.seats.filter(s=>s.role===desired).length>=(desired==='hunter'?1:4))return 'That team is full. You are queued for the next round.';
-    d.seats.push({...actor,role:desired,ready:false});d.queue=d.queue.filter(a=>a.id!==actor.id);Object.assign(addPlayer(d.match,actor.id,actor.name,desired,actor.species),{grade:actor.grade??3,stage:actor.stage??'adult'});return null;
+    d.seats.push({...actor,role:desired,ready:false});d.queue=d.queue.filter(a=>a.id!==actor.id);Object.assign(addPlayer(d.match,actor.id,actor.name,desired,actor.species),{grade:actor.grade??3,returnProfile:actor.returnProfile,stage:actor.stage??'adult'});return null;
   }
   async fetch(request:Request):Promise<Response>{
     if(!this.data||this.data.config.expires<Date.now())return new Response('Room expired',{status:410});
@@ -158,11 +160,12 @@ export class PetHuntRoom extends DurableObject<Env> {
       // Waiting players get first access; previous runners rotate through the queue.
       const waiting=d.queue.filter(q=>this.connected(q.id)),all=[...waiting,...humans].filter((a,i,list)=>list.findIndex(b=>b.id===a.id)===i);
       const nextHunter=d.config.mode==='coop'?null:d.config.mode==='teacher'?all.find(p=>p.teacher):all.find(p=>!humans.find(s=>s.id===p.id&&s.role==='hunter'))??all[0];
-      d.match=createMatch(d.config.map,d.config.difficulty,d.config.duration,newSeed(),d.config.relaxed===true);d.seats=[];d.queue=[];
+      d.match=createMatch(d.config.map,d.config.difficulty,d.config.duration,newSeed(),d.config.relaxed===true,d.config.ruleset);d.seats=[];d.queue=[];
       if(nextHunter){this.ensureSeat(nextHunter,'hunter');}
       for(const actor of all){if(actor.id===nextHunter?.id)continue;const issue=this.ensureSeat(actor,'runner');if(issue&&!actor.teacher)d.queue.push(actor);}
       this.inputs.clear();return;
     }
+    if(v.action==='evolution-choice'){if(typeof v.choice!=='string'||!chooseEvolution(m,a.id,v.choice))throw new Error('Choose one of your available powers.');return;}
     if(m.phase!=='lobby')throw new Error('Choose roles and gadgets between rounds.');
     if(v.action==='role'){
       if(!['runner','hunter','spectator'].includes(String(v.role)))throw new Error('Choose runner or hunter.');
@@ -230,18 +233,19 @@ export async function petHuntAPI(request:Request,env:Env,session:{role:'teacher'
     ?await env.DB.prepare('SELECT id AS classroom_id FROM classrooms WHERE teacher_id=?').bind(session.actor_id).first<{classroom_id:string;alias?:string;state_json?:string;learning_json?:string|null}>()
     :await env.DB.prepare('SELECT classroom_id,alias,state_json,learning_json FROM students WHERE id=? AND active=1').bind(session.actor_id).first<{classroom_id:string;alias?:string;state_json?:string;learning_json?:string|null}>();
   if(!row)throw new ApiError(403,'Sign in to your classroom first.');
-  const savedPet=!teacher&&row.state_json?parseStored(row.state_json).pet:null;
+  const savedState=!teacher&&row.state_json?parseStored(row.state_json):null;
+  const savedPet=savedState?.pet;
   const pet=teacher?{species:'bramble_hedgehog',name:'Bramble Sentinel',stage:'adult' as PetStage}:savedPet&&SPECIES.includes(savedPet.speciesId as typeof SPECIES[number])?{species:savedPet.speciesId,name:savedPet.name,stage:toStage(savedPet.stage)}:null;
-  const actor:Actor={id:session.actor_id,teacher,name:teacher?'Teacher':row.alias??'Pet explorer',species:pet?.species??'',sessionHash:await digest(readCookie(request)),stage:pet?.stage??'adult',grade:normalizeLearning(row.learning_json?JSON.parse(row.learning_json):undefined).grade};
+  const actor:Actor={id:session.actor_id,teacher,name:teacher?'Teacher':row.alias??'Pet explorer',species:pet?.species??'',sessionHash:await digest(readCookie(request)),stage:pet?.stage??'adult',returnProfile:returnProfile(savedState??{}),grade:normalizeLearning(row.learning_json?JSON.parse(row.learning_json):undefined).grade};
   const path=new URL(request.url).pathname,directory=env.PET_HUNT.getByName(`class:${row.classroom_id}`);
   if(path==='/api/pilot/pet-hunt'&&request.method==='GET'){
     const configs=await directory.directory();const rooms=(await Promise.all(configs.map(c=>env.PET_HUNT.getByName(`room:${c.id}`).summary()))).filter(Boolean);
-    return Response.json({you:actor.id,teacher,species:pet?.species??null,pet,rooms});
+    return Response.json({you:actor.id,teacher,species:pet?.species??null,pet,rooms,returnProfile:actor.returnProfile,grade:actor.grade});
   }
   if(!pet)throw new ApiError(409,'Hatch your earned pet in Auralith before entering Pet Hunt.');
   if(path==='/api/pilot/pet-hunt/create'&&request.method==='POST'){
     const body=await readBody(request);const proposed=configFrom(body,actor,row.classroom_id);
-    let config:Config;try{config=await directory.reserve(proposed);}catch{throw new ApiError(409,'The classroom has eight rooms open. Ask your teacher to close a room.');}
+    let config:Config;try{config=await directory.reserve(proposed);}catch(error){throw new ApiError(409,error instanceof Error&&error.message.includes('Close your existing room')?'Close your existing room before switching between Classic Hunt and Rift Hunt.':'The classroom has eight rooms open. Ask your teacher to close a room.');}
     await env.PET_HUNT.getByName(`room:${config.id}`).initialize(config,actor,typeof body.kit==='string'&&Object.hasOwn(KITS,body.kit)?body.kit as Kit:'scout');
     return Response.json({id:config.id});
   }

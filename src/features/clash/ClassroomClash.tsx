@@ -18,15 +18,23 @@ export function ClassroomClash({ teacher = false, claim, play, showTeacherTools 
   const [data, setData] = useState<ClashData | null>(null);
   const [error, setError] = useState(''), [busy, setBusy] = useState(false), [minutes, setMinutes] = useState(10);
   const [expanded, setExpanded] = useState(teacher);
+  const liveUntil = useRef(0);
+  const accept = (next: ClashData) => {
+    // Use the server's remaining time so a skewed device clock cannot keep an abandoned tab awake.
+    // Allow one final refresh after the round ends to display results.
+    liveUntil.current = next.round && !next.round.finished_at && next.round.ends_at > next.serverNow
+      ? Date.now() + next.round.ends_at - next.serverNow + 5000 : 0;
+    setData(next);
+  };
   useEffect(() => {
     let alive = true;
-    const refresh = async () => { try { const next = await pilotAPI<ClashData>('clash'); if (alive) { setData(next); setError(''); } if(!teacher){const extra=await pilotAPI<{grants:typeof gifts}>('clash/gifts');if(alive)setGifts(extra.grants);} } catch (e) { if (alive) setError(e instanceof Error ? e.message : 'Standings unavailable.'); } };
-    const stop = startPolling(refresh, 5000);
+    const refresh = async () => { try { const next = await pilotAPI<ClashData>('clash'); if (alive) { accept(next); setError(''); } if(!teacher){const extra=await pilotAPI<{grants:typeof gifts}>('clash/gifts');if(alive)setGifts(extra.grants);} } catch (e) { if (alive) setError(e instanceof Error ? e.message : 'Standings unavailable.'); } };
+    const stop = startPolling(refresh, 5000, { awake: () => teacher && Date.now() < liveUntil.current });
     return () => { alive = false; stop(); };
   }, [teacher]);
   const run = async (operation: () => Promise<unknown>) => {
     setBusy(true); setError('');
-    try { await operation(); setData(await pilotAPI<ClashData>('clash')); } catch (e) { setError(e instanceof Error ? e.message : 'Try again.'); } finally { setBusy(false); }
+    try { await operation(); accept(await pilotAPI<ClashData>('clash')); } catch (e) { setError(e instanceof Error ? e.message : 'Try again.'); } finally { setBusy(false); }
   };
   const round = data?.round;
   const active = !!round && !round.finished_at && round.ends_at > (data?.serverNow ?? 0);

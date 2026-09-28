@@ -46,7 +46,7 @@ export const RunMapScreen: React.FC<RunMapScreenProps> = ({ run, pet: _pet, disp
 
   return (
     <div
-      className="min-h-screen flex flex-col text-white relative overflow-hidden"
+      className="dungeon-map-screen min-h-screen flex flex-col text-white relative overflow-hidden"
       style={{ background: 'linear-gradient(180deg, #0a0a12 0%, #12091f 50%, #0a0a12 100%)' }}
     >
       {/* Atmosphere */}
@@ -108,7 +108,7 @@ export const RunMapScreen: React.FC<RunMapScreenProps> = ({ run, pet: _pet, disp
       </div>
 
       {/* Map */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10 gap-4">
+      <div className="dungeon-map-path flex-1 flex flex-col items-center justify-center px-6 relative z-10 gap-4">
         {[0, 1, 2, 3].map(tierIdx => {
           const nodes = tiers[tierIdx] ?? [];
           return (

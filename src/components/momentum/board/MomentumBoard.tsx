@@ -1,3 +1,4 @@
+import {CaptureSequence, type BoardCapture} from '../effects/CaptureSequence';
 import {MATH_POWERS} from '../../../engine/systems/MomentumPowers';
 import { ENERGY_STATIONS } from '../../../config/momentumConfig';
 import type React from 'react';
@@ -9,6 +10,7 @@ import { BoardPiece } from './BoardPiece';
 
 interface MomentumBoardProps {
   state: ActiveMomentumState;
+  capture?: BoardCapture | null;
   boardSize?: number;
   theme?: BoardTheme;
   onCellClick: (x: number, y: number) => void;
@@ -21,6 +23,7 @@ interface MomentumBoardProps {
 
 export const MomentumBoard: React.FC<MomentumBoardProps> = ({
   state,
+  capture,
   boardSize = 320,
   theme = DEFAULT_THEME,
   onCellClick,
@@ -106,7 +109,7 @@ export const MomentumBoard: React.FC<MomentumBoardProps> = ({
               {piece?.guarded && <span className="absolute top-0 right-0 text-xs z-10" aria-hidden="true">🛡</span>}
               {move && <span className="absolute bottom-0 right-0 rounded bg-slate-950 text-white text-xs px-1 z-20" aria-hidden="true">{move.isAttack ? '× ' : ''}{move.energyCost}</span>}
               
-              {piece && <div style={{transform: `scale(${Math.min(1,(boardSize / size - 9)/58)})`}}>
+              {piece && piece.id !== capture?.attacker.id && piece.id !== capture?.defender.id && <div style={{transform: `scale(${Math.min(1,(boardSize / size - 9)/58)})`}}>
                 <BoardPiece
                   mathPower={piece.mathPower}
                   team={piece.team}
@@ -125,6 +128,7 @@ export const MomentumBoard: React.FC<MomentumBoardProps> = ({
           );
         })}
       </div>
+      {capture && <CaptureSequence key={capture.sequenceKey} attacker={capture.attacker} defender={capture.defender} onComplete={capture.onComplete} boardSize={boardSize} cellSize={(boardSize-(size-1)*theme.gridGap)/size} gridGap={theme.gridGap}/>}
     </div>
   );
 };

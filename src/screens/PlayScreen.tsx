@@ -18,7 +18,7 @@ export function PlayScreen({ dispatch, hasPet, arcade, reviews }: { dispatch: (a
     { title: 'Math Practice', description: 'Start here: five questions, no timer, and hints when you need them.', image: 'math', action: { type: 'SET_SCREEN', screen: 'math' } },
     { title: 'Catch Math', description: 'Choose an answer, then throw. Complete five catches with unlimited retries.', image: 'catch', action: { type: 'SET_SCREEN', screen: 'catch_math' } },
     { title: 'Momentum', description: 'Classic 5×5 or Advanced 7×7: capture, guard, share energy and control stations. Includes a practice example.', image: 'momentum', action: { type: 'START_MOMENTUM' } },
-    { title: 'Math Stack', description: 'Solve it. Pick your answer piece. Drop it and clear rows! Kindergarten through Grade 9.', image: 'merge', action: { type: 'SET_SCREEN', screen: 'math_stack' } },
+    { title: 'Math Pop', description: 'Connect numbers. Pop chains. Break ice and collect stars! K–Grade 9.', image: 'merge', action: { type: 'SET_SCREEN', screen: 'math_pop' } },
     { title: 'Number Merge', description: 'Start with Easy: add neighboring numbers with no timer or lost hearts. Master chains in harder modes.', image: 'merge', action: { type: 'SET_SCREEN', screen: 'number_merge' } },
     { title: 'Pet Care', description: 'Pet, wash, brush, comfort, train, and play together.', image: 'care', needsPet: true, action: { type: 'SET_SCREEN', screen: 'pet_care' } },
     { title: 'Pet Battle', description: 'Level up your earned pet. Equip gear, learn talents and choose your battle strategy.', image: 'battle', needsPet: true, action: { type: 'SET_SCREEN', screen:'pet_arena' } },

@@ -1,3 +1,4 @@
+import type {PopCommand} from './features/math-pop/model';
 import type {StackCommand} from './features/math-stack/model';
 import type {ArenaCommand} from './features/pet-arena/model';
 const PetArena = lazy(() => import('./features/pet-arena/Arena').then(m=>({default:m.Arena})));
@@ -6,6 +7,7 @@ import { StudentShell } from './features/student-navigation/StudentShell';
 import { demoLearners, selectDemoLearner, createDemoLearner } from './demo/demoClassroom';
 import { FirstAdventureScreen, NextAdventure } from './features/first-adventure/FirstAdventure';
 import { createHomeBase } from './features/home-base/model';
+const MathPop = lazy(() => import('./features/math-pop/MathPop'));
 const MathStack = lazy(() => import('./features/math-stack/MathStack'));
 const HomeBaseScreen = lazy(() => import('./features/home-base/HomeBaseScreen').then(m => ({ default: m.HomeBaseScreen })));
 import { PrizeStudio } from './features/clash/PrizeStudio';
@@ -143,7 +145,7 @@ function loadInitialState(): EngineState {
 }
 
 
-function App({ initialStateOverride, persistence, studentPilot = false, studentFlush, studentAssignment, studentTools, arenaExecute, stackExecute }: { initialStateOverride?: EngineState; persistence?: typeof import('./services/persistence/enginePersistence').connectPersistence; studentPilot?: boolean; studentFlush?:()=>Promise<boolean>; studentAssignment?:()=>string; studentTools?:ReactNode; arenaExecute?:(command:ArenaCommand)=>Promise<void>; stackExecute?:(command:StackCommand)=>Promise<void> } = {}) {
+function App({ initialStateOverride, persistence, studentPilot = false, studentFlush, studentAssignment, studentTools, arenaExecute, stackExecute, popExecute }: { initialStateOverride?: EngineState; persistence?: typeof import('./services/persistence/enginePersistence').connectPersistence; studentPilot?: boolean; studentFlush?:()=>Promise<boolean>; studentAssignment?:()=>string; studentTools?:ReactNode; arenaExecute?:(command:ArenaCommand)=>Promise<void>; popExecute?:(command:PopCommand)=>Promise<void>; stackExecute?:(command:StackCommand)=>Promise<void> } = {}) {
   const [initialState] = useState<EngineState>(() => initialStateOverride ?? (DEMO_MODE ? createDemoState() : loadInitialState()));
   const { state, engine, dispatch } = useGameEngine(initialState, DEMO_MODE ? connectDemoPersistence : persistence);
   const learnerFacts = useMemo(() => ({ skillReviews: state.skillReviews, matchHistory: state.matchHistory }), [state.skillReviews, state.matchHistory]);
@@ -243,6 +245,7 @@ function App({ initialStateOverride, persistence, studentPilot = false, studentF
     if (state.screen === 'run_over') {
       return <RunOverScreen run={state.run} pet={state.pet} dispatch={dispatch} />;
     }
+    if (state.screen === 'math_pop') return <MathPop state={state} dispatch={dispatch} execute={popExecute}/>;
     if (state.screen === 'math_stack') return <MathStack state={state} dispatch={dispatch} execute={stackExecute}/>;
     if (state.screen === 'pet_arena') return <PetArena state={state} dispatch={dispatch} execute={arenaExecute}/>;
     if (state.screen === 'battle' && state.battle.active) {

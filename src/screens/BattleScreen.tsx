@@ -224,7 +224,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({ battle, dispatch, pr
   const isEnemyTurn = combatPhase === 'ENEMY_TURN';
 
   return (
-      <div className="fixed inset-0 bg-slate-900 text-white flex flex-col overflow-hidden pb-16">
+      <div className="battle-play-screen fixed inset-0 bg-slate-900 text-white flex flex-col overflow-hidden pb-16">
 
         {/* === TOP HUD — Player & Enemy Stats === */}
         <div data-help="hp-bars" className="battle-hud-bar flex-shrink-0 flex flex-wrap sm:flex-nowrap items-stretch bg-slate-900/90 border-b border-slate-700/50 z-10">

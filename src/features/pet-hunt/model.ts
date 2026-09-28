@@ -1,3 +1,7 @@
+import type {Evolution,EvoActor} from './evolution/types';
+import {initEvolution,initActor,sanitizeActor} from './evolution/state';
+import {expandedArena,evolutionArena} from './evolution/world';
+import {evolutionStep} from './evolution/simulation';
 /** Shared deterministic arena rules. No saved-pet state or client-authoritative damage. */
 export type Role = 'hunter' | 'runner';
 export type Kit = 'scout' | 'helper' | 'trickster';
@@ -27,7 +31,7 @@ export const KITS: Record<Kit, { name: string; description: string }> = {
   helper: { name: 'Helper', description: 'Rescue faster. Create a protective shield.' },
   trickster: { name: 'Trickster', description: 'Drop concealing smoke to slip away.' },
 };
-export interface Arena { id: string; name: string; tagline: string; colors: [string,string,string]; walls: Rect[]; bushes: Rect[]; beacons: Vec[]; portal: Vec;
+export interface Arena { width?:number; height?:number; id: string; name: string; tagline: string; colors: [string,string,string]; walls: Rect[]; bushes: Rect[]; beacons: Vec[]; portal: Vec;
   lockers?: Vec[]; vents?: [Vec,Vec][]; cages?: Vec[]; door?: Rect|null; key?: Vec|null;
   /** Typed obstacles for drawing (same rects as walls); absent on the fixed legacy arenas. */
   pieces?: import('./mapgen').Piece[]; }
@@ -53,6 +57,8 @@ export function sanitizeInput(value: unknown): Input | null {
   return {x:Math.max(-1,Math.min(1,v.x as number)),y:Math.max(-1,Math.min(1,v.y as number)),aim:(v.aim as number) % (Math.PI*2),fire:v.fire===true,interact:v.interact===true,gadget:v.gadget===true,quiet:v.quiet===true,trap:v.trap===true,sensor:v.sensor===true,answer:[0,1,2].includes(v.answer as number)?v.answer as number:-1,answerFor:Number.isInteger(v.answerFor)?v.answerFor as number:-1};
 }
 export interface Player extends Vec {
+  evo?:EvoActor;
+  returnProfile?:import('./evolution/returnMath').ReturnProfile;
   id: string; name: string; species: string; role: Role; kit: Kit; bot: boolean; connected: boolean;
   aim: number; moving: boolean; quiet: boolean; hidden: boolean; action: string; hp: number;
   captured: boolean; escaped: boolean; captureTime: number; rescue: number; escape: number;
@@ -72,9 +78,10 @@ export interface Player extends Vec {
   stage: PetStage;
 }
 export type PetStage = 'baby' | 'juvenile' | 'adult';
-export interface Bullet extends Vec { id: number; owner: string; role: Role; vx: number; vy: number; life: number; }
+export interface Bullet extends Vec { damage?:number; pierce?:number; hitIds?:string[]; ricochets?:number;  id: number; owner: string; role: Role; vx: number; vy: number; life: number; }
 export interface Effect extends Vec { id: number; kind: 'smoke'|'decoy'|'pulse'|'hit'|'rescue'|'escape'|'beacon'|'ping'|'spark'; life: number; }
 export interface Match {
+  evolution?:Evolution;
   map: string; difficulty: Difficulty; duration: number; time: number; phase: 'lobby'|'playing'|'finished'; paused: boolean;
   winner: 'runners'|'hunter'|'ended'|null; players: Player[]; beacons: (Vec & {progress:number})[]; bullets: Bullet[]; effects: Effect[];
   nextId: number; tick: number; message: string;
@@ -94,17 +101,18 @@ export interface RivalBrief { id: string; name: string; species: string; edge: n
 export interface View extends Omit<Match,'players'|'rival'|'rivalLog'> { players: Omit<Player,'target'|'memory'>[]; you: string; hiddenCount: number; }
 const arenaCache=new Map<string,Arena>();
 /** The arena a match is played on: generated from its seed, or a fixed legacy layout when it has none. */
-export function arenaOf(m:{map:string;seed?:number}):Arena {
+export function arenaOf(m:{map:string;seed?:number;evolution?:Evolution}):Arena {
   const theme=ARENAS.find(a=>a.id===m.map)??ARENAS[0];
-  if(m.seed===undefined)return theme;
+  if(m.seed===undefined)return m.evolution?expandedArena(theme):theme;
   const key=`${theme.id}:${m.seed}`;let arena=arenaCache.get(key);
   if(!arena){arena=arenaFromLayout(theme,generateLayout(theme.id,m.seed));if(arenaCache.size>32)arenaCache.clear();arenaCache.set(key,arena);}
-  return arena;
+  return m.evolution?expandedArena(arena):arena;
 }
 export const newSeed=()=>Math.floor(Math.random()*2**31);
-export function createMatch(map='garden',difficulty:Difficulty='normal',duration=240,seed?:number,relaxed=false): Match {
+export function createMatch(map='garden',difficulty:Difficulty='normal',duration=240,seed?:number,relaxed=false,ruleset:'classic'|'evolution'='classic'): Match {
   const theme=ARENAS.find(a=>a.id===map)??ARENAS[0],arena=arenaOf({map:theme.id,seed});
-  return {map:theme.id,...(seed!==undefined?{seed}:{}),difficulty,duration,time:duration,phase:'lobby',paused:false,winner:null,players:[],beacons:arena.beacons.map(p=>({...p,progress:0})),bullets:[],effects:[],nextId:1,tick:0,gate:{state:'closed',left:GATE_SECONDS},doorOpen:!arena.door,key:arena.key?{...arena.key,holder:null}:null,lockers:(arena.lockers??[]).map(()=>null),traps:[],trapsLeft:TRAPS_PER_ROUND,sensor:null,relaxed,message:'Choose a role. The empty seats become computer pets.'};
+  const match:Match={map:theme.id,...(seed!==undefined?{seed}:{}),difficulty,duration,time:duration,phase:'lobby',paused:false,winner:null,players:[],beacons:arena.beacons.map(p=>({...p,progress:0})),bullets:[],effects:[],nextId:1,tick:0,gate:{state:'closed',left:GATE_SECONDS},doorOpen:!arena.door,key:arena.key?{...arena.key,holder:null}:null,lockers:(arena.lockers??[]).map(()=>null),traps:[],trapsLeft:TRAPS_PER_ROUND,sensor:null,relaxed,message:'Choose a role. The empty seats become computer pets.'};
+  if(ruleset==='evolution')initEvolution(match);return match;
 }
 function spawnFor(m:Match,role:Role,index:number):Vec {
   if(m.seed===undefined)return role==='hunter'?{x:560,y:355}:{x:140+index*275,y:640};
@@ -114,7 +122,7 @@ export function addPlayer(m:Match,id:string,name:string,role:Role,species:string
   const runners=m.players.filter(p=>p.role==='runner').length;
   const p:Player={id,name:name.slice(0,24),species:SPECIES.includes(species as typeof SPECIES[number])?species:'ember_fox',role,kit,bot,connected:!bot,
     ...spawnFor(m,role,runners),aim:-Math.PI/2,moving:false,quiet:false,hidden:false,action:'idle',hp:2,captured:false,escaped:false,captureTime:0,rescue:0,escape:0,stun:0,immune:0,shot:0,cooldown:0,gadgetCooldown:0,shield:0,ammo:3,reload:0,noise:0,beaconScore:0,rescues:0,tags:0,target:null,memory:0,locker:-1,vent:0,ventTo:null,ventCooldown:0,caged:0,out:false,carrying:null,lastInteract:false,lastTrap:false,lastSensor:false,hideTime:0,charging:-1,check:null,checkIn:CHECK_GAP[0],grade:3,lastCheck:null,lastCheckTick:0,stage:bot?'baby':'adult'};
-  m.players.push(p);return p;
+  m.players.push(p);if(m.evolution)initActor(m,p);return p;
 }
 /** Backfill rooms persisted before spark checks and growth-stage artwork shipped. */
 export function upgradeMatch(m: Match): Match {
@@ -130,7 +138,7 @@ export function startMatch(m:Match): void {
   if(m.phase!=='lobby')return;
   if(!m.players.some(p=>p.role==='hunter'))addPlayer(m,'bot-hunter',m.rival?.name??'Bramble Sentinel','hunter',m.rival?.species??'bramble_hedgehog','scout',true);
   while(m.players.filter(p=>p.role==='runner').length<4){const i=m.players.filter(p=>p.role==='runner').length;addPlayer(m,`bot-${i}`,PET_NAMES[i+1],'runner',SPECIES[i+1],(['scout','helper','trickster'] as Kit[])[i%3],true);}
-  m.phase='playing';m.message=`Light ${BEACONS_NEEDED} beacons, rescue your friends, and escape through the gate!`;
+  m.phase='playing';if(m.evolution)return;m.message=`Light ${BEACONS_NEEDED} beacons, rescue your friends, and escape through the gate!`;
 }
 export const distance=(a:Vec,b:Vec)=>Math.hypot(a.x-b.x,a.y-b.y);
 export const inside=(p:Vec,r:Rect,pad=0)=>p.x>=r.x-pad&&p.x<=r.x+r.w+pad&&p.y>=r.y-pad&&p.y<=r.y+r.h+pad;
@@ -138,12 +146,13 @@ const resolve=(map:string|Arena)=>typeof map==='string'?ARENAS.find(a=>a.id===ma
 // While the locked door is shut it is a wall for movement, sight, shots and bot paths alike.
 const shutCache=new WeakMap<Arena,Arena>();
 export function playArena(m:Match):Arena{
+  if(m.evolution)return evolutionArena(m);
   const arena=arenaOf(m);if(!arena.door||m.doorOpen)return arena;
   let shut=shutCache.get(arena);if(!shut){shut={...arena,walls:[...arena.walls,arena.door]};shutCache.set(arena,shut);}
   return shut;
 }
 export function blocked(map:string|Arena,p:Vec):boolean {
-  return p.x<RADIUS+8||p.y<RADIUS+8||p.x>WIDTH-RADIUS-8||p.y>HEIGHT-RADIUS-8||resolve(map).walls.some(r=>inside(p,r,RADIUS));
+  return p.x<RADIUS+8||p.y<RADIUS+8||p.x>(resolve(map).width??WIDTH)-RADIUS-8||p.y>(resolve(map).height??HEIGHT)-RADIUS-8||resolve(map).walls.some(r=>inside(p,r,RADIUS));
 }
 export function lineClear(map:string|Arena,a:Vec,b:Vec):boolean {
   const steps=Math.ceil(distance(a,b)/10),walls=resolve(map).walls;
@@ -154,6 +163,7 @@ function concealed(m:Match,p:Player):boolean {
   return p.role==='runner'&&!p.captured&&!p.escaped&&p.noise<=0&&((!p.moving||p.quiet)&&arenaOf(m).bushes.some(r=>inside(p,r))||m.effects.some(e=>e.kind==='smoke'&&distance(e,p)<90));
 }
 export function visible(m:Match,observer:Player,target:Player):boolean {
+  if(m.evolution){if(observer.id===target.id||observer.role===target.role)return true;if(target.evo?.echo||target.out||target.evo?.underground)return false;if(target.locker>=0)return false;return distance(observer,target)<500&&lineClear(playArena(m),observer,target)&&(!(target.hidden||target.evo?.stealth)||distance(observer,target)<55);}
   if(observer.id===target.id||observer.role===target.role||target.captured||target.escaped)return true;
   // A pet inside a locker or crawling through a vent cannot be seen at any distance; the hunter has to check the locker.
   if(target.locker>=0||target.vent>0)return false;
@@ -164,15 +174,15 @@ export function viewFor(m:Match,id:string,spectator=false):View {
   const seen=m.players.filter(p=>spectator||m.phase!=='playing'||observer&&visible(m,observer,p));
   const {rival,rivalLog,...shared}=m;void rival;void rivalLog;
   const hunterView=spectator||observer?.role==='hunter';
-  return {...shared,you:id,
+  return {...shared,...(m.evolution?{evolution:{...m.evolution,rng:0,paid:{},drones:m.evolution.drones.filter(d=>spectator||observer&&(d.role===observer.role||distance(observer,d)<440&&lineClear(playArena(m),observer,d))).map(d=>({...d,target:null})),core:{...m.evolution.core,parts:m.evolution.core.parts.map(part=>part.carrier&&!seen.some(p=>p.id===part.carrier)?{...part,x:0,y:0}:part)}}}:{}),you:id,
     // The hunter never learns which locker is occupied; runners never see traps until they are right on top of them.
     lockers:hunterView&&!spectator?m.lockers.map(()=>null):m.lockers,
     traps:hunterView?m.traps:m.traps.filter(t=>observer&&distance(observer,t)<70),hiddenCount:m.players.length-seen.length,players:seen.map(p=>{
     // Never serialize bot targets/last-known positions to an opposing player.
-    const {target,memory,...safe}=p;void target;void memory;
+    const {target,memory,returnProfile,...safe}=p;void target;void memory;void returnProfile;
     // Only you see your own spark check, and never its answer.
     const check=p.id===id&&p.check?{...p.check,answer:-1}:null;
-    return {...safe,check,hidden:concealed(m,p)};
+    return {...safe,check,...(p.evo?{evo:sanitizeActor(p.evo,p.id===id)}:{}),hidden:m.evolution?p.hidden:concealed(m,p)};
   }),bullets:m.bullets.filter(b=>spectator||observer&&(distance(observer,b)<440&&lineClear(playArena(m),observer,b))),
     effects:m.effects.filter(e=>e.kind==='ping'?hunterView:spectator||e.kind==='decoy'||e.kind==='pulse'||e.kind==='beacon'||observer&&distance(observer,e)<440),
   };
@@ -206,7 +216,7 @@ const reachableNow=(m:Match,v:Vec)=>m.doorOpen||!!reachableFromStart(m)[Math.flo
 export function waypoint(m:Match,p:Vec,target:Vec):Vec {
   const steps=Math.ceil(distance(p,target)/18);
   if(Array.from({length:steps},(_,i)=>({x:p.x+(target.x-p.x)*(i+1)/steps,y:p.y+(target.y-p.y)*(i+1)/steps})).every(v=>!blocked(playArena(m),v)))return target;
-  const cell=40,cols=Math.ceil(WIDTH/cell),rows=Math.ceil(HEIGHT/cell),solid=navGrid(playArena(m),cols,rows,cell),idx=(v:Vec)=>Math.max(0,Math.min(rows-1,Math.floor(v.y/cell)))*cols+Math.max(0,Math.min(cols-1,Math.floor(v.x/cell)));
+  const cell=40,cols=Math.ceil((arenaOf(m).width??WIDTH)/cell),rows=Math.ceil((arenaOf(m).height??HEIGHT)/cell),solid=navGrid(playArena(m),cols,rows,cell),idx=(v:Vec)=>Math.max(0,Math.min(rows-1,Math.floor(v.y/cell)))*cols+Math.max(0,Math.min(cols-1,Math.floor(v.x/cell)));
   const start=idx(p),goal=idx(target),queue=[start],prev=new Map<number,number>([[start,-1]]);let found=start,best=Infinity;
   for(let q=0;q<queue.length;q++){const k=queue[q],v={x:k%cols*cell+20,y:Math.floor(k/cols)*cell+20},d=distance(v,target);if(d<best){best=d;found=k;}if(k===goal)break;
     for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const x=k%cols+dx,y=Math.floor(k/cols)+dy,n=y*cols+x;if(x<0||x>=cols||y<0||y>=rows||prev.has(n)||solid[n])continue;prev.set(n,k);queue.push(n);}}
@@ -284,6 +294,7 @@ export function botInput(m:Match,p:Player):Input {
 }
 export function step(m:Match,inputs:Record<string,Input>,dt:number):void {
   if(m.phase!=='playing'||m.paused)return;
+  if(m.evolution){evolutionStep(m,inputs,dt);return;}
   dt=Math.max(0,Math.min(.05,dt));m.time=Math.max(0,m.time-dt);m.tick++;
   const arena=arenaOf(m),hunter=m.players.find(p=>p.role==='hunter')!,elapsed=m.duration-m.time;
   for(const e of m.effects)e.life-=dt;m.effects=m.effects.filter(e=>e.life>0);

@@ -5,6 +5,7 @@ type C=CanvasRenderingContext2D;
 const cache=new WeakMap<Arena,HTMLCanvasElement>();
 const rect=(c:C,x:number,y:number,w:number,h:number,color:string)=>{c.fillStyle=color;c.fillRect(Math.round(x/2)*2,Math.round(y/2)*2,w,h);};
 export function ground(arena:Arena){
+ const WIDTH=arena.width??2240,HEIGHT=arena.height??1440;
  const existing=cache.get(arena);if(existing)return existing;
  // Half-resolution terrain makes the paths, texture, and shadows share a pixel grid.
  const canvas=document.createElement('canvas');canvas.width=WIDTH/2;canvas.height=HEIGHT/2;const c=canvas.getContext('2d')!;c.scale(.5,.5);c.imageSmoothingEnabled=false;

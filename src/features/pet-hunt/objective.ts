@@ -1,6 +1,7 @@
 import { BEACONS_NEEDED, HEAD_START, type View } from './model';
 export function nextObjective(view:View):string {
  const me=view.players.find(p=>p.id===view.you),lit=view.beacons.filter(b=>b.progress>=1).length,escaped=view.players.filter(p=>p.escaped).length,need=BEACONS_NEEDED-lit;
+ if(view.evolution&&view.phase!=='finished'){const e=view.evolution;if(me?.evo?.returnMath)return 'SECOND LIFE · Five correct answers · Mistakes never erase progress';if(me?.evo?.echo)return me.evo.returns?'ECHO SUPPORT · Space near a teammate gives a shield':'ECHO · Find a blue relay · Hold E for your rapid-fire return';if(me?.evo?.grabbedBy)return 'GRABBED · Hold E to struggle free!';if(e.core.exposed>0)return 'CORE EXPOSED · Attack the monster together!';if(me?.role==='hunter')return 'Hunt · Break cover · Earn mutations · Protect your core';if(me?.evo?.component!==undefined&&me.evo.component>=0)return 'CORE COMPONENT · Bring it to the assembly station';return `Escape: ${lit}/5 beacons · Or defeat the core: ${e.core.installed}/3 parts installed`; }
  if(view.phase==='finished')return view.message;
  if(!me)return `Team goal: light ${BEACONS_NEEDED} beacons, then get 3 runners out.`;
  if(me.role==='hunter'){

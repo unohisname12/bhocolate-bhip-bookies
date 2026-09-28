@@ -1,0 +1,4 @@
+import {writeFileSync} from 'node:fs';
+import {it,expect} from 'vitest';
+import {createMatch,startMatch,step} from '../../model';
+it('completes seeded bot rounds without invalid positions or an unbounded entity count',()=>{const outcomes=[];for(let seed=1;seed<=6;seed++){const m=createMatch('garden','normal',540,seed,false,'evolution');startMatch(m);for(let n=0;n<11000&&m.phase==='playing';n++){step(m,{},.05);if(n%200===0){expect(m.evolution!.drones.length).toBeLessThanOrEqual(7);expect(m.players.every(p=>Number.isFinite(p.x)&&p.x>=0&&p.x<=2800&&p.y>=0&&p.y<=1800)).toBe(true);}}expect(m.phase).toBe('finished');outcomes.push({seed,winner:m.winner,reason:m.evolution!.reason,time:Math.round(m.duration-m.time),beacons:m.beacons.filter(b=>b.progress>=1).length,returns:m.players.reduce((n,p)=>n+p.evo!.returns,0),core:m.evolution!.core.hp});}if(process.env.HUNT_BALANCE_REPORT)writeFileSync(process.env.HUNT_BALANCE_REPORT,JSON.stringify(outcomes,null,2));},60000);

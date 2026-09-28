@@ -62,6 +62,7 @@ export interface EconomyProgress {
 }
 
 export interface EngineState {
+  mathPop?: import('../features/math-pop/model').PopProgress;
   mathStack?: import('../features/math-stack/model').StackProgress;
   petArena?: import('../features/pet-arena/model').ArenaProgress;
   economy?: EconomyProgress;

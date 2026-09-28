@@ -1,3 +1,4 @@
+import {popCommand} from '../../features/math-pop/model';
 import {stackCommand} from '../../features/math-stack/model';
 import {command as arenaCommand} from '../../features/pet-arena/model';
 import { TOKENS_PER_COIN } from '../../services/game/wallet';
@@ -571,6 +572,9 @@ const reduceEngine = (state: EngineState, action: GameEngineAction): EngineState
       return { ...state, notifications: state.notifications.filter((n) => n.id !== action.id) };
     case 'CANCEL_BATTLE_WARMUP':
       return { ...state, pendingBattleWarmup: null };
+    case 'MATH_POP_COMMAND': {
+      try { return popCommand(state, action.command); } catch { return state; }
+    }
     case 'MATH_STACK_COMMAND': {
       try { return stackCommand(state, action.command); } catch { return state; }
     }

@@ -11,9 +11,33 @@ describe('teacher battle',()=>{
  it('a hint and wrong attempts do not reduce a successful contribution',()=>{let r=apply(room(),{action:'next'},'host',()=>.2);r=apply(r,{action:'answer',questionId:r.questions.s0.id,answer:'999',move:'strike'},'s0');expect(r.questions.s0.solved).toBe(false);r=solve(r,'s0');r=apply(r,{action:'next'},'host');expect(r.health.teachers).toBe(85);});
  it('cannot score twice or switch moves by replaying an answer',()=>{let r=apply(room(),{action:'next'},'host');r=solve(r,'s0');r=solve(r,'s0','rally');expect(r.questions.s0.move).toBe('strike');r=apply(r,{action:'next'},'host');expect(r.health.teachers).toBe(85);expect(()=>solve(r,'s0')).toThrow();});
  it('keeps questions private even from the opposing teacher and projector',()=>{const r=apply(room(),{action:'next'},'host');for(const actor of ['host','s0','projector']){const v=roomView(r,actor);expect(JSON.stringify(v)).not.toContain('PRIVATE');if(v.question)expect(v.question).not.toHaveProperty('answer');expect(v).not.toHaveProperty('questions');if(actor==='projector')expect(v.question).toBeNull();}expect(roomView(r,'s0').members[0]).not.toHaveProperty('learning');});
- it('applies shielding and healing without permanently changing a pet',()=>{let r=apply(room(1,1),{action:'next'},'host');r=solve(r,'host');r=solve(r,'s0','guard');r=apply(r,{action:'next'},'host');expect(r.health.students).toBe(100);r=apply(r,{action:'next'},'host');r.health.students=50;r=solve(r,'s0','rally');r=apply(r,{action:'next'},'host');expect(r.health.students).toBe(68);});
+ it('applies shielding and healing without permanently changing a pet',()=>{let r=apply(room(1,1),{action:'next'},'host');r=solve(r,'host');r=solve(r,'s0','guard');r=apply(r,{action:'next'},'host');expect(r.health.students).toBe(94);expect(r.health.teachers).toBe(88);r=apply(r,{action:'next'},'host');r.health.students=50;r=solve(r,'s0','rally');r=apply(r,{action:'next'},'host');expect(r.health.students).toBe(62);});
  it('allows co-teacher pause but restricts progression, removal and ending',()=>{let r=apply(room(2),{action:'next'},'host');r=apply(r,{action:'pause'},'t1');expect(()=>solve(r,'s0')).toThrow(/paused/);r=apply(r,{action:'pause'},'host');expect(()=>apply(r,{action:'next'},'t1')).toThrow();expect(()=>apply(r,{action:'finish'},'s0')).toThrow();expect(()=>apply(r,{action:'pause'},'s0')).toThrow();expect(()=>apply(r,{action:'remove',memberId:'s0'},'host')).toThrow();});
  it('supports individual learning levels without different energy awards',()=>{let r=room();r=apply(r,{action:'learning',memberId:'s0',grade:8,topic:'mixed',challenge:'support'},'host');r=apply(r,{action:'next'},'host');expect(r.members.find(m=>m.id==='s0')?.learning.grade).toBe(8);for(const id of ['s0','s1'])r=solve(r,id);r=apply(r,{action:'next'},'host');expect(r.health.teachers).toBe(70);});
  it('rejects stale questions, spectator actions and late joining',()=>{let r=apply(room(),{action:'next'},'host');expect(()=>apply(r,{action:'answer',questionId:'old',answer:'1',move:'strike'},'s0')).toThrow();expect(()=>apply(r,{action:'answer'},'outsider')).toThrow();expect(()=>joinRoom(r,member('late','students'))).toThrow();r=apply(r,{action:'finish'},'host');expect(()=>apply(r,{action:'next'},'host')).toThrow();});
  it('requires a student and finishes after the chosen number of rounds',()=>{expect(()=>apply(room(1,0),{action:'next'},'host')).toThrow();let r=room();r.rounds=1;r=apply(r,{action:'next'},'host');r=apply(r,{action:'next'},'host');r=apply(r,{action:'next'},'host');expect(r.phase).toBe('finished');});
+});
+
+describe('boss battle strategy and class balance',()=>{
+ it.each([['guard','strike'],['rally','guard'],['strike','rally']] as const)('%s beats %s for either side', (winning,losing)=>{
+  for(const side of ['teachers','students'] as const){let r=apply(room(1,1),{action:'next'},'host');r=solve(r,'host',side==='teachers'?winning:losing);r=solve(r,'s0',side==='students'?winning:losing);r=apply(r,{action:'next'},'host');expect(r.health[side]).toBeGreaterThan(r.health[side==='teachers'?'students':'teachers']);}
+ });
+ it.each([1,2,5,12,30,60])('caps power and tolerates a few unfinished answers in a class of %i',count=>{
+  let r=apply(room(1,count),{action:'next'},'host');r=solve(r,'host');for(let i=0;i<Math.ceil(count*.8);i++)r=solve(r,`s${i}`);r=apply(r,{action:'next'},'host');expect(r.health).toEqual({teachers:70,students:70});
+ });
+ it('partial participation still reduces power below the class target',()=>{
+  let r=apply(room(1,10),{action:'next'},'host');for(let i=0;i<4;i++)r=solve(r,`s${i}`);r=apply(r,{action:'next'},'host');expect(r.health.teachers).toBe(85);
+ });
+ it('does not heal above the health cap or counter an absent attack',()=>{
+  let r=apply(room(1,1),{action:'next'},'host');r=solve(r,'host','guard');r=apply(r,{action:'next'},'host');expect(r.health).toEqual({teachers:100,students:100});expect(r.results[0].shield.teachers).toBe(0);
+  r=apply(r,{action:'next'},'host');r=solve(r,'host','rally');r=apply(r,{action:'next'},'host');expect(r.results[1].healing.teachers).toBe(0);
+ });
+ it('mixed class moves remain capped and health stays bounded through a long match',()=>{
+  let r=room(3,60);r.rounds=10;let seed=17;const random=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  r=apply(r,{action:'next'},'host',random);
+  while(r.phase!=='finished'){
+   for(const m of r.members)if(random()>.1)r=solve(r,m.id,(['strike','guard','rally'] as const)[Math.floor(random()*3)]);
+   r=apply(r,{action:'next'},'host',random);for(const h of Object.values(r.health)){expect(h).toBeGreaterThanOrEqual(0);expect(h).toBeLessThanOrEqual(100);}r=apply(r,{action:'next'},'host',random);
+  }
+ });
 });

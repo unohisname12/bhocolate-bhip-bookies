@@ -10,6 +10,8 @@ interface Question { id:string; text:string; answer:number; hint:string; explana
 export interface Result { round:number; damage:Record<Side,number>; shield:Record<Side,number>; healing:Record<Side,number>; charged:Record<Side,number>; contributors:string[] }
 export interface Room { host:string; members:Member[]; phase:'lobby'|'question'|'result'|'finished'; paused:boolean; round:number; rounds:number; learning:LearningSettings; health:Record<Side,number>; questions:Record<string,Question>; results:Result[]; emotes?:Record<string,{emote:Emote;at:number}>; }
 export interface Command { emote?:string; action:string; questionId?:string; answer?:string; move?:Move; memberId?:string; grade?:number; topic?:string; challenge?:LearningSettings['challenge'] }
+export const TEAM_POWER = 30;
+export function chargeTarget(side:Side,count:number){return side==='students'?Math.ceil(count*.8):count;}
 const need:(condition:unknown,message:string)=>asserts condition=(condition,message)=>{if(!condition)throw Error(message);};
 export function createRoom(host:Member,rounds:number,learning:LearningSettings):Room {
   need(Number.isInteger(rounds)&&rounds>=1&&rounds<=10,'Choose 1–10 rounds.');
@@ -29,11 +31,27 @@ function questionRound(r:Room,random:()=>number) {
 export function resolveRound(r:Room) {
   const actions={teachers:{strike:0,guard:0,rally:0},students:{strike:0,guard:0,rally:0}};
   const charged={teachers:0,students:0};const contributors:string[]=[];
-  for(const side of ['teachers','students'] as const){const members=r.members.filter(m=>m.side===side);for(const m of members){const q=r.questions[m.id];if(q?.solved&&q.move){actions[side][q.move]+=30/members.length;charged[side]++;contributors.push(m.id);}}}
-  const shield={teachers:actions.teachers.guard,students:actions.students.guard};
-  const healing={teachers:actions.teachers.rally*.6,students:actions.students.rally*.6};
-  const damage={teachers:Math.max(0,actions.students.strike-shield.teachers),students:Math.max(0,actions.teachers.strike-shield.students)};
-  for(const side of ['teachers','students'] as const)r.health[side]=Math.round(Math.max(0,Math.min(100,r.health[side]-damage[side]+healing[side]))*100)/100;
+  for(const side of ['teachers','students'] as const){
+    const members=r.members.filter(m=>m.side===side);
+    const ready=members.filter(m=>r.questions[m.id]?.solved&&r.questions[m.id]?.move);
+    // A few unfinished student answers should not make a whole class weaker than one adult.
+    // Above the target, every contributor shares the same capped team power.
+    const share=TEAM_POWER/Math.max(1,chargeTarget(side,members.length),ready.length);
+    for(const m of ready){actions[side][r.questions[m.id].move!]+=share;charged[side]++;contributors.push(m.id);}
+  }
+  const shield={teachers:0,students:0},healing={teachers:0,students:0},damage={teachers:0,students:0};
+  for(const side of ['teachers','students'] as const){
+    const other=side==='teachers'?'students':'teachers';
+    shield[side]=Math.min(actions[other].strike,actions[side].guard*.8);
+  }
+  for(const side of ['teachers','students'] as const){
+    const other=side==='teachers'?'students':'teachers';
+    // Strike beats Rally; Guard blocks and counters Strike; Rally breaks Guard.
+    damage[side]=Math.max(0,actions[other].strike-shield[side])
+      +shield[other]*.5+Math.min(actions[other].rally,actions[side].guard)*.6;
+    healing[side]=Math.min(actions[side].rally*.4,100-Math.max(0,r.health[side]-damage[side]));
+    r.health[side]=Math.round(Math.max(0,Math.min(100,r.health[side]-damage[side]+healing[side]))*100)/100;
+  }
   r.results.push({round:r.round,damage,shield,healing,charged,contributors});r.phase='result';
 }
 export const EMOTE_COOLDOWN=2000;

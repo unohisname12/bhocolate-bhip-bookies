@@ -14,8 +14,8 @@ const plan=(r:Room)=>guardianPlan(r.phase,r.health,r.results.at(-1));
 describe('guardian animation plan',()=>{
   it('reads the spellbook while questions are open',()=>{let r=joinRoom(createRoom(member('host','teachers'),3,learning),member('s0','students'));r=apply(r,{action:'next'},'host');expect(plan(r)).toEqual({once:[],rest:'math',holdLast:false});});
   it('a full-power teacher strike plays the special, and the student hit plays hurt',()=>{expect(plan(round('strike','strike')).once).toEqual(['special','hurt']);});
-  it('guard blocks the student strike without a hurt reaction',()=>{expect(plan(round('guard','strike')).once).toEqual(['defend']);});
-  it('rally heals',()=>{expect(plan(round('rally',null)).once).toEqual(['heal']);});
+  it('guard counters and blocks most of the student strike',()=>{expect(plan(round('guard','strike')).once).toEqual(['attack','defend','hurt']);});
+  it('rally at full health needs no healing reaction',()=>{expect(plan(round('rally',null)).once).toEqual([]);});
   it('an unsolved round just idles',()=>{expect(plan(round(null,null))).toEqual({once:[],rest:'idle',holdLast:false});});
   it('holds victory or defeat at the finale',()=>{
     expect(guardianPlan('finished',{teachers:80,students:40})).toEqual({once:[],rest:'victory',holdLast:true});
